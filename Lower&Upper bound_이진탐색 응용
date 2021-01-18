@@ -1,0 +1,25 @@
+int lower_binary(int* arr, int target, int size) { // target<=값 처음 발견된 위치
+	int mid, start, end;
+	start = 0, end = size - 1;
+
+	while (end > start) {
+		mid = (start + end) / 2;
+		if (arr[mid] >= target)
+			end = mid;
+		else start = mid + 1;
+	}
+	return end;
+}
+
+int upper_binary(int* arr, int target, int size) { //target<값 처음 발견된 위치
+	int mid, start, end;
+	start = 0, end = size - 1;
+
+	while (end > start) {
+		mid = (start + end) / 2;
+		if (arr[mid] > target)
+			end = mid;
+		else start = mid + 1;
+	}
+	return end;
+}
