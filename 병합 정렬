@@ -1,3 +1,6 @@
+// 시간 복잡도 : O(N*logN)
+// 반으로 나누고 나중에 합쳐서 정렬
+
 void merge(int a[], int m, int middle, int n) { 
 	int i = m;
 	int j = middle + 1;
