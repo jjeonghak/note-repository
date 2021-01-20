@@ -1,4 +1,39 @@
-// 시간 복잡도 : O(log N)
-// 힙 트리 구조를 이용하는 정렬방법(Feapify Algorithm) - 특정한 노드의 두 자식 중 더 큰 자식과 자신의 위치를 변경
+// 시간 복잡도 : O(N*logN)
+// 힙 트리 구조를 이용하는 정렬방법
+// 힙 생성 알고리즘(Heapify Algorithm) : 특정한 노드의 두 자식 중 더 큰 자식과 자신의 위치를 변경, 시간 복잡도O(logN)
+// 추가적인 배열이 필요하지 않아 메모리 측면에서 효율적
 // 이진트리 = 모든 노드의 자식노드가 2개 이하인 노드(트리의 최상단 노드:루트, 트리의 최하단 노드:리프)
 // 완전 이진 트리 = 데이터가 루트노드부터 자식 노드가 왼쪽부터 오른쪽으로 차근차근 들어가는 이진 트리
+
+int heap[number];
+for (int i = 1; i < number; i++) { // 전체 트리구조를 최대 힙 구조로 변경
+	int c = 1;
+	do {
+		int root = (c - 1) / 2; //특정한 노드의 부모
+		if (heap[root] < heap[c]) {
+			int temp = heap[root];
+			heap[root] = heap[c];
+			heap[c] = temp;
+		}
+		c = root;
+	} while(c!=0)
+}
+for (int i = number - 1; i >= 0; i--) { //크기를 줄여가며 반복적으로 힙 구성
+	int temp = heap[0];
+	heap[0] = heap[i];
+	heap[i] = temap; //가장 큰 값을 밑으로
+	int root = 0;
+	int c = 1;
+	do { //다시 힙 구조 생성
+		c = 2 * root + 1; //자식 중 더 큰 값
+		if (heap[c] < heap[c + 1] && c < i - 1) {
+			c++;
+		}
+		if (heap[root] < heap[c] && c < i) { //루트보다 자식이 크다면 교환
+			int temp = heap[root];
+			heap[root] = heap[c];
+			heap[c] = temap;
+		}
+		root = c;
+	} while (c < i);
+}
