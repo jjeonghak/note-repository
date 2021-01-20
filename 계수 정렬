@@ -1,0 +1,15 @@
+// 시간 복잡도 : O(N)
+// 범위 조건이 있는 경우
+// 이전 알고리즘은 모든 데이터를 그 자체로 위치를 바꾸며 정렬했으나 계수정렬은 크기 기준으로 갯수를 셈
+
+int temp;
+int count[number1] = { 0, };//범위조건 : 크기가 number1 이하(0 초기화)
+int array[number2]; //데이터량
+for (int i = 0; i < number2; i++) { //갯수를 셈
+	count[array[i] - 1]++;
+}
+for (int i = 0; i < number1; i++) { //갯수만큼 출력
+	if (count[i] != 0) {
+		for (int j = 0; j < count[i]; j++) cout << i + 1;
+	}
+}
