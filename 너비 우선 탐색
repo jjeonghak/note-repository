@@ -1,0 +1,40 @@
+// 너비를 우선으로 하여 탐색을 수행(Breadth First Search, BFS)
+// 큐를 이용해서 최단 경로 탐색에 주로 쓰임
+
+int c[number]; //방문처리를 위한 배열
+vector <int> a[number + 1]; //인덱스 시작 1
+
+void bfs(int start) {
+	queue<int>q;
+	q.push(start);
+	c[start] = true;
+	while (!q.empty()) {
+		int x = q.front();
+		q.pop();
+		cout << x;
+		for (int i = 0; i < a[x].size(); i++) {
+			int y = a[x][i];
+			if (!c[y]) { //방문하지 않았을 경우
+				q.push(y);
+				c[y] = true;
+			}
+		}
+	}
+}
+
+int main(void) {
+	a[1].push_back(2); //노드의 연결 상태대로
+	a[2].push_back(1);
+	a[1].push_back(3); 
+	a[3].push_back(1);
+
+	a[2].push_back(3); 
+	a[3].push_back(2);
+	a[2].push_back(4);
+	a[4].push_back(2);
+	a[2].push_back(5);
+	a[5].push_back(2); //...이외에도 계속 노드 연결
+
+	bfs(1); //시작노드부터
+	return 0;
+}
