@@ -1,3 +1,6 @@
+// 시간 복잡도 : 평균O(N*logN), 최악O(N^2) 
+// 특정한 값(피벗)을 기준으로 큰 숫자와 작은 숫자를 서로 교환한 뒤 배열을 반으로 나눔
+
 void quickSort(int* data, int start, int end) {
 	if (start >= end) return; //원소가 하나인 경우
 
