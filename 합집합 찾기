@@ -1,0 +1,19 @@
+// 유니온-파인드(Union-Find)는 대표적인 그래프 알고리즘으로 서로소 집합(Disjoint-Set) 알고리즘과 동임
+// 여러개의 노드 중 두개의 노드를 선택해서 같은 그래프에 속하는지 판단
+
+int getParent(int parent[], int x) { //부모 노드를 찾는 함수
+	if (parent[x] == x) return x;
+	return parent[x] = getParent(parent, parent[x]);
+}
+int unionParent(int parent[], int a, int b) { //두 부모 노드를 합치는 함수(간선 생성)
+	a = getParent(parent, a);
+	b = getParent(parent, b);
+	if (a < b) parent[b] = a;
+	else parent[a] = b;
+}
+int findParent(int parent[], int a, int b) { //같은 부모인지 판단(같은 그래프인지 판단)
+	a = getParent(parent, a);
+	b = getParent(parent, b);
+	if (a == b) return 1;
+	return 0;
+}
