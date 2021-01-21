@@ -1,0 +1,58 @@
+// 크루스칼 알고리즘(Kruskal Algorithm)은 가장 적은 비용으로 모든 노드를 연결
+// 최소 비용 신장 트리를 만들기 위한 알고리즘
+// 노드=정점=도시
+// 간선=거리=비용
+// 최소 간선 갯수 = 노드 갯수 - 1
+// 간선이 작은 순으로 그래프에 포함(사이클이 생기지 않도록)
+// 사이클 테이블은 Union-Find 알고리즘 사용
+
+// <Union-Find>
+int getParent(int parent[], int x) { //부모 노드를 찾는 함수
+	if (parent[x] == x) return x;
+	return parent[x] = getParent(parent, parent[x]);
+}
+void unionParent(int parent[], int a, int b) { //두 부모 노드를 합치는 함수
+	a = getParent(parent, a);
+	b = getParent(parent, b);
+	if (a < b) parent[b] = a;
+	else parent[a] = b;
+}
+int findParent(int parent[], int a, int b) { //같은 부모인지 판단
+	a = getParent(parent, a);
+	b = getParent(parent, b);
+	if (a == b) return 1;
+	return 0;
+}
+
+class Edge { //간선 클래스 선언
+public:
+	int node[2];
+	int distance;
+	Edge(int a, int b, int distance) { //간선 입렵 함수 정의
+		this->node[0] = a;
+		this->node[1] = b;
+		this->distance = distance;
+	}
+	bool operator<(Edge& edge) { //정렬기준은 거리 기준
+		return this->distance < edge.distance;
+	}
+};
+
+int main(void) {
+	vector<Edge> v; //간선 클래스 데이터를 담을 벡터 선언
+	v.push_back(Edge(a, b, distance)); //간선 데이터 삽입
+	sort(v.begin(), v.end()); //정렬기준에 따라 정렬
+	
+	int parent[n]; //0부터 저장
+	for (int i = 0; i < n; i++) { //모든 노드가 자신을 가리키도록 초기화
+		parent[i] = i;
+	}
+	int sum = 0; //거리합 0초기화
+	for (int i = 0; i < v.size(); i++) { //노드는 1부터 시작되지만 저장은 0부터 되어있으므로 -1
+		if (!findParent(parent, v[i].node[0] - 1, v[i].node[1] - 1)) { //사이클 발생 안된 경우
+			sum += v[i].distance;
+			unionParent(parent, v[i].node[0] - 1, v[i].node[1] - 1); //두 노드 연결
+		}
+	}
+	return 0;
+}
