@@ -52,3 +52,22 @@ void postorder(treePointer ptr) {
 		cout << ptr->data << ' '; //먼저 자기 자신 처리
 	}
 }
+
+//이진 트리 생성
+int main(void) {
+	node nodes[number + 1];
+	for (int i = 1; i <= number; i++) {
+		nodes[i].data = i;
+		nodes[i].le = 0;
+		nodes[i].ri = 0;
+	}
+	for (int i = 1; i <= number; i++) {
+		if (i % 2 == 0) { //자식노드가 짝수라면 왼쪽노드에 삽입
+			nodes[i / 2].le = &nodes[i]; //포인터 형식으로 주소를 입력
+		}
+		else {
+			nodes[i / 2].ri = &nodes[i];
+		}
+	}
+	return 0;
+}
