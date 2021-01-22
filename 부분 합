@@ -1,0 +1,28 @@
+구간합을 빠르게 계산하기 위해서는 부분합을 미리 계산해 둘 필요가 있다.
+
+// 1차원 부분합
+vector<int> partialSum(const vector<int>& a) { //주어진 벡터 a의 부분합을 계산한다
+	vector<int> ret(a.size());
+	ret[0] = a[0];
+	for (int i = 0; i < a.size(); ++i) {
+		ret[i] = ret[i - 1] + a[i];
+	}
+	return ret;
+}
+
+
+int rangeSum(const vector<int>& psum, int a, int b) { //어떤 벡터의 부분합 psum[]이 주어질 때, 원래 벡터의 a부터 b까지의 합을 구한다.
+	if (a == 0) return psum;
+	return psum[b] - psum[a]; //b까지의 부분합 - a까지의 부분합 = [a,b]의 합
+}
+
+
+// 2차원 부분합 
+// sum(y1,x1,y2,x2) = psum[y2,x2] - psum[y2,x1-1] - psum[y1-1,x2] + psum[y1-1,x1-1]
+int gridSum(const vector<vector<int>>& psum, int y1, int x1, int y2, int x2) {
+	int ret = psum[y2][x2]; //어떤 2차원 배열A[]의 부분합이 주어질 때 A[y1,x1]과 A[y2,x2]를 양 끝으로 갖는 부분 배열의 합을 반환
+	if (y1 > 0) ret -= psum[y1 - 1][x2];
+	if (x1 > 0) ret -= psum[y2][x1 - 1];
+	if (y1 > 0 && x1 > 0) ret += psum[y1 - 1][x1 - 1];
+	return ret;
+}
