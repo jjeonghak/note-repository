@@ -1,0 +1,36 @@
+// 시간 복잡도 : O(N^(1/2))
+// 대표적인 소수(Prime Number)판별 알고리즘
+// 소수를 대량으로 빠르고 정확하게 구하는 방법
+
+bool isPrimeNumber(int x) { //비효율적인 소수 판별 
+	for (int i = 2; i < x; i++) {
+		if (x % i == 0) return false; 
+	}
+	return true;
+}
+
+위와 같은 소수판별 알고리즘은 시간 복잡도기 O(N)으로 매우 비효율적이다.
+모든 약수들은 대칭적으로(10 = 2*5 = 5*2) 존재하므로 제곱근까지만 약수의 여부를 검증한다.  
+
+bool isPrimeNumber(int x) { //효율적인 소수 판별
+	int end = (int)sqrt(x); //제곱근까지만 확인
+	for (int i = 2; i <= end; i++) {
+		if (x % i == 0) return false;
+	}		
+	return true;
+}
+
+적은 양의 소수가 아닌 대량이나 어떠한 구간 안의 소수 판별을 위해서는 아래와 같이 배열을 사용한다.
+2부터 시작해서 그 구간 속 그 배수들을 전부 지우고 남은 수를 대상으로 이 과정을 반복한다.
+
+void primeNumberSieve() { //소수만 남기고 0초기화
+	for (int i = 2; i <= number; i++) {
+		a[i] = i; //배열 초기화
+	}
+	for (int i = 2; i <= number; i++) {
+		if (a[i] == 0) continue;
+		for (int j = i + i; j <= number; j += i) { //다음 배수부터 시작해서 모든 배수를 0초기화
+			a[j] = 0;
+		}
+	}
+}
