@@ -1,0 +1,82 @@
+// 검색과정 중에 얻은 정보를 활용한 최적화 문자열 검색 알고리즘
+// 지금까지 일치한 글자의 수를 이용해 다음으로 시도해야 할 시작 위치 파악
+
+// 일반적인 string::find() 함수
+vector<int> naiveSearch(const string& H, const string& N) { 
+	vector<int> ret;
+	for (int begin = 0; begin + N.size() <= H.size(); ++begin) { //모든 위치에서 시도
+		bool matched = true;
+		for (int i = 0; i < N.size(); ++i) {
+			if (H[begin + i] != N[i]) {
+				matched = false;
+				break;
+			}
+		}
+		if (matched) ret.push_back(begin);
+	}
+	return ret;
+}
+
+// 일반적인 문자열 알고리즘을 이용한 부분 일치 테이블 계산
+vector<int> getPartialMatchNaive(const string& N) { //N에서 자기 자신을 찾으면서 부분일치를 이용해 pi[] 계산
+	int m = N.size();
+	vector<int> pi(m, 0);
+	for (int begin = 1; begin < m; ++begin) { //단순한 문자열 검색 알고리즘 구현
+		for (int i = 0; i + begin < m; ++i) {
+			if (N[begin + i] != N[i]) break;
+			pi[begin + i] = max(pi[begin + i], i + 1); //i+1글자가 서로 대응
+		}
+	}
+	return pi;
+}
+
+pi[i] = N[...i]의 접두사도 되고 접미사도 가능한 문자열의 최대 길이
+
+pi[]는 N이 어디까지 일치했는지가 주어질 때 다음 시작 위치를 파악해주기 때문에, 부분 일치 테이블(Partial match table)이라고 부른다.
+1) KMP 알고리즘은 단순한 시작 위치를 0에서부터 시작해서 H와 N의 글자를 비교한다. 
+2) 만약 matched 글자가 일치한 후 불일치가 발생했다면 시작 위치를 matched - pi[matched - 1] 증가시킨다.
+3) 새로운 위치에서 비교를 시작하더라도 N의 첫 pi[matched - 1] 글자는 대응되는 H의 글자와 일치하기 때문에 matched를 pi[matched - 1]로 변경
+
+// KMP 알고리즘을 이용한 부분 일치 테이블 계산
+vector<int> getPartialMatch(const string& N) { //N에서 자기 자신을 찾으면서 부분일치를 이용해 pi[] 계산
+	int m = N.size();
+	vector<int> pi(m, 0);
+	int begin = 1, matched = 0; //N을 N에서 찾을 때 begin=0아면 자기 자신을 찾아버림
+	while (begin + matched < m) { //KMP 알고리즘 구현, 비교할 문자가 N의 끝에 도달할 때까지 부분일치를 모두 기록
+		if (N[begin + matched] == N[matched]) { 
+			++matched;
+			pi[begin + matched - 1] = matched;
+		}
+		else {
+			if (matched == 0)++begin;
+			else {
+				begin += matched - pi[matched - 1];
+				matched = pi[matched - 1];
+			}
+		}
+	}
+	return pi;
+}
+
+// KMP 문자열 검색 알고리즘 구현
+vector<int> kmpSearch(const string& H, const string& N) { //짚더미에서 바늘찾기
+	int n = H.size(), m = N.size(); //짚더미 H의 부분 문자열로 바늘 N이 출현하는 시작 위치를 모두 반환
+	vector<int> ret;
+	vector<int> pi = getPartialMatch(N); //pi[i] = N[...i]의 접미사, 접두사 가능한 문자열의 최대길이
+	int begin = 0, matched = 0; //begin = matched = 0 에서부터 시작
+	while (begin <= n - m) {
+		if (matched < m && H[begin + matched] == N[matched]) { //짚더미의 해당 글자가 바늘의 해당 글자와 같은 경우
+			++matched;
+			if (matched == m) ret.push_back(begin); //결과적으로 m글자가 모두 일치했다면 답에 추가
+		}
+		else {
+			if (matched == 0) ++begin; //m이 0인 경우는 예외
+			else {
+				begin += matched - pi[matched - 1]; //begin을 옮겨도 pi[matched-1]만큼은 일치하므로 처음부터 다시 비교할 필요없다
+				matched = pi[matched - 1];
+			}
+		}
+	}
+	return ret;
+}
+
