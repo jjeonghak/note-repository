@@ -1,0 +1,15 @@
+// 배낭문제(Knapsack problem)란 배낭에 담을 수 있는 무게의 최댓값이 있고 일정 가치와 무게가 있는 짐들을 배낭에 넣을때 가치의 합이 최대가 되도록
+// 짐을 쪼갤 수 있는 분할가능 배낭문제(Fractional knapsack problem),  쪼갤 수 없는 0-1 배낭문제(0-1 Knapsack problem)
+최댓값은 (현재 보석의 가치 + 남은 가방크기만큼 나머지 보석을 넣을때 최대 가치, 이전까지 구해둔 보석의 가치)이다.
+
+for (int i = 0; i < n; i++) { //짐의 갯수
+		for (int j = 0; j <= k; j++) { //배낭에 들어가는 무게
+			if (i == 0) {
+				if (v[i].first <= j) dp[i][j] = v[i].second;
+				continue;
+			}
+			if (v[i].first <= j) dp[i][j] = max(dp[i - 1][j], v[i].second + dp[i - 1][j - v[i].first]);
+			else dp[i][j] = dp[i - 1][j];
+		}
+	}
+ 
