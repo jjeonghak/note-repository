@@ -1,0 +1,30 @@
+// 플로이드 와샬(Floyd warshall) 알고리즘은 다익스트라 알고리즘과 다르게 모든 정점에서 모든 정점으로의 최단 경로를 탐색
+// 거쳐가는 정점을 기준으로 최단 거리 탐색
+// 다익스트라는 1차원 배열, 플로이드 와샬은 2차원 배열 사용
+
+int number = 4;
+int INF = 1000000000;
+int a[4][4] = { //자료 배열 초기화
+	{0,5,INF,8},
+	{7,0,9,INF},
+	{2,INF,0,4},
+	{INF,INF,3,0}
+};
+
+void floydWarshall() {
+	int result[4][4]; //결과 그래프 초기화
+	for (int i = 0; i < number; i++) {
+		for (int j = 0; j < 4; j++) {
+			result[i][j] = a[i][j];
+		}
+	}
+	for (int k = 0; k < 4; k++) { //k = 거쳐가는 노드
+		for (int i = 0; i < 4; i++) { //i = 출발 노드
+			for (int j = 0; j < 4; j++) { //j = 도착 노드
+				if (result[i][k] + result[k][j] < result[i][j]) {
+					result[i][j] = result[i][k] + result[k][j];
+				}
+			}
+		}
+	}
+  
