@@ -5,15 +5,31 @@
 2) Stack : 모든 지역변수들이 저장되는 곳
 3) Heap : 할당해야 할 메모리 크기를 프로그램 실행중 결정해야 하는 경우 사용 가능한 메모리(동적 할당)
 
+1) 헤더파일 : #include<stdlib.h> 
+2) 함수원형 : void* malloc(size_t size) //매개변수에 해당하는 size_t만큼의 크기 할당
+3) 메모리 해제 : free(pointerName)
+// 성공시 할당한 메모리의 첫번째 주소 리턴, 실패시 NULL 리턴
+
+int arr[4];
+int* p;
+p = (int*)malloc(sizeof(int) * 4);
+free(p);
+//(int*)는 malloc의 반환형이 void* 이므로 (int*)형태로 형변환을 해달라는 명령
+//sizeof(int)는 괄호 안에 자료형 타입을 바이트로 연산
+//*4는 위에 선언한 arr[4] 사이즈와 동일한 메모리 할당을 위해
+
+1) 헤더파일 : #include<iostream> 
+2) 함수원형 : new 자료형 //자료형 크기만큼 메모리 할당
+3) 메모리 해제 : delete pointerName
+
 int i = 5;
 int arr[i];
 // 컴파일시에 변수 i가 정수형이라는 것만 정해지고 값 5는 프로그램 실행중 삽입, 컴파일시 i의 값을 알수 없어 컴파일 에러
 
-// 동적 메모리 할당
-int *p = new int; //포인터 p에 정수형 크기만큼 데이터 할당
+int* p = new int; //포인터 p에 정수형 크기만큼 데이터 할당
 *p = 5; //여기서 p의 위치는 스택이며 힙에 할당된 주소값이 저장, 숫자 5의 실제 저장위치는 힙
 delete p; //힙의 저장공간은 수동으로 직접 관리필요, 포인터 p는 스택에 남아 dangling pointers로 존재
 
 int i = 5;
-int *arr = new int[i]; //이건 가능
+int* arr = new int[i]; //이건 가능
 delete [] arr; //동적 메모리 할당 후 해제 필수
