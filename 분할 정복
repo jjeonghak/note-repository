@@ -1,0 +1,19 @@
+// 분할정복(Divide & Conquer)은 주어진 문제를 둘 이상의 부분 문제로 나눈 뒤 각 문제에 대한 답을 재귀호출로 계산
+분할 정복이 일반적인 재귀 호출과 다른 점은 문제를 한 조각과 나머지 전체로 나누는 대신 거의 같은 크기의 부분 문제로 분할
+
+1) 문제를 더 적은 문제로 분할하는 과정(Divide)
+2) 각 문제에 대해 구한 답을 원래 문제에 대한 답으로 병합하는 과정(Merge)
+3) 더이상 답을 분할하지 않고 곧장 풀 수 있는 매우 작은 문제(Base case)
+
+// 분할 정복, 빠른합, 시간 복잡도 : O(lgN)
+int fastSum(int n) {
+	if (n == 1) return 1; //기저조건
+	if (n % 2 == 1) return fastSum(n - 1) + n;
+	return 2 * fastSum(n / 2) + (n / 2) * (n / 2); //재귀와 다르게 다음 문제는 n/2
+}
+
+// 재귀 호출, 느린합
+int recursiveSum(int n) {
+	if (n == 1) return 1; //기저조건
+	return n + recursiveSum(n - 1); //다음 문제는 n-1
+}
