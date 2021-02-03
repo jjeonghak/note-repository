@@ -1,0 +1,43 @@
+// 헤더파일 : #include<iostream>
+1. 문자열 삽입 : insert()
+2. 문자열 대체 : replace()
+3. 문자열 교환 : swap()
+4. 부분 문자 변환받기 : substr()
+5. 전체 지우기 : clear()
+6. 부분 지우기 : erase()
+7. 문자 찾기 : find()
+8. char형 변환 : [] or at()
+9. int형 변환 : stoi() or to_string
+10. 대소문자 변환 : toupper() or tolower()
+11. 숫자 판별 : isdigit()
+12. 영어 판별 : isalpha()
+13. 문자열 벡터 함수 : empty(), pop_back(), push_back(), front(), back() 
+
+// 문자열 삽입
+ string s = "012345";
+ s.insert(2, "bbb"); //인덱스가 2인 위치 앞에 삽입
+- 결과 : 01bbb2345
+
+// 문자열 대체
+ string s = "012345";
+ s.replace(2, 3, "b"); //인덱스가 2인 위치에 있는 문자부터 3개의 문자를 대체
+- 결과 : 01b5
+
+// 부분 문자 변환받기
+	string s = "012345";
+	string s1 = s.substr(2); //인덱스 2에서 끝까지 반환
+	string s2 = s.substr(2,2); //인덱스 2 뒤에 2개 반환
+- 결과 : s:012345 
+         s1:2345 
+         s2:23
+
+// 전체 지우기
+	string s = "012345";
+	s.clear(); //문자열 전체 지움
+- 결과 : 
+
+// 부분 지우기
+ string s = "012345";
+ s.erase(1, 4); //인덱스가 1~4인 부분 지움
+- 결과 : 01b5
+
