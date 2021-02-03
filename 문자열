@@ -24,16 +24,16 @@
 - 결과 : 01b5
 
 // 부분 문자 변환받기
-	string s = "012345";
-	string s1 = s.substr(2); //인덱스 2에서 끝까지 반환
-	string s2 = s.substr(2,2); //인덱스 2 뒤에 2개 반환
+ string s = "012345";
+ string s1 = s.substr(2); //인덱스 2에서 끝까지 반환
+ string s2 = s.substr(2,2); //인덱스 2 뒤에 2개 반환
 - 결과 : s : 012345 
          s1 : 2345 
          s2 : 23
 
 // 전체 지우기
-	string s = "012345";
-	s.clear(); //문자열 전체 지움
+ string s = "012345";
+ s.clear(); //문자열 전체 지움
 - 결과 : 
 
 // 부분 지우기
