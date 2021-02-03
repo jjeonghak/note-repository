@@ -27,9 +27,9 @@
 	string s = "012345";
 	string s1 = s.substr(2); //인덱스 2에서 끝까지 반환
 	string s2 = s.substr(2,2); //인덱스 2 뒤에 2개 반환
-- 결과 : s:012345 
-         s1:2345 
-         s2:23
+- 결과 : s : 012345 
+         s1 : 2345 
+         s2 : 23
 
 // 전체 지우기
 	string s = "012345";
@@ -41,3 +41,63 @@
  s.erase(1, 4); //인덱스가 1~4인 부분 지움
 - 결과 : 01b5
 
+// 문자 찾기
+// 문자가 존재하는 경우 해당 인덱스, 문자열이 존재하는 경우 시작 인덱스, 존재하지 않는 경우 -1 반환
+ string s = "012345";
+ int result = s.find("3"); //문자 3의 인덱스
+ int result1 = s.find("34"); //문자열 34의 시작 인덱스
+ int result2 = s.find("6"); //문자 6의 인덱스
+- 결과 : result : 3
+         result1 : 3
+         result2 : -1
+
+// char형 변환
+ string s = "012345";
+ char c, c1;
+ c = s[1]; //문자열의 1인덱스
+ c1 = s.at(1); //문자열의 1인덱스
+- 결과 : c : 1
+         c1 : 1
+	 
+// int형 변환
+// #include<string>
+// 문자열을 정수형 혹은 그 반대로 변환을 수행, stoi() 함수의 경우 인자는 반드시 문자열
+ string s = "012345";
+ int a = stoi(s); //문자열 전체 변환
+- 결과 : a : 12345 //정수형 변환으로 맨 앞 0사라짐
+
+ string temp;
+ temp = s[0]; //인덱스를 포함한 값인 경우 선언과 할당 분리
+ int b = stoi(temp); //문자 한개 변환
+- 결과 : b = 0 
+
+ int c = 12;
+ string ss;
+ ss = to_string(c); //정수형 값이 문자열 값 변환
+- 결과 : ss = 12
+
+// 대소문 변환
+// 단, 하나의 문자씩만 변환 가능
+ string s = "abcde";
+ s[2] = toupper(s[2]); //인덱스 2인 위치에 인덱스 2의 대문자
+ - 결과 : s = abCde
+ 
+ string s = "ABCDE";
+ s[2] = tolower(s[2]); //인덱스 2인 위치에 인덱스 2의 소문자
+- 결과 : s = ABcDE
+
+// 숫자 판별
+ string s = "1ABCDE";
+ bool result = isdigit(s[0]); 
+ bool result1 = isdigit(s[2]);
+ - 결과 : result = 1
+          result1 = 0
+	  
+// 영어 판별
+ string s = "1ABCDE";
+ bool result = isalpha(s[0]); 
+ bool result1 = isalpha(s[2]);
+ - 결과 : result = 0
+          result1 = 1
+	  
+	  
