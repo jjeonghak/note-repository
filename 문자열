@@ -10,8 +10,10 @@
 9. int형 변환 : stoi() or to_string
 10. 대소문자 변환 : toupper() or tolower()
 11. 숫자 판별 : isdigit()
-12. 영어 판별 : isalpha()
-13. 문자열 벡터 함수 : empty(), pop_back(), push_back(), front(), back() 
+12. 대소문자 판별 : isupper() or islower()
+13. 공백 판별 : isspace()
+14. 영어 판별 : isalpha()
+15. 문자열 벡터 함수 : empty(), pop_back(), push_back(), front(), back() 
 
 // 문자열 삽입
  string s = "012345";
