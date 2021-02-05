@@ -7,7 +7,7 @@
 6. 부분 지우기 : erase()
 7. 문자 찾기 : find()
 8. char형 변환 : [] or at()
-9. int형 변환 : stoi() or to_string
+9. 정수형 변환(int, float, double, long long) : stoi() or to_string or stof() or stod() or stoll()
 10. 대소문자 변환 : toupper() or tolower()
 11. 숫자 판별 : isdigit()
 12. 대소문자 판별 : isupper() or islower()
