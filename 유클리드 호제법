@@ -24,7 +24,23 @@ B = gb이며 r = gr'이므로 g는 공약수확정, b와 r'이 서로소이면 g
 따라서 gcd(b,r') = m이면 gcd(A,B) = gm이 되므로 처음 명제조건에 위반, gcd(b,r') = 1 
 그러므로 b와 r'은 서로소이며 gcd(B,r) = g이다.
 
+// 1번(재귀)
 int gcd(int a, int b) {
 	return b ? gcd(b, a % b) : a; //나머지가 0일때 a값이 최대공약수
+}
+// 2번(재귀)
+int gcd(int a, int b) {
+	if (a % b == 0) return b; //나머지가 0일때 b값, 위의 알고리즘과는 리턴하는 순서차이
+	else return gcd(b, a % b);  
+}
+// 3번(반복)
+int gcd(int a, int b) {
+	int c;
+	while (b) {
+		c = a % b;
+		a = b;
+		b = c;
+	}
+	return a; //나머지가 0일때
 }
 
