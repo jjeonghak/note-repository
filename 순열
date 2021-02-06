@@ -1,19 +1,50 @@
 // 순열(Permutation)이란 서로 다른 n개의 원소에서 r개를 뽑아 한 줄로 세우는 경우의 수를 말한다.
 // ex) {1,2,3} -> {1,2,3},{1,3,2},{2,1,3},{2,3,1},{3,1,2},{3,2,1}
 
-// next_permutation
-bool next_permutation(BidirectionalIterator first, BidirectionalIterator last);
-bool next_permutation(BidirectionalIterator first, BidirectionalIterator last, compare);
-
 순열을 구할 배열의 시작과 끝 반복자(Iterator)를 인자로 받음
 해당 배열의 다음 순열이 존재하면 그 원소와 해당 순열 순서를 변경 후 true 반환, 존재하지 않으면 false 반환
 1) 오름차순 정렬된 값을 가진 배열에만 사용가능(sort함수와 같이 사용)
 2) 오름차순으로 순열 생성
 3) 중복이 있는 원소들은 중복을 제외
+next_permutation은 오름차순 수열이고 prev_permutation은 내림차순 수열이다.
+
+// next_permutation
+bool next_permutation(BidirectionalIterator first, BidirectionalIterator last);
+bool next_permutation(BidirectionalIterator first, BidirectionalIterator last, compare);
+
+// next_permutation 구현
+bool next_permutation(vector<int>& a, int n) {
+	int i = n - 1;
+	while (i > 0 && a[i - 1] >= a[i]) i -= 1; //뒤에서 앞으로 가면서 i-1>=i가 아니면 끝(1번)
+	if (i <= 0) return false; //만약 마지막 순열이라면 끝난다
+	int j = n - 1;
+	while (a[j] <= a[i - 1]) j -= 1; //뒤에서 앞으로 가면서 크면서 가장 작은 수를 구한다(2번)
+	swap(a[i - 1], a[j]); //두 수의 위치를 바꾼다 (3번)
+	j = n - 1;
+	while (i < j) { //i<n-1까지의 수열을 뒤집는다 (4번)
+		swap(a[i], a[j]);
+		i += 1; j -= 1;
+	}
+	return true; //다음 수열이 존재한다 true
+}
+
 
 // prev_permutation
 bool prev_permutation(BidirectionalIterator first, BidirectionalIterator last);
 bool prev_permutation(BidirectionalIterator first, BidirectionalIterator last, compare);
 
-next_permutation은 오름차순 수열이고 prev_permutation은 내림차순 수열이다.
-
+// prev_permutation 구현
+bool prev_permutation(vector<int>& a, int n) {
+	int i = n - 1;
+	while (i > 0 && a[i - 1] <= a[i]) i -= 1; //(1번)
+	if (i <= 0) return false;
+	int j = n - 1;
+	while (a[j] >= a[i - 1]) j -= 1; //(2번)
+	swap(a[i - 1], a[j]); //(3번)
+	j = n - 1;
+	while (i < j) { //4번)
+		swap(a[i], a[j]);
+		i += 1; j -= 1;
+	}
+	return true;
+}
