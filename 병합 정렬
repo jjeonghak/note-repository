@@ -1,5 +1,11 @@
 // 시간 복잡도 : O(N*logN)
 // 반으로 나누고 나중에 합쳐서 정렬
+// Time Complexity Analysis(worst-case)
+1. Basic Operation : the comparsion in merge
+2. Input Size : n, the number of items in the array
+
+
+
 
 void merge(int a[], int m, int middle, int n) { 
 	int i = m;
@@ -41,3 +47,4 @@ void mergeSort(int a[], int m, int n) {
 		merge(a, m, middle,n);
 	}
 }
+
