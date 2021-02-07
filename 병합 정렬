@@ -4,8 +4,9 @@
 1. Basic Operation : the comparsion in merge
 2. Input Size : n, the number of items in the array
 
-
-
+  * 재귀식(재현식) 
+  T(1) = 0 
+  T(N) = 2T(N) + c //반으로 나눈 후 상수번 비교
 
 void merge(int a[], int m, int middle, int n) { 
 	int i = m;
