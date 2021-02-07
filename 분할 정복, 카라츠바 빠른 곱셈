@@ -26,7 +26,13 @@ vector<int> multiply(const vector<int>& a, const vector<int>& b) { //각 배열�
 	return c;
 }
 
-// 카라츠바의 빠른 정수 곱셈, 시간 복잡도 O(N^lgN)
+// 카라츠바의 빠른 정수 곱셈, 시간 복잡도 O(N^lg3)
+// Time Complexity Analysis(worst-case)
+1. Basic Operation : the manipulation of one digit(m times)
+2. Input Size : n, the number of digits for two integers
+   W(s) = 0
+   W(N) = 3W(N/2) + cN
+
 카라츠바의 빠른 곱셈 알고리즘은 두 수를 각각 절반으로 나눈다. a와 b가 256자리라면 a1과 b1은 첫 128자리, a0와 b0는 그 다음 128자리를 저장
 즉, a = a1*10^128 + a0, b = b1*10^128 + b0 이다.
 카라츠바는 이때 a*b를 세개의 조각을 이용해 표현 : z0, z1, z2
