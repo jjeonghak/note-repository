@@ -12,6 +12,8 @@ int a[4][4] = { //자료 배열 초기화
 	{INF,INF,3,0}
 };
 
+int p[4][4]; //최단경로 자체를 알고 싶을때 필요
+
 void floydWarshall() {
 	int result[4][4]; //결과 그래프 초기화
 	for (int i = 0; i < number; i++) {
@@ -23,9 +25,20 @@ void floydWarshall() {
 		for (int i = 0; i < 4; i++) { //i = 출발 노드
 			for (int j = 0; j < 4; j++) { //j = 도착 노드
 				if (result[i][k] + result[k][j] < result[i][j]) {
+					p[i][j] = k; //거처간 경로 저장
 					result[i][j] = result[i][k] + result[k][j];
 				}
 			}
 		}
 	}
-  
+}
+
+void path(int i, int j) { //경로 출력
+	int k = p[i][j];
+	if (k != 0) { //거쳐지나간 경우
+		path(i, k); //출발점과 k사이 거쳐간 경우
+		cout << k;  //k출력
+		path(k, j); //k와 도착점 사이 거쳐간 경우
+	}
+}
+
