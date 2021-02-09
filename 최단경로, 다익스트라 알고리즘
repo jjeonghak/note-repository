@@ -63,10 +63,10 @@ vector<pair<int, int>> a[7]; //간선 정보
 void dijkstra(int start) { //다익스트라 수행 함수
 	dis[start] = 0;
 	priority_queue<pair<int, int>> pq;// 힙 구조
-	pq.push(make_pair(start, 0));
+	pq.push(make_pair(0, start)); //비용 큰 것이 top()
 	while (!pq.empty()) { 
-		int current = pq.top().first; //가장 최소 비용의 노드가 top에 존재
-		int distance = -pq.top().second; //짧은 것이 먼저 오도록 음수화
+		int current = pq.top().second; //가장 최소 비용의 노드가 top에 존재
+		int distance = -pq.top().first; //짧은 것이 먼저 오도록 음수화
 		pq.pop();
 		if (dis[current] < distance) continue; //최단 거리가 아닌 경우 
 		for (int i = 0; i < a[current].size(); i++) {
@@ -74,7 +74,7 @@ void dijkstra(int start) { //다익스트라 수행 함수
 			int nextDistance = distance + a[current][i].second; //선택된 노드를 거쳐서 인접 노드로 가는 비용
 			if (nextDistance < dis[next]) { //최소 비용 갱신
 				dis[next] = nextDistance;
-				pq.push(make_pair(next, -nextDistance)); //삽입시에 거리 양수화 
+				pq.push(make_pair(-nextDistance, -next)); //삽입시에 거리 양수화 
 			}
 		}
 	}
