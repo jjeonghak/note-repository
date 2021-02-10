@@ -1,0 +1,9 @@
+// 벡터 중복제거
+// 헤더 파일 : #include<algorithm>
+
+unique(v.begin(), v.end()); //연속된 v[i]와 v[i+1]이 동일한 값이면 제일 뒤 쓰레기값으로 보냄
+그러므로 정렬된 상태에서 사용해야 중복값이 뒤로 정렬됨
+
+sort(v.begin(), v.end());
+v.erase(unique(v.begin(), v.end()), v.end()); //중복된 값을 뒤로 보내고 지움
+int형 자료가 아닌 문자도 중복제거 가능
