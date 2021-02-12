@@ -1,4 +1,5 @@
-// 위상 정렬(Topology sort)이란 순서가 정해져있는 작업을 차례대로 수행해야할때 순서를 결정
+// 위상 정렬(Topology sort), 시간 복잡도 : O(V+E)
+// 순서가 정해져있는 작업을 차례대로 수행해야할때 순서를 결정
 // 사이클이 없는 DAG(Directed Acyclic Graph)에서만 적용가능, 시작점이 존재해야 하는데 사이클에서는 불가능
 // 여러가지 답이 존재할 수 있다.
 
@@ -29,7 +30,15 @@ void topologySort() {
 		result[i] = x;
 		for (int i = 0; i < v[x].size(); i++) {
 			int y = v[x][i]; //제거한 정점과 연결된 모든 정점
-			if (--inDegree[y] == 0) q.push(y); //간선 제거 후 새롭게 진입차수가 0이 된 정점 삽입
+			if (--inDegree[y] == 0) q.push(y); //간선제거 후 진입차수가 0이 된 정점 삽입
 	 }
      }
+}
+
+int main(void) {
+	v[1].push_back(2);
+	inDegree[2]++; //1에서 2로 가는 진입차수++ 
+	v[1].push_back(5);
+	inDegree[5]++;
+	return 0;
 }
