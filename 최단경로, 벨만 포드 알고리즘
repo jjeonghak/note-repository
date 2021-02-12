@@ -10,4 +10,26 @@
  * 음수 간선 순환 발생 확인을 원한다면 추가로 5번 과정 실행
    이때 최단 거리 테이블 갱신된다면 음수 간선 순환 존재
    
-
+int v;
+vector<pair<int, int>> adj[MAX_v];
+vector<int> bellmanFord(int src) {
+	vector<int> upper(v, INF);
+	upper[src] = 0;
+	bool updated;
+	for (int iter = 0; iter < v; iter++) {
+		updated = false;
+		for (int here = 0; here < v; ++here) {
+			for (int i = 0; i < adj[here][i].first; i++) {
+				int there = adj[here][i].first;
+				int cost = adj[here][i].second;
+				if (upper[there] > upper[here] + cost) { //완화시도
+					upper[there] = upper[here] + cost;
+					updated = true;
+				}
+			}
+		}
+		if (!updated) break; //모든 간선에 대해 완화 실패 시 v-1 안돌고 종료
+	}
+	if (updated) upper.clear(); //v번째 순회도 완화 성공시 음수 사이클
+	return upper;
+}
