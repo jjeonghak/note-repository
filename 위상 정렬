@@ -31,5 +31,5 @@ void topologySort() {
 			int y = v[x][i]; //제거한 정점과 연결된 모든 정점
 			if (--inDegree[y] == 0) q.push(y); //간선 제거 후 새롭게 진입차수가 0이 된 정점 삽입
 	 }
-	}
+     }
 }
