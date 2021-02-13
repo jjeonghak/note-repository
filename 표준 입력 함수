@@ -1,0 +1,34 @@
+// cin  
+1. 표준 입력 버퍼에서 개행 문자를 제외한 값을 가져온다.
+2. 공백이나 개행 입력시 공백 이전까지의 값만 결과로 받아들인다.(>> 연산자가 끊기 때문)
+3. 개행 문자를 입력 버퍼에 남겨둔다.
+
+// #include<iostream>의 cin.getline()
+1. 문자 배열이며 마지막 글자가 '\0'(Terminator)인 c-string을 입력받는데 사용한다.
+2. n-1개의 문자 개수만큼 읽어와 문자에 저장(n번째 문자는 NULL)
+3. 세번째 인자인 제한자(Delim)를 별도로 지정해주지 않으면 엔터('\n')로 인식
+4. 제한자를 지정하면 그 제한자 문자 직적까지 읽어서 문자에 저장
+
+cin.getline(char* str, streamsize n, char dlim) //(변수 주소, 최대 입력 가능 문자수, 종결 문자)
+
+// #include<string>의 getline()
+1. 최대 문자 수를 입력하지 않아도 된다.
+2. 원하는 구분자(Delimiter)를 만날 때 까지 모든 문자열을 입력 받아 하나의 문자열 객체에 저장
+
+getline(cin, str)
+getline(istream& is, string str, char dlim) //(입력스트림 오브젝트, 문자열, 종결문자)
+
+* getline() 주의사항
+  cin >> n; //버퍼에 정수 값을 입력한 뒤 엔터('\n') 존재
+  getline(cin, str); //엔터가 들어가서 실행되지 않음
+
+  cin >> n; 
+  cin.ignore() //입력 버퍼의 모든 내용 제거,(읽어들일 문자의 갯수, 종결문자)로도 사용
+  getline(cin, str); 
+
+// cin.get()
+1. 표준 입력 버퍼에서 문자를 하나만 가져온다.
+2. 문자 하나만 입력이 가능하며 공백과 개행도 입력으로 포함한다.
+char c;
+c = cin.get();
+
