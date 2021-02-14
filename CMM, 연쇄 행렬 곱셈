@@ -49,7 +49,7 @@ n번째 : M[1][n] = mininmum(M[1][k] + M[k+1][n] + d0*dk*dn) (i<=k<=j-1)
 
 int d[MAXX];
 int M[MAX][MAX];
-int P[MAX][MAX];
+int P[MAX][MAX]; //P[i][j] has the value k where matrices from i to j are split in an optimal order
 
 int minimum(int i, int j, int* minK) {
 	int k, m, min;
@@ -75,6 +75,18 @@ int minmult(int n) {
 			M[i][j] = minimum(i, j, &k);
 			P[i][j] = k; //a value that gavethe minimum
 		}
+	}
+}
+
+void order(int i, int j) { //계산과정 출력
+	int k;
+	if (i == j) printf("A%d", i);
+	else {
+		k = P[i][j];
+		printf("(");
+		order(i, k);
+		order(k + 1, j);
+		printf(")");
 	}
 }
 
