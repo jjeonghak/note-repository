@@ -1,5 +1,12 @@
 // 이진 탐색(BST, Binary Search Tree)
-
+BST is a binary tree of items(keys), that come from an ordered set , such that
+1. Each node contains one key 
+   각각의 노드는 키를 가지고 있고
+2. The keys in the left subtree of a given node are less than or equal to the key in that node
+   왼쪽 트리의 키들은 작거나 같고
+3. The keys in the right subtree of a given node are greater than or equal to the key in that node
+   오른쪽 트리의 키들은 크거나 같은 경우
+   
 Int Binary_Search(int le, int ri,int val) {
 	int mid = (le + ri) / 2;
 	if (le > ri) return 0; //값이 없음, 범위가 좁아지지만 le 혹은 ri는 고정되어 있음
