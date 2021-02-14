@@ -46,3 +46,34 @@ n번째 : M[1][n] = mininmum(M[1][k] + M[k+1][n] + d0*dk*dn) (i<=k<=j-1)
 2. Compute all the entries in diagonal 1, then compute all the entries
 3. Continue in this manner to the final answer in diagonal n
 
+
+int d[MAXX];
+int M[MAX][MAX];
+int P[MAX][MAX];
+
+int minimum(int i, int j, int* minK) {
+	int k, m, min;
+	min = INF;
+	for (k = i; k < j; k++) {
+		m = M[i][k] + M[k + 1][j] + d[i - 1] * d[k] * d[j];
+		if (min > m) {
+			min = m; //최솟값 저장
+			*minK = k; //최솟값을 만드는 k 저장
+		}
+	}
+	return min;
+}
+
+int minmult(int n) {
+	int i, j, k, diagonal;
+	for (i = 1; i <= n; i++) {
+		M[i][i] = 0;
+	}
+	for (diagonal = 1; diagonal <= n - 1; diagonal++) {
+		for (i = 1; i <= n - diagonal; i++) {
+			j = i + diagonal; //Find the minimum from i to j
+			M[i][j] = minimum(i, j, &k);
+			P[i][j] = k; //a value that gavethe minimum
+		}
+	}
+}
