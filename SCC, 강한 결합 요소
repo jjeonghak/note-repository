@@ -1,0 +1,8 @@
+// 강한 연결 요소(SCC, Strongly Connected Component)란 그래프 안에서 강하게 결합된 정점의 집합을 의미한다.
+// 같은 SCC에 속하는 두 정점은 서로 도달 가능하다.(한쪽만 가능하면 SCC 아님)
+// 그래프의 종류가 무향 그래프이거나 사이클이 발생하는 경우 무조건 SCC
+
+// 대표적인 알고리즘
+1. 코사라주 알고리즘(Kosaraju's algorithm)
+2. 타잔 알고리즘(Tarjan's algorithm)
+
