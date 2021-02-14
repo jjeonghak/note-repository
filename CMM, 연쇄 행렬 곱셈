@@ -1,4 +1,4 @@
-// 연쇄 행렬 곱셈(CMM, Chained Matrix Multiplication)
+// 연쇄 행렬 곱셈(CMM, Chained Matrix Multiplication), 시간 복잡도 : O(N^3)
 1. 행렬은 결합법칙이 성립하므로 곱하는 순서는 중요치 않지만 곱셉의 횟수가 달라진다.
 2. 곱셈의 횟수를 최소화하는 최적화 문제
 
@@ -77,3 +77,4 @@ int minmult(int n) {
 		}
 	}
 }
+
