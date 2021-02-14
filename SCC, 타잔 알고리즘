@@ -1,4 +1,5 @@
-// 타잔 알고리즘(Tarjan's algorithm)은 모든 정점에 대해 DFS를 수행하여 SCC를 찾는다.
+// 타잔 알고리즘(Tarjan's algorithm), 시간 복잡도 : O(V+E)
+// 모든 정점에 대해 DFS를 수행하여 SCC를 찾는다.
 // 자식을 탐색하면서 마지막에 부모로 돌아올 수 있어야 SCC가 성립한다.
 
 int id, d[MAX];
