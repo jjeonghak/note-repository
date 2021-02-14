@@ -1,3 +1,4 @@
+// 이진 탐색 응용
 int lower_binary(int* arr, int target, int size) { // target<=값 처음 발견된 위치
 	int mid, start, end;
 	start = 0, end = size - 1;
