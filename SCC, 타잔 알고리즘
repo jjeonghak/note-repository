@@ -1,0 +1,39 @@
+// 타잔 알고리즘(Tarjan's algorithm)은 모든 정점에 대해 DFS를 수행하여 SCC를 찾는다.
+// 자식을 탐색하면서 마지막에 부모로 돌아올 수 있어야 SCC가 성립한다.
+
+int id, d[MAX];
+bool finished[MAX]; //특정노드의 dfs가 끝났는지 판별하기 위해
+vector<int> a[MAX]; //실질적으로 인접한 노드를 담는 벡터
+vector<vector<int>> scc; //scc는 한 배열에 여러가지가 존재할 수 있기때문에 2차원 벡터
+stack<int> s;
+
+int dfs(int x) { //dfs는 총 정점의 갯수만큼 실행
+	d[x] = ++id; //노드마다 고유한 번호할당, 맨 처음 부모로 할당된 값
+	s.push(x); //스택에 자기 자신 삽입
+
+	int parent = d[x];
+	for (int i = 0; i < a[x].size(); i++) {
+		int y = a[x][i];
+		if (d[y] == 0) parent = min(parent, dfs(y)); //방문하지 않았으면 해당 노드로 dfs 수행
+		else if (!finished[y]) parent = min(parent, d[y]); //현재 dfs를 수행중인 노드, 더 작은 값으로 변경
+	}
+	if (parent == d[x]) { //부모노드가 자기 자신인 경우
+		vector<int> scc1;
+		while (1) {
+			int t = s.top();
+			s.pop();
+			scc1.push_back(t);
+			finished[t] = true;
+			if (t == x) break; //자기 자신이 나올때까지 
+		}
+		scc.push_back(scc1); //만들어진 작은 scc를 전체 scc집합에 삽입
+	}
+	return parent;
+}
+
+int main(void) {
+	for (int i = 1; i <= v; i++) {
+		if (d[i] == 0) dfs(i); //한번도 방문이 안된 노드들만 수행
+	}
+	return 0;
+}
