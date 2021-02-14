@@ -1,3 +1,5 @@
+// 이진 탐색(BST, Binary Search Tree)
+
 Int Binary_Search(int le, int ri,int val) {
 	int mid = (le + ri) / 2;
 	if (le > ri) return 0; //값이 없음, 범위가 좁아지지만 le 혹은 ri는 고정되어 있음
