@@ -38,9 +38,9 @@ k. (A1A2A3...Ak)(Ak+1...An)
 n-1. (A1A2A3...An-1)(An)
 
 k번째 : M[1][k] + M[k+1][n] + d0*dk*dn //분할된 두 괄호의 곱셈 총 횟수 + 두 괄호 곱하는 횟수 
-n번째 : M[1][n] = mininmum(M[1][k] + M[k+1][n] + d0*dk*dn) (i<=k<=j-1)
+n번째 : M[1][n] = minimum(M[1][k] + M[k+1][n] + d0*dk*dn) (i<=k<=j-1)
 * if i=j, M[i][j] = 0
-  if i<j, M[i][j] = mininmum(M[i][k] + M[k+1][j] + di-1*dk*dj) (i<=k<=j-1) //i>j인 대각선 밑부분은 필요없음
+  if i<j, M[i][j] = minimum(M[i][k] + M[k+1][j] + di-1*dk*dj) (i<=k<=j-1) //i>j인 대각선 밑부분은 필요없음
 
 1. Set all the entries to 0 in main diagonal
 2. Compute all the entries in diagonal 1, then compute all the entries
