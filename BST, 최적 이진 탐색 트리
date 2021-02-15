@@ -1,4 +1,4 @@
-// 최적 이진 탐색 트리(OBST, Optimal Binary Search Trees)
+// 최적 이진 탐색 트리(OBST, Optimal Binary Search Trees), 시간 복잡도 : O(N^3)
 A BST for which the average search time is minimal, BST 중에 평균탐색시간이 최소인 BST  
 
 given with n keys in order : K1, K2, ..., Kn
@@ -10,3 +10,49 @@ A[i][j] = optimal value for the keys from Ki to Kj
 Kk = root node
 A[1][k-1] + A[k+1][n] + p1+p2+...+pn
 A[1][n] = minimum(A[1][k-1] + A[k+1][n] + p1+p2+...+pn) i<=k<=j
+* if i=j, A[i][j] = pi
+  if i<j, A[i][j] = minimum(A[i][k-1] + A[k+1][j] + pi+pi+1+...+pj) (i<=k<=j)
+  구현목적 A[i][i-1] = A[j+1][j] = 0
+
+int keys[MAX];
+int p[MAX];
+int A[MAX][MAX];
+int R[MAX][MAX]; //이진트리 구축할때 사용
+int n;
+
+int minimum(int i, int j, int* minK) {
+	int k, m, min, sumpi;
+	min = INF;
+	sumpi = 0;
+	for (k = i; k <= j; k++) { //p값의 총합
+		sumpi += p[k];
+	}
+	for (k = i; k < j; k++) {
+		m = A[i][k] + A[k + 1][j] + sumpi; //sumpi는 최소값 구할때 없어도 됨
+		if (min > m) {
+			min = m; //최솟값 저장
+			*minK = k; //최솟값을 만드는 k 저장
+		}
+	}
+	return min;
+}
+
+void optSearchTree(int n) {
+	int i, j, k, diagonal;
+	for (i = 1; i <= n; i++) { //대각선 성분 pi 및 0초기화
+		A[i][i - 1] = 0;
+		A[i][i] = p[i];
+		R[i][i - 1] = 0;
+		R[i][i] = i;
+	}
+	A[n + 1][n] = 0;
+	R[n + 1][n] = 0;
+	for (diagonal = 1; diagonal <= n - 1; diagonal++) {
+		for (i = 1; i <= n - diagonal; i++) {
+			j = i + diagonal; //Find the minimum from i to j
+			A[i][j] = minimum(i, j, &k);
+			R[i][j] = k; //a value that gave the minimum
+		}
+	}
+}  
+
