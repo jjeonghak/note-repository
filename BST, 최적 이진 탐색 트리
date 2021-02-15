@@ -1,3 +1,12 @@
 // 최적 이진 탐색 트리(OBST, Optimal Binary Search Trees)
 A BST for which the average search time is minimal, BST 중에 평균탐색시간이 최소인 BST  
 
+given with n keys in order : K1, K2, ..., Kn
+pi = probability that Ki is the search key
+ci = number of comparisons needed to find Ki
+Tavg(average search time) = ci*pi의 평균
+A[i][j] = optimal value for the keys from Ki to Kj
+
+Kk = root node
+A[1][k-1] + A[k+1][n] + p1+p2+...+pn
+A[1][n] = minimum(A[1][k-1] + A[k+1][n] + p1+p2+...+pn) i<=k<=j
