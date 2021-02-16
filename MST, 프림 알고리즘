@@ -1,0 +1,29 @@
+// 프림 알고리즘(Prim's algorithm)
+// 사이클이 존재하지 않는 신장 트리에서 모든 정점이 서로 연결되어 있고 간선이 가지고 있는 가중치의 합이
+최소가 되게 최소신장트리를 구하는 알고리즘
+
+1. 그래프에서 하나의 정점을 선택하여 트리 구현
+2. 트리와 연결된 간선 중에서 가중치가 가장 낮은 간선을 선택하면서 트리를 확보
+3. 모든 정점이 연결된 후 더해진 가중치는 최소 비용 가중치이다.
+
+vector<vector<pair<int, int>>> edge;
+priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+bool visited[MAX];
+int v, e, c, k;
+
+void prim(int v) {
+	visited[v] = true;
+	for (auto u : edge[v]) { //정점 v와 연결된 간선을 큐에 삽입
+		if (!visited[u.second]) pq.push({ u.first,u.second });
+	}
+	while (!pq.empty()) {
+		auto w = pq.top();
+		pq.pop();
+		if (!visited[w.second]) { //정점이 트리와 연결되지 않았다면 연결
+			k += w.first;
+			prim(w.second); //가중치가 낮은 간선을 차례대로 탐색
+			return;
+		}
+	}
+}
+
