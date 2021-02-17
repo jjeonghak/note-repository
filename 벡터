@@ -2,8 +2,23 @@
 // 헤더 파일 : #include<algorithm>
 
 unique(v.begin(), v.end()); //연속된 v[i]와 v[i+1]이 동일한 값이면 제일 뒤 쓰레기값으로 보냄
-그러므로 정렬된 상태에서 사용해야 중복값이 뒤로 정렬됨
+ - 그러므로 정렬된 상태에서 사용해야 중복값이 뒤로 정렬됨
 
 sort(v.begin(), v.end());
 v.erase(unique(v.begin(), v.end()), v.end()); //중복된 값을 뒤로 보내고 지움
-int형 자료가 아닌 문자도 중복제거 가능
+ - int형 자료가 아닌 문자도 중복제거 가능
+
+1. vector<int> v; //벡터 생성
+   vector<int> v = { a,b,c }; //벡터 생성 후 a,b,c로 초기화
+2. vector<int> v[MAX]; //벡터 배열(크기:MAX) 생성
+   vector<int> v[] = { {a,b},{c,d} }; //벡터 배열 생성(행은 가변이지만 열은 고정)
+3. vector<vector<int>> v; //2차원 벡터 생성(행과 열 모두 가변)
+4. vector<int> v(a); //a개의 원소를 0으로 초기화
+   vector<int> v(a, b); //a개의 원소를 b로 초기화
+5. vector<int> v2(v); //벡터 v를 복사하여 벡터 v2 생성
+6. v.insert(a, b); //인덱스 a의 위치에 b값 삽입
+   v.insert(a, b, c); //인덱스 a의 위치에 b값 c개 삽입
+7. v.erase(v.begin() + a); //인덱스 a의 위치 제거
+   v.erase(v.begin(), v.begin() + a) //인덱스 a까지 제거
+8. v.clear(); //모든 값 제거
+
