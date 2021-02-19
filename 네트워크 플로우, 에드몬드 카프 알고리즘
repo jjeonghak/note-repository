@@ -1,0 +1,41 @@
+// 네트워크 플로우(Network Flow), 에드몬드 카프 알고리즘(Edmonds-Karp algorithm) 
+// 특정한 지점에서 다른 지점으로 데이터가 얼마나 많이 흐르고 있는지 측정
+// 표현 방식 = 유량(Flow)/용량(Capacity)
+// bfs를 이용하는 것이 일반적
+// 음의 유량 고려, 남아있는 모든 가능한 경로를 찾기위해
+
+int c[MAX][MAX]; //용량
+int f[MAX][MAX]; //유량
+int d[MAX];
+vector<int> v[MAX];
+
+void maxFlow(int start, int end) {
+	while (1) {
+		fill(d, d + MAX, -1); //-1로 초기화
+		queue<int> q;
+		q.push(start);
+		while (!q.empty()) {
+			int x = q.front();
+			q.pop();
+			for (int i = 0; i < v[x].size(); i++) {
+				int y = v[x][i]; 
+				if (c[x][y] - f[x][y] > 0 && d[y] == -1) { //방문하지 않은 노드 중 용량이 남은 경우
+					q.push(y);
+					d[y] = x; //경로를 기억하기 위해 처음 출발노드를 삽입
+					if (y == end) break; //도착지에 도달한 경우
+				}
+			}
+		}
+		if (d[end == -1]) break; //모든 경로 탐색이 끝난 후 종료
+		int flow = INF;
+		for (int i = end; i != start; i = d[i]) { //거꾸로 최소 유량 탐색
+			flow = min(flow, c[d[i]][i] - f[d[i]][i]);
+		}
+		for (int i = end; i != start; i = d[i]) { //최소 유량만큼 추가
+			f[d[i]][i] += flow;
+			f[i][d[i]] -= flow; //음의 유량
+		}
+		result += flow; //최대 유량
+	}
+}
+
