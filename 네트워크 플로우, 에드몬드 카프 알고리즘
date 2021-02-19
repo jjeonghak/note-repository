@@ -1,4 +1,5 @@
-// 네트워크 플로우(Network Flow), 에드몬드 카프 알고리즘(Edmonds-Karp algorithm), 시간 복잡도 : O(VE^2) 
+// 네트워크 플로우(Network Flow)
+// 에드몬드 카프 알고리즘(Edmonds-Karp algorithm), 시간 복잡도 : O(VE^2) 
 // 특정한 지점에서 다른 지점으로 데이터가 얼마나 많이 흐르고 있는지 측정
 // 표현 방식 = 유량(Flow)/용량(Capacity)
 // bfs를 이용하는 것이 일반적
