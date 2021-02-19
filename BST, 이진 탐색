@@ -1,4 +1,4 @@
-// 이진 탐색(BST, Binary Search Tree)
+// 이진 탐색 트리(BST, Binary Search Tree)
 BST is a binary tree of items(keys), that come from an ordered set , such that
 1. Each node contains one key 
    각각의 노드는 키를 가지고 있고
