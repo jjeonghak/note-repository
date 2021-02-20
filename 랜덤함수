@@ -14,7 +14,7 @@
 3. time()
   헤더파일 : #include<ctime>
   함수원형 : time_t time(time_t* timer);
-  UCT 기준 1970년 1월 1일 0시 0분 0초부터 경과된 시간을 sec으로 봔환
+  UCT 기준 1970년 1월 1일 0시 0분 0초부터 경과된 시간을 sec으로 환
   다른 함수를 통해 날짜 계산가능
   * scand()의 seed값이 항상 변하고 같지 않으면 rand()의 결과값도 항상 변하기 때문에 seed값으로 사용
 
