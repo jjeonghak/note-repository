@@ -27,7 +27,7 @@ int main(void) {
 	srand((unsigned int)time(NULL)); //시간은 계속 증가하는 상태이므로 동일한 seed값 없음
 	for (int i = 0; i < cnt; i++) { //cnt = 난수생성갯수
 		int num = rand() % n; //srand()의 각기 다른 seed값 받음
-		cout << num;
+		cout << num <<;
 	}
 	system("pause"); //일시적으로 결과를 지연, 밑의 소스는 잠시 실행안됨
 	return 0; //return 0 위의 pause는 결과 확인 전에 종료되는 것을 방지
