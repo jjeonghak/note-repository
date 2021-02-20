@@ -18,7 +18,7 @@
   다른 함수를 통해 날짜 계산가능
   * scand()의 seed값이 항상 변하고 같지 않으면 rand()의 결과값도 항상 변하기 때문에 seed값으로 사용
     rand()%n은 랜덤분포가 고르지 못하므로 rand()*n/(RAND_MAX+1) 사용추천
-    큰 랜덤값 (int)(((double)((rand() << 15) | rand())) / (((RAND_MAX << 15) | RAND_MAX) + 1) * (n))
+    큰 랜덤값을 원한다면 (int)(((double)((rand()<<15)|rand()))/(((RAND_MAX<<15)|RAND_MAX)+1)*(n))
 
 // 0 ~ n-1의 랜덤함수
 1) time을 seed로 srand()
