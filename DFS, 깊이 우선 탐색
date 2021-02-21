@@ -33,7 +33,7 @@ void dfs(int x) { //스택없이
 	cout << x;
 	for (int i = 0; i < a[x].size(); i++) {
 		int y = a[x][i];
-		dfs(y) //재귀함수를 이용(스택의 원리) 
+		dfs(y); //재귀함수를 이용(스택의 원리) 
 	}
 }
 int main(void) {
