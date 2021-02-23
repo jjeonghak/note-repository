@@ -1,4 +1,5 @@
 // 메모리 초기화 및 특정값으로 설정
+// 0 or char 형태값으로 초기화
 
 1. 헤더파일 : #include<cstring> 
 2. 함수원형 : void* memset(void* ptr, int value, size_t num);
@@ -10,3 +11,7 @@
 char arr[] = "abcdefg";
 memset(arr, '1', 3 * sizeof(char));
 - 결과 : 111defg 
+
+0이 아닌 int 타입의 숫자를 넣게되면 예상할 수 없는 값으로 세팅
+memset()은 1바이트 단위로 값 초기화, int는 4바이트(0은 동일)
+즉, 0 또는 char 형태 초기화만 가능
