@@ -1,0 +1,12 @@
+// 메모리 초기화 및 특정값으로 설정
+
+1. 헤더파일 : #include<cstring> 
+2. 함수원형 : void* memset(void* ptr, int value, size_t num);
+             - void* ptr : 세팅하고자 하는 메모리의 시작 주소
+               value : 메모리에 세팅하고자 하는 값
+               size_t num : 세팅하고자 하는 길이
+
+
+char arr[] = "abcdefg";
+memset(arr, '1', 3 * sizeof(char));
+
