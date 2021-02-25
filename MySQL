@@ -33,6 +33,7 @@ SELECT * FROM tablename; //모든 열의 데이터를 확인
 SELECT c0,c1 FROM tablename; //원하는 열의 데이터 확인
 SELECT * FROM tablename WHERE condition; //모든 열 중 조건을 만족하는 데이터 확인
 SELECT * FROM tablename WHERE condition ORDER BY c0 DESC; //내림차순 정렬 후 확인
+SELECT * FROM tablename WHERE condition ORDER BY c0 ASC; //오름차순 정렬 후 확인
 SELECT * FROM tablename WHERE condition ORDER BY c0 DESC LIMIT number //number만큼 확인
 
 UPDATE tablename SET c1='change' //특정열의 모든 값 변경
