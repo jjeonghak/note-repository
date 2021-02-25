@@ -1,3 +1,32 @@
-// 데이터베이스(DB, Database, Shema) : 공유할 목적으로 체계화, 통합 관리하는 데이터의 집합
+// 데이터베이스(DB, Database, Schema) : 공유할 목적으로 체계화, 통합 관리하는 데이터의 집합
 // 데이터베이스 서버(Database Server) : 데이터베이스의 집합
+
+// MySQL 실행
+Window + r (cmd 입력)
+mysql -uroot -p (비번 입력)
+SET PASSWORD = PASSWORD('123456') //비번 변경
+
+// 데이터베이스 기본 명령어
+CREATE DATABASE dataname; //데이터베이스 생성
+DROP DATABASE dataname; //데이터베이스 삭제
+SHOW DATABASES; //데이터베이스 확인
+USE dataname; //명령을 수행할 데이터베이스 선언
+
+// SQL
+구조화 질의어(SQL, Structured Query Language) : 관계형 데이터베이스 관리 시스템의 언어
+
+// 표
+CREATE TABLE 테이블명( //표생성
+   c0 INT(length) NOT NULL AUTO_INCREMENT, //식별자로 쓰임
+   c1 datatype(length) NULL, //열 정보(데이터형, 데이터길이 지정), 값이 없어도됨
+   c2 datatype(length) NOT NULL, //값이 없는 것을 허용하지 않음
+   c3 datatype(length) AUTO_INCREMENT, //자동으로 오름차순 값 삽입
+   ...
+   PRIMARY KEY(c0) //중요한 열을 지정, 중복방지
+);
+
+SHOW TABLES; //표 확인
+DESC tablename; //표 구조 확인
+INSERT INTO tablename (c0,c1) VALUES ('value1','value2') //데이터 생성
+SELECT * FROM tablename; //모든 열의 데이터를 확인
 
