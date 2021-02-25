@@ -28,5 +28,17 @@ CREATE TABLE 테이블명( //표생성
 SHOW TABLES; //표 확인
 DESC tablename; //표 구조 확인
 INSERT INTO tablename (c0,c1) VALUES ('value1','value2') //데이터 생성
+
 SELECT * FROM tablename; //모든 열의 데이터를 확인
+SELECT c0,c1 FROM tablename; //원하는 열의 데이터 확인
+SELECT * FROM tablename WHERE condition; //모든 열 중 조건을 만족하는 데이터 확인
+SELECT * FROM tablename WHERE condition ORDER BY c0 DESC; //내림차순 정렬 후 확인
+SELECT * FROM tablename WHERE condition ORDER BY c0 DESC LIMIT number //number만큼 확인
+
+UPDATE tablename SET c1='change' //특정열의 모든 값 변경
+UPDATE tablename SET c1='change' WHERE condition //특정열의 특정행의 값 변경
+
+DELETE FROM tablename //모든 열 삭제
+DELETE FROM tablename WHERE condition //특정 행 삭제
+
 
