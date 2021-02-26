@@ -27,6 +27,8 @@ CREATE TABLE 테이블명( //표생성
 
 SHOW TABLES; //표 확인
 DESC tablename; //표 구조 확인
+RENAME TABLE tablename TO newtablename; //테이블 이름 변경
+
 INSERT INTO tablename (c0,c1) VALUES ('value1','value2') //데이터 생성
 
 SELECT * FROM tablename; //모든 열의 데이터를 확인
@@ -35,6 +37,11 @@ SELECT * FROM tablename WHERE condition; //모든 열 중 조건을 만족하는
 SELECT * FROM tablename WHERE condition ORDER BY c0 DESC; //내림차순 정렬 후 확인
 SELECT * FROM tablename WHERE condition ORDER BY c0 ASC; //오름차순 정렬 후 확인
 SELECT * FROM tablename WHERE condition ORDER BY c0 DESC LIMIT number //number만큼 확인
+
+SELECT * FROM table1 LEFT JOIN table2 ON table1.c1 = table2.c2; //두개의 테이블 조건에 맞게 연결
+//중복되는 조건열을 빼기위해 *이 아닌 직접 열입력
+  열이름이 중복된다면 tablename.c1으로 표시
+  또는 tablename.c1 AS newc1name으로 출력시에만 이름 변경
 
 UPDATE tablename SET c1='change' //특정열의 모든 값 변경
 UPDATE tablename SET c1='change' WHERE condition //특정열의 특정행의 값 변경
