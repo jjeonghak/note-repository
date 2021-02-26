@@ -46,7 +46,10 @@ SELECT * FROM tablename WHERE condition ORDER BY c0 ASC; //오름차순 정렬 �
 SELECT * FROM tablename WHERE condition ORDER BY c0 DESC LIMIT number; //number만큼 확인
 
 // 집계함수
-SELECT c1, MAX(c2) FROM tablename GROUP BY c1 //c1으로 묶어서 c2 최댓값만 출력
+SELECT MAX(c2) FROM tablename //c2의 최댓값 출력
+SELECT c1, MAX(c2) FROM tablename GROUP BY c1 //c1으로 묶어서 c2 최댓값 출력
+SELECT c1, MAX(c2) AS 'Max' FROM tablename GROUP BY c1 //c1으로 묶어서 c2 최댓값 출력(이름변경)
+SELECT c1, MAX(c2) FROM tablename GROUP BY c1 HAVING condition //조건포함
 // MAX() : 최댓값
    MIN() : 최소값
    AVG() : 평균
