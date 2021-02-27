@@ -1,2 +1,31 @@
 // 이분 매칭(bipartite Matching)
 // 두 집단으로 나누어지는 경우에 유효
+// 두 집단의 최대 유량
+
+vector<int> a[MAX];
+int d[MAX];
+bool c[MAX];
+int n = 3, m;
+
+bool dfs(int x) { //매칭여부
+	for (int i = 0; i < a[x].size(); i++) { //연결된 모든 노드에 대해 삽입시도
+		int t = a[x][i];
+		if (c[t]) continue; //이미 처리한 노드
+		c[t] = true;
+		if (d[t] == 0 || dfs(d[t])) { //비어있거나 공간이 없는 경우
+			d[t] = x;
+			return true;
+		}
+	}
+}
+
+int main(void) {
+	int cnt = 0;
+	for (int i = 1; i <= n; i++) { //최대유량계산
+		fill(c, c + MAX, false); //매번 false값 초기화
+		if (dfs(i)) cnt++;
+	}
+	for (int i = 1; i < MAX; i++) { //매칭정보
+		if (d[i] != 0) printf("%d %d", d[i], i);
+	}
+}
