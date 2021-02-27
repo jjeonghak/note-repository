@@ -1,4 +1,4 @@
-// 이분 매칭(bipartite Matching)
+// 이분 매칭(bipartite Matching), 시간 복잡도 : O(V*E)
 // 두 집단으로 나누어지는 경우에 유효
 // 두 집단의 최대 유량
 
