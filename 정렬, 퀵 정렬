@@ -1,5 +1,5 @@
 // 시간 복잡도 : 평균O(N*logN), 최악O(N^2) 
-// 특정한 값(피벗)을 기준으로 큰 숫자와 작은 숫자를 서로 교환한 뒤 배열을 반으로 나눔
+// 파티션(Partition) : 특정한 값(피벗)을 기준으로 큰 숫자와 작은 숫자를 서로 교환한 뒤 배열을 반으로 나눔
 // Time Complexity Analysis(worst-case)
 1. Basic Operation : the comparsion in merge
 2. Input Size : n, the number of items in the array
