@@ -38,3 +38,33 @@ void quickSort(int* data, int start, int end) {
 	quickSort(data, start, j - 1);
 	quickSort(data, j + 1, end);
 } 
+
+
+# python
+# 두 요소의 위치를 바꿔주는 helper function
+def swap_elements(my_list, index1, index2):
+    my_list[index1], my_list[index2] = my_list[index2], my_list[index1]
+
+
+# 퀵 정렬에서 사용되는 partition 함수
+def partition(my_list, start, end):
+    pivot_index = end
+    pivot = my_list[pivot_index]
+    b = start
+    for i in range(start,end+1):
+        if my_list[i] <= pivot:
+            swap_elements(my_list, b, i)
+            b += 1
+    return b - 1
+
+
+# 퀵 정렬
+def quicksort(my_list, start, end):
+    if end <start+1:
+        return
+    pivotindex = partition(my_list, start, end)
+    if pivotindex != 0:
+        quicksort(my_list, start, pivotindex - 1)
+    if pivotindex != len(my_list) - 1:
+        quicksort(my_list, pivotindex + 1, end)
+	
