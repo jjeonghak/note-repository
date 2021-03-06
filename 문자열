@@ -16,6 +16,18 @@
 15. 문자열 벡터 함수 : empty(), pop_back(), push_back(), front(), back()
 16. 문자열 비교 : strcmp() or compare()
 
+// 구분자가 있는 문자열 분리
+헤더 파일 : #include<sstream>
+string str;
+getline(cin, str);
+istringstream ss(str);
+string stringBuffer;
+vector<string> v;
+while (getline(ss, stringBuffer, ' ')) {  //" " 공백, "," 콤마 등등
+	v.push_back(stringBuffer);
+	cout << stringBuffer << "\n";
+}
+
 // 문자열 삽입
  string s = "012345";
  s.insert(2, "bbb"); //인덱스가 2인 위치 앞에 삽입
@@ -26,7 +38,6 @@
  string s2 = "012345";
  s2.append(s,6,8) //문자열의 끝에 s 인덱스 6~8 문자 삽입
 - 결과 : 012345bbb
-
 
 // 문자열 대체
  string s = "012345";
