@@ -1,0 +1,102 @@
+// 해싱(Hashing) : 임의의 길이의 값을 해시함수를 사용하여 고전된 크기의 값으로 변환
+// 해시테이블(Hash Table) : 해시 함수를 사용하여 변환한 값을 인덱스로 삼아 키와 데이터로 저장
+
+1. Direct Address Table : 해싱없이 인덱스 = 키
+                          공간의 낭비가 심하다.
+                          최대 키값을 알고 있어야 한다.                        
+2. Hash Table : 해싱을 사용하여 일정한 구간 인덱스에 데이터 저장
+                해싱한 결과값이 같은 경우 충돌(Collision)발생
+                - 적재율(Load Factor) : 해시 테이블 크기 대비, 키의 갯수
+
+// 해시 충돌 개선
+1. Chaining : 충돌 발생시 해당 인덱스 안에 연결리스트 형태로 데이터 저장
+2. Oppen Addressing : 동일한 인덱스에 다른 데이터가 있는 경우 비어있는 다른 인덱스 탐사 후 저장
+                      1) 선형탐사(Linear Probing) : 바로 인접한 인덱스, 데이터 밀집(Clustering)
+                      2) 제곱탐사(Quadratic Probing) : 1^2, 2^2, 3^2 ...으로 탐사
+                      3) 이중해싱(Double Hashing) : 첫번째 해싱 충돌 후 두번째 해싱
+
+// 해시테이블 구현
+#include<iostream>
+#include<string>
+using namespace std;
+
+class Node {
+private:
+	string key;
+	int value;
+	Node* nextNode;
+
+public:
+	Node() : key(""), value(0), nextNode(NULL) {}
+	Node(string _key, int _value) {
+		key = _key;
+		value = _value;
+		nextNode = NULL;
+	}
+	Node* getNext() { return nextNode; }
+	void setNext(Node* next) { nextNode = next; }
+	string getKey() { return key; }
+	int getValue() { return value; }
+};
+
+class HashTable {
+private:
+	int size;
+	Node* nodeList;
+	int hashFunction(string s) {
+		int len = s.length();
+		int hash = 0;
+		for (int i = 0; i < len; i++) {
+			hash += s[i];
+		}
+		return hash % size;
+	}
+
+public:
+	HashTable(int _size) {
+		size = _size;
+		nodeList = new Node[_size];
+	}
+	void put(string key, int value) {
+		int index = hashFunction(key);
+		Node* next = nodeList[index].getNext();
+		Node* cur = &nodeList[index];
+		while (next != NULL) {
+			cur = next;
+			next = next->getNext();
+		}
+		Node* newNode = new Node(key, value);
+		cur->setNext(newNode);
+	}
+	Node get(string key) {
+		int index = hashFunction(key);
+		cout << "해시 값 : " << index << "\n";
+		Node* cur = nodeList[index].getNext();
+		while (cur != NULL) {
+			if (!key.compare(cur->getKey())) {
+				return *cur;
+			}
+			cur = cur->getNext();
+		}
+		return Node();
+	}
+	~HashTable() {
+		for (int i = 0; i < size; i++) {
+			Node* cur = nodeList[i].getNext();
+			while (cur != NULL) {
+				Node* temp = cur->getNext();
+				delete cur;
+				cur = temp;
+			}
+		}
+		delete[] nodeList;
+	}
+};
+
+int main(void) {
+	HashTable hashTable = HashTable(100);
+	hashTable.put("ac", 10);
+	hashTable.put("bb", 12);
+	cout << hashTable.get("ac").getValue() << "\n";
+	return 0;
+}
