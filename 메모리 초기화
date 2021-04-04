@@ -1,11 +1,12 @@
 // 메모리 초기화 및 특정값으로 설정
 // 0 or char 형태값으로 초기화
 
+// memset
 1. 헤더파일 : #include<cstring> 
 2. 함수원형 : void* memset(void* ptr, int value, size_t num);
-             - void* ptr : 세팅하고자 하는 메모리의 시작 주소
-               value : 메모리에 세팅하고자 하는 값
-               size_t num : 세팅하고자 하는 길이
+           - void* ptr : 세팅하고자 하는 메모리의 시작 주소
+             value : 메모리에 세팅하고자 하는 값
+             size_t num : 세팅하고자 하는 길이
 
 
 char arr[] = "abcdefg";
@@ -15,3 +16,14 @@ memset(arr, '1', 3 * sizeof(char));
 0이 아닌 int 타입의 숫자를 넣게되면 예상할 수 없는 값으로 세팅
 memset()은 1바이트 단위로 값 초기화, int는 4바이트(0은 동일)
 즉, 0 또는 char 형태 초기화만 가능
+
+// fill
+1. 헤더파일: #include<algorithm>
+2. 함수원형 : void* fill(void* start_ptr, void* end_ptr,int value);
+           - void* start_ptr : 세팅하고자 하는 메모리의 시작 주소
+             void* end_ptr : 세팅하고자 하는 메모리의 끝 주소
+             value : 메모리에 세팅하고자 하는 값
+
+fill(v.begin(), v.end(), 0);
+- 결과 : 벡터 v의 값 0초기화
+
