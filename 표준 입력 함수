@@ -32,3 +32,9 @@ getline(istream& is, string str, char dlim) //(입력스트림 오브젝트, 문
 char c;
 c = cin.get();
 
+// cin.eof()
+파일의 끝을 나타내는 EOF가 입력으로 들어오면 true
+입력 함수가 
+1. 
+
+
