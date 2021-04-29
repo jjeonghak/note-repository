@@ -2,7 +2,7 @@
 A, B가 정수일때 A(A!=0)가 B의 약수이면 B = A*k 를 만족하는 정수 k 존재, 즉 A가 B를 나눈다.
 
 // 유클리드 호제법(Euclidean algorithm)
-두 수 또는 정식의 최대공약수(GCD, Greatest Common Divisor)를 빠르게 계산
+두 수 또는 정식의 최대공약수(GCD, Greatest Common Divisor)를 빠르게 계산, 반복 또는 재귀적으로 계산
 
 1) gcd(A,B) (단, A>B, A!=B)
 2) A = qB + r (단, 0 <= r < B)
