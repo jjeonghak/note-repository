@@ -1,5 +1,5 @@
 // 최적 이진 탐색 트리(OBST, Optimal Binary Search Trees), 시간 복잡도 : O(N^3)
-A BST for which the average search time is minimal, BST 중에 평균탐색시간이 최소인 BST  
+// A BST for which the average search time is minimal, BST 중에 평균탐색시간이 최소인 BST  
 
 given with n keys in order : K1, K2, ..., Kn
 pi = probability that Ki is the search key
