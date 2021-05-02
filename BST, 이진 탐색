@@ -21,5 +21,5 @@ Int Binary_Search(int le, int ri,int val) {
 
   * 재귀식(재현식) 
   T(1) = 1 //한번의 비교로 끝남
-  T(N) = T(N/2) + 1 //반으로 나눈 후 한번 비교
+  T(N) = T(N/2) + 1 //반으로 나눈 후, 한번 비교
   
