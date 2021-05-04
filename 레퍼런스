@@ -3,7 +3,7 @@
 // 함수 또한 포인터 형식으로 사용가능
 
 int a = 3; 
-int& another_a = a; //another_a는 a의 주소값을 나타냄
+int& another_a = a; //another_a는 a의 주소값을 나타냄, 별명생성
 another_a = 5; //another_a는 a의 주소값이므로 a도 5로 변경
 
 1) 레퍼런스는 반드시 처음 선언할 때 주소값을 입력해야 한다. 
