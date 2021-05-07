@@ -36,7 +36,7 @@ while (getline(ss, stringBuffer, ' ')) {  //" " 공백, "," 콤마 등등
  s.append("bbb"); //문자열의 끝에 삽입
  s.append(3,'b'); //문자열의 끝에 b 3번 삽입
  string s2 = "012345";
- s2.append(s,6,8) //문자열의 끝에 s 인덱스 6~8 문자 삽입
+ s2.append(s,6,8) //문자열의 끝에 s의 인덱스 6~8 문자 삽입
 - 결과 : 012345bbb
 
 // 문자열 대체
