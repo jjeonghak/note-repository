@@ -134,7 +134,7 @@ while (getline(ss, stringBuffer, ' ')) {  //" " 공백, "," 콤마 등등
  strcmp(a, b); //a<b(사전적으로 a가 앞)인 경우 음수, 두 값이 같으면 0, a>b인 경우 양수
  a.compare(b) //strcmp와 같은 결과값
 	  
-// 문자열 연산
+// 문자열 연산(c++)
  string a = "a", b = "b", c;
  c = a + b;
  - 결과 : c = "ab"
