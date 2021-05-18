@@ -140,8 +140,8 @@ while (getline(ss, stringBuffer, ' ')) {  //" " 공백, "," 콤마 등등
  - 결과 : c = "ab"
 
  string a = "a";
- a.operator = ("b"); //a = "b"
+ a.operator = ("b"); //a = "b" 동일
  a += "c";
- a.operator +=("d"); //a += "d"
+ a.operator +=("d"); //a += "d" 동일
  - 결과 : a = "bcd"
 
