@@ -86,7 +86,7 @@ while (getline(ss, stringBuffer, ' ')) {  //" " 공백, "," 콤마 등등
  c = s[1]; //문자열의 1인덱스
  c1 = s.at(1); //문자열의 1인덱스
 - 결과 : c : 1
-         c1 : 1
+        c1 : 1
 	 
 // int형 변환
 // #include<string>
@@ -120,17 +120,28 @@ while (getline(ss, stringBuffer, ' ')) {  //" " 공백, "," 콤마 등등
  bool result = isdigit(s[0]); 
  bool result1 = isdigit(s[2]);
  - 결과 : result = 1
-          result1 = 0
+         result1 = 0
 	  
 // 영어 판별
  string s = "1ABCDE";
  bool result = isalpha(s[0]); 
  bool result1 = isalpha(s[2]);
  - 결과 : result = 0
-          result1 = 1
+         result1 = 1
 
 // 문자열 비교
  string a, b;
  strcmp(a, b); //a<b(사전적으로 a가 앞)인 경우 음수, 두 값이 같으면 0, a>b인 경우 양수
  a.compare(b) //strcmp와 같은 결과값
 	  
+// 문자열 연산
+ string a = "a", b = "b", c;
+ c = a + b;
+ - 결과 : c = "ab"
+
+ string a = "a";
+ a.operator = ("b"); //a = "b"
+ a += "c";
+ a.operator +=("d"); //a += "d"
+ - 결과 : a = "bcd"
+
