@@ -38,4 +38,8 @@ c = cin.get();
 1. 함수호출 실패
 2. 윈도우에서 ctrl + z, 리눅스에서 ctrl + d를 입력하는 경우
 
+// cin.ignore() 및 cin.clear()
+cin.ignore() : 버퍼 내에 존재하는 데이터를 종결문자가 나올 때까지 제거
+cin.clear() : 버퍼 내에 발생한 에러 처리, EOF 처러
+
 
