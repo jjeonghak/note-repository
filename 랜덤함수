@@ -38,8 +38,12 @@ int main(void) {
 
 // 메르센 알고리즘(Mersenne twister algorithm)
 일반적인 rand()는 21억번마다 반복적인 패턴을 갖지만 메르센 알고리즘은 2^19937 - 1번마다 반복적인 패턴
-반복주기 : 4.3154 * 10^6001
-
+반복주기 : 4.3154 * 10^6001, MT19937
+seed : random_device
+generator : mt19937, mt19937_64, default_random_engine
+distribution : uniform_int_distribution
+	       uniform_real_distribution
+	       normal_distribution
 
 
 
