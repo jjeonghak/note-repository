@@ -45,5 +45,26 @@ distribution : uniform_int_distribution
 	       uniform_real_distribution
 	       normal_distribution
 
+#include<iostream>
+#include<iomanip>
+#include<random>
+using namespace std;
+
+int main(){
+    random_device rdev;
+    mt19937 mt(rdev());
+    uniform_int_distribution<int> dist(0, 99);
+    // normal_distribution<double> dist(50., 10.) 평균과 표준편차
+    int histogram[100] = {0};
+    for(int i=0;i<1000000;i++){
+        int r = dist(mt);  //난수발생
+        // if(r>=0&&r<=99)
+        histogram[r]++;
+    }
+    for(int i=0;i<100;i++){
+        cout << i << ": " << histogram[i] <<'\n';
+    }
+}
+
 
 
