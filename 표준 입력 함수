@@ -13,7 +13,7 @@ cin.getline(char* str, streamsize n, char dlim) //(변수 주소, 최대 입력 
 
 // #include<string>의 getline()
 1. 최대 문자 수를 입력하지 않아도 된다.
-2. 원하는 구분자(Delimiter)를 만날 때 까지 모든 문자열을 입력 받아 하나의 문자열 객체에 저장
+2. 원하는 구분자(Delimiter)를 만날 때 까지 모든 문자열을 입력 받아 하나의 문자열 객체 저장
 
 getline(cin, str)
 getline(istream& is, string str, char dlim) //(입력스트림 오브젝트, 문자열, 종결문자)
