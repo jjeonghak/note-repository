@@ -1,2 +1,18 @@
 // ifstream : input file stream
+// 헤더파일 : <fstream>
 // 파일 내부의 것들을 스트림 버퍼로 가지고 와서 프로그램에 입력
+
+1. open()
+함수원형 : void open(const char* fileName, ios_base::openmode = ios_base::in);
+         void open(const string& fileName, ios_base::openmode = ops_base::in);
+
+//ios_base::in - 파일을 read할 목적으로 open할 것 
+//ios_base::out - 파일에 write할 목적으로 open할 것
+//ios_base::binary - 파일을 바이너리 형태로 open할 것
+
+2. is_open()
+함수원형 : bool is_open() const;
+
+
+
+
