@@ -1,6 +1,6 @@
 // ifstream : input file stream
-// 헤더파일 : <fstream>
-// 파일 내부의 것들을 스트림 버퍼로 가지고 와서 프로그램에 입력
+헤더파일 : <fstream>
+파일 내부의 것들을 스트림 버퍼로 가지고 와서 프로그램에 입력
 
 1. open()
 함수원형 : void open(const char* fileName, ios_base::openmode = ios_base::in);
@@ -25,5 +25,13 @@
 
 6. eof() : 파일의 끝
 함수원형 : bool eof() const;
+
+
+// ofstream : output file stream
+헤더파일 : <fstream>
+프로그램의 출력을 파일에 입력
+
+write() : 첫번째 매개변수로 받은 문자형 포인터 타입의 문자열을 n만큼 파일에 입력
+함수원형 : ostream& write(const char* str, streamsize n);
 
 
