@@ -1,0 +1,2 @@
+// ifstream : input file stream
+// 파일 내부의 것들을 스트림 버퍼로 가지고 와서 프로그램에 입력
