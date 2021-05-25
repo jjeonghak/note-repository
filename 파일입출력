@@ -10,9 +10,20 @@
 //ios_base::out - 파일에 write할 목적으로 open할 것
 //ios_base::binary - 파일을 바이너리 형태로 open할 것
 
-2. is_open()
+2. is_open() : 파일의 open 여부
 함수원형 : bool is_open() const;
 
 
+3. close() 
+함수원형 : void close();
+
+4. get() : 문자형 단위로 하나씩 파일에서 프로그램으로 읽어오는 함수
+함수원형 : istream& get(char &c);
+
+5. getline() : \n 단위로 파일에서 프로그램으로 읽어오는 함수
+함수원형 : istream& getline(char* str, streamsize len);
+
+6. eof() : 파일의 끝
+함수원형 : bool eof() const;
 
 
