@@ -54,3 +54,13 @@ int main() {
 	b = 3;
   c = 3;
 }
+
+// 포인터 멤버 연산자
+
+(*pointer_name).instance_member = value;
+pointer_name -> instance_member = value;
+
+
+
+
+
