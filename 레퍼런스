@@ -56,7 +56,7 @@ int main() {
 }
 
 // 포인터 멤버 연산자
-
+포인터를 이용해서 클래스 객체의 인스턴스 변수에 값을 할당하는 방법은 두가지
 (*pointer_name).instance_member = value;
 pointer_name -> instance_member = value;
 
