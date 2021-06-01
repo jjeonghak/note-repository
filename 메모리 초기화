@@ -2,6 +2,7 @@
 // 0 or char 형태값으로 초기화
 
 // memset
+// 벡터에 적용안됨
 1. 헤더파일 : #include<cstring> 
 2. 함수원형 : void* memset(void* ptr, int value, size_t num);
            - void* ptr : 세팅하고자 하는 메모리의 시작 주소
