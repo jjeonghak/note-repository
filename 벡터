@@ -24,4 +24,6 @@ v.erase(unique(v.begin(), v.end()), v.end()); //중복된 값을 뒤로 보내�
 7. v.erase(v.begin() + a); //인덱스 a의 위치 제거
    v.erase(v.begin(), v.begin() + a) //인덱스 a까지 제거
 8. v.clear(); //모든 값 제거
+9. for(auto i : v)
+   for(auto i : &v) //벡터의 인덱스 값을 이용한 반복문
 
