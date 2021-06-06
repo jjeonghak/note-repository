@@ -9,7 +9,11 @@
 3. dynamic_cast
    객체의 포인터에만 사용
    해당 객체를 상속관계 속에서 캐스팅할 때 사용
-
+   런타임 시에 타입 확인
+   주어진 포인터가 캐스팅하기에 적절하지 않은 경우 null 값 리턴
+   1) upcast : derived class -> base class
+   2) downcast : base class -> derived class
+   3) crosscast : multiple inheritance
 
 
 
