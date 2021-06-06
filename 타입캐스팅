@@ -1,9 +1,10 @@
 1. static_cast
    derived class의 포인터를 base class로 캐스팅, 그 반대의 경우도 사용가능
-   런타임 체크를 하지않기 때문에 안전하지 않다.
+   런타임 체크를 하지않기 때문에 낮은 안정성
    
 2. const_cast
    타입에 const 키워드를 추가하거나 삭제할때 사용
+   volatile에 사용 가능
    컴파일 시에 타입 확인
    
 3. dynamic_cast
@@ -15,9 +16,8 @@
    2) downcast : base class -> derived class
    3) crosscast : multiple inheritance
 
-
-
-
-
-
+4. reinterpret_cast
+   어떠한 포인터를 받아서 어떠한 포인터로든지 캐스팅
+   const와 volatile에 관해서 사용 불가능
+   낮은 안정성
 
