@@ -1,4 +1,5 @@
 // ifstream : input file stream
+
 헤더파일 : <fstream>
 파일 내부의 것들을 스트림 버퍼로 가지고 와서 프로그램에서 입력
 
