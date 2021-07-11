@@ -1,4 +1,5 @@
 // c++ 스타일의 캐스팅
+
 1. static_cast
    derived class의 포인터를 base class로 캐스팅, 그 반대의 경우도 사용가능
    런타임 체크를 하지않기 때문에 낮은 안정성
