@@ -1,0 +1,21 @@
+//열거 상수(enum)
+//열거형은 정의만으로 사용이 불가하고 변수로 선언까지 해야함
+
+enum Color { Red, Orange, Yellow, Green, Blue, Violet };
+cout << Red << Orange << Yellow;  //선언만 했을시 인덱스값 출력
+- 결과 : 012
+
+enum Animal { Cat = 1, Dog, Puppy = 2 };  //앞 인덱스값에 영향
+cout << Cat << Dog << Puppy;
+- 결과 : 122
+
+//사용자 정의 타입
+enum class Shade { Dark, Dim, Light, Bright };
+enum class Weight { Light, Medium, Heavy };
+
+Shade color = Shade::Light;
+Weight mass = Weight::Light;
+
+cout << (int)color;  //사용자 정의 타입 출력 불가, 캐스팅 필요
+- 결과 : 2
+
