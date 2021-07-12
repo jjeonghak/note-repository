@@ -1,0 +1,43 @@
+// Integers and Floating-point Numbers
+// Computers store all data internally in binary form
+// EPS : 오차를 해결하기 위해 수학적(수치해석) 계산에 사용
+// const double EPS = 1E-6; EPS보다 작은 값은 0으로 취급
+
+1. Integers
+   Overflow/Underflow
+   
+2. Floating-point numbers
+   Sign, mantissa, exponent. //부호, 가수, 지수
+   실수형이 정수형보다 표현할 수 있는 수의 범위가 크지만 자릿수 디테일이 떨어짐
+
+
+#include<iostream>
+#include<iomanip>  //setprecision 포함
+using namespace std;
+
+int main(void){
+    double d1 = 2000.5;
+    double d2 = 2000.0;
+    cout << setprecision(16) << (d1 - d2) << '\n';
+    
+    double d3 = 2000.58;
+    double d4 = 2000.0;
+    cout << setprecision(16) << (d3 - d4) << '\n';
+    
+    double one = 1.0;
+    double one_four = 1.0/4.0;
+    double zero_four = one - one_four - one_four - one_four - one_four;
+    cout << one << " - " << one_four << " - " << zero_four << '\n';
+    
+    
+    double one_five = 1.0/5.0;
+    double zero_five = one - one_five - one_five - one_five - one_five - one_five;
+    cout << one << " - " << one_five << " - " << zero_five << '\n'; 
+}
+
+- 결과 : 0.5
+        0.5799999999999272
+        1 - 0.25 - 0  //이진수
+        1 - 0.2 - 5.55112e-17  //십진수
+
+
