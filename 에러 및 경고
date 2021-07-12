@@ -1,0 +1,20 @@
+//Errors and Warnings
+
+1. Compile-time error  //컴파일타임에러, 실행파일 생성안됨
+   Syntax error : 문법오류 및 오타
+   Link error : obj파일 연결 과정중 에러
+
+2. Run-time error  //실행타임에러, 실행파일 생성 후 오류발생 
+   Invalid memory access : 잘못된 메모리 접근
+   Memory leak : 메모리 할당에 의한 메모리 누수
+   Division by zero : 0 나누기
+
+3. Logic error  //논리적 오류, 알고리즘 오류
+   Wrong formula/output : 잘못된 결과 및 예상하지 못한 결과
+   Division by zero : 0 나누기
+
+4. Compiler warnings  //컴파일러 경고
+   Uninitialized object(variable) : 초기화되지 않거나 선언되지 않은 obj 또는 변수 사용
+   Narrowing conversion(double -> int) : 자료형 변경에 의한 데이터 손실
+   
+   
