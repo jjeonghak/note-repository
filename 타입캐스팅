@@ -1,4 +1,13 @@
 // c++ 스타일의 캐스팅
+
+enum class Shade { Dark, Dim, Light, Bright };
+Shade color = Shade::Light;
+
+cout << (int)color;  //c스타일
+cout << static_cast<int>(color);  //c++스타일
+- 결과 : 22
+
+
 1. static_cast
    derived class의 포인터를 base class로 캐스팅, 그 반대의 경우도 사용가능
    런타임 체크를 하지않기 때문에 낮은 안정성
