@@ -7,6 +7,11 @@ cout << (int)color;  //c스타일
 cout << static_cast<int>(color);  //c++스타일
 - 결과 : 22
 
+int x1 = 011;  //인트형 변수 선언에 0으로 시작할 경우 8진수 표현
+int x2 = 0x11;  //인트형 변수 선언에 0x로 시작할 경우 16진수 표현
+cout << x1 << " " << x2;
+- 결과 : 9 17
+
 
 1. static_cast
    derived class의 포인터를 base class로 캐스팅, 그 반대의 경우도 사용가능
