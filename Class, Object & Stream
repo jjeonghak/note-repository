@@ -1,3 +1,11 @@
+//Object basics
+//In computer science, an object can be a variable,  a data structure, a function, or a method, 
+  and as such, is a value in memory referenced by an identifier
+//In the object-oriented programming paradigm, object can be a combination of variables, functions,
+  and data structures
+//An object is an instance of a class 
+//The terms object and instance may be used interchangeably
+
 1. String object
    operator[]  //provide access to the value stored at a given index within the string 
    operator=  //assigns a string to another 
