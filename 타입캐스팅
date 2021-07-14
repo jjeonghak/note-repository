@@ -34,4 +34,6 @@ cout << x1 << " " << x2;
    어떠한 포인터를 받아서 어떠한 포인터로든지 캐스팅
    const와 volatile에 관해서 사용 불가능
    낮은 안정성
-
+   int -> ptr, ptr -> int, ptr -> ptr
+   int *p = reinterpret_cast<int *>(5);
+   
