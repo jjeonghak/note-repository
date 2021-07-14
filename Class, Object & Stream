@@ -20,6 +20,9 @@
 
 
 2. I/O stream
+   #include<iostream>
+   대상이 키보드 및 모니터로 정해짐
+   
    std::cin >> x;  //삽입연산자 >>  
    cin.operator>>(x);
    
@@ -29,6 +32,33 @@
 
    
 3. File stream
+   #include<fstream>
+   대상과 그 수가 정해지지 않음
+   
+void save_vector(const std::string& filename, const std::vector<int>& vec) {
+	std::ofstream out(filename);  //default 값 : 유사한 이름의 파일 존재시 기존 파일 삭제후 새로 생성
+	out.open(filename);
+	if (out.good()) {  //작동여부 확인, 사용불가한 또는 사용중인 저장공간 접근시 false
+		int n = vec.size();
+		for (int i = 0; i < n; i++) out << vec[i] << " ";  //Space delimited 구분문자
+		out << '\n';
+		out.close();  //메모리 누수등 여러 문제 방지
+	}
+	else std::cout << "Unable to save the file\n";
+}
+
+void load_vector(const std::string& filename, std::vector<int>& vec) {
+	std::ifstream in(filename);
+	in.open(filename);
+	if (in.good()) {
+		vec.clear();
+		int value;
+		while (in >> value) vec.push_back(value);
+		in.close();
+	}
+	else std::cout << "Unable to load in the file\n";
+}
+
 
 
    
