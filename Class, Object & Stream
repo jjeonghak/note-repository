@@ -1,0 +1,34 @@
+1. String object
+   operator[]  //provide access to the value stored at a given index within the string 
+   operator=  //assigns a string to another 
+   operator+=  //appends a string or single character to the end of a string object
+   at  //provides bounds-checking access to the character stored at a given index
+   length  //returns the number of characters that make up the string
+   size  //returns the number of characters that make up the string(same as length)
+   find  //locates the index of a substring within a string object
+   substr  //returns a new string object made of a substring of an existing string object
+   empty  //returns true if the string contains no characters, another returns false
+   clear  //removes all the characters from a string
+   
+   std::string word;
+   
+   word = "good";
+   word.operator=("good");
+   
+   word += "bye";
+   wore.operator+=("bye");
+
+
+2. I/O stream
+   std::cin >> x;  //삽입연산자 >>  
+   cin.operator>>(x);
+   
+   std::cout << x;  //추출연산자 <<
+   cout.operator<<(x);  
+   cout.operator<<(x).operator<<('\n')
+
+   
+3. File stream
+
+
+   
