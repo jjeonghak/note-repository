@@ -1,4 +1,5 @@
 // c++ 스타일의 캐스팅
+
 enum class Shade { Dark, Dim, Light, Bright };
 Shade color = Shade::Light;
 
