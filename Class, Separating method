@@ -1,0 +1,25 @@
+//Inline method definition
+//compiler replaces the definition of inline functions at compile time instead
+//of referring function definition at runtime
+//일반적인 함수는 프로그램 실행 중 함수를 실행해야 하면 해당 함수 주소로 이동하고 종료시 원위치
+//인라인 함수는 컴파일된 함수코드가 프로그램 코드 안에 직접 삽입
+
+//cpp_file1
+class Class_name{
+    double instance_member1;
+    double instance_member2;
+public:
+    Class_name(double x, double y); //no constructor implementation and no method
+    double get_instance_member1() const;
+    double get_instance_member2() const;  //implementations, 프로토타입만 선언
+};
+
+//cpp_file2
+Class_name::Class_name(double x, double y) : instance_member1(x), instance_member2(y) {}
+double Class_name::get_instance_member1(double x) const{
+    return instance_member1;
+}
+double Class_name::get_instance_member2(double x) const{
+    return instance_member2;
+}
+
