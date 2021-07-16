@@ -5,8 +5,7 @@
   1) 생성자는 클래스와 이름이 같아야 한다
   2) 생성자는 리턴 타입이 없다(void도 아님)
   3) default 생성자는 생성자 메소드 정의시 사라지므로 defualt 생성자도 정의필요
-  
-#include<iostream>
+
 class Class_name{
     int instance_member;
     const int const_member;
@@ -22,8 +21,7 @@ public:
   2) 레퍼런스 멤버 존재시
   3) 멤버의 생성자 호출시
   4) 상속받을 클래스 부모 생성자 호출시
-  
-#include<iostream>
+
 class Class_name{
     int instance_member;
     const int const_member;
@@ -31,4 +29,31 @@ public:
     Class_name() : instance_member(0), const_member(0) {}  //생성자 멤버 초기화 리스트, 할당이 아닌 직접초기화 방식
     Class_name(int x, int y) : instance_member(x), const_member(y) {}  //생성자 멤버 초기화 리스트 오버로딩
 };
+
+//Defining a New numeric type
+클래스 또는 구조체에 생성자가 없는 경우 클래스에서 멤버를 선언하는 순서대로 목록요소 제공
+클래스에 생성자가 있는 경우 매개변수 순서대로 요소제공
+형식에 암시적 또는 명시적으로 선언된 default 생성자가 있는 경우 기본 brace 초기화 사용가능
+
+class Class_name{
+    int instance_member;
+    double instance_member1;
+public:
+    Class_name() {}
+    Class_name(int x) : instance_member{x} {}  //brace 초기화
+    Class_name(int x, double y) : instance_member{x}, instance_member1{y} {}
+};
+
+class_name c1;
+class_name c2{};
+class_name c3();  //불가능, 클래스 객체 선언이 아닌 프로토타입 선언
+ 
+class_name c4{0};
+class_name c5(0);
+class_name c6{0.1};  //불가능, 파라미터 형식 불만족
+
+class_name c7{0, 1.};
+class_name c8(0, 1.);
+class_name c9{1., 0};  //불가능, 파라미터 순서 불만족
+
 
