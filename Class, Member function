@@ -1,0 +1,3 @@
+//public : directly referenced outside of the class
+//private : can be accessed only by functions within the class, default
+
