@@ -7,7 +7,36 @@ SimpleRational zero1(const SimpleRational& f){  //f 수정불가
     result.set_numerator(0);
     return result;
 }
-SimpleRational zero2(SimpleRational f){
+SimpleRational zero2(SimpleRational f){  //f 수정가능
     f.set_numerator(0);  //just use f, it is a copy of the caller's actual parameter
     return f;
 }
+
+
+//Pointers to objects and object arrays
+
+Account acct("KJH", 3185, 90.00);
+Account *acct_ptr;  //포인터 선언
+Account *acct_ptr1 = nullptr;
+//a pointer with the value nullptr is interpreted to mean a pointer
+//that is pointing to notthing, an attempt to delete a null pointer is legal and does nothing
+
+acct_ptr = &acct;  //포인터 할당
+//acct_ptr = new Account("KJH", 3185, 90.00); 동적메모리할당
+//delete acct_ptr;
+
+(*acct_ptr).id = 100;  //접근1, 최우선순위 dot operator(.) 
+acct_ptr -> id = 100;  //접근2, arrow member selection operator(->)
+
+
+//the this pointer
+class Class_name{
+    int instance_member;
+public:
+    void set_instance_member(int x){
+        this -> instance_member = x;  //this pointer use an arrow member selection operator
+    }
+    void clear(){
+        log(*this);  //void log(Class_name c){}
+    }
+};
