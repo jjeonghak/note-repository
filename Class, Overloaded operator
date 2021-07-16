@@ -1,0 +1,24 @@
+//operator<<
+  class : std::ostream
+  function : right-hand operand is sent to the stream specified by the left-hand operand
+  
+//operator>>
+  class : std::istream
+  function : right-hand operand is extracted from the stream specified by the left-hand operand
+  
+//operator[]
+  class : std::vector
+  function : right-hand operand(the integer within the square brackets) is used to locate an 
+             element within the left-hand operand(a vector)
+             
+//operator==
+  class : std::string 
+  function : right-hand operand(a string) is compared with the left-hand operator(also a string)
+             to determine if they contain exactly the same characters in exactly the same order
+
+
+
+
+
+
+
