@@ -4,6 +4,7 @@
 //생성자(Constructor)
   1) 생성자는 클래스와 이름이 같아야 한다
   2) 생성자는 리턴 타입이 없다(void도 아님)
+  3) default 생성자는 생성자 메소드 정의시 사라지므로 defualt 생성자도 정의필요
   
 #include<iostream>
 class Class_name{
