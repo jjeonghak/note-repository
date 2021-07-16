@@ -1,0 +1,13 @@
+//Passing object parameters
+//reference : passing an instance, no need to copy an object
+//const : cannot modify
+
+SimpleRational zero1(const SimpleRational& f){  //f 수정불가
+    SimpleRational result{f};  //make a copy of parameter f, 새로운 객체 생성, 복사생성자
+    result.set_numerator(0);
+    return result;
+}
+SimpleRational zero2(SimpleRational f){
+    f.set_numerator(0);  //just use f, it is a copy of the caller's actual parameter
+    return f;
+}
