@@ -1,0 +1,32 @@
+//public : directly referenced outside of the class
+//private : can be accessed only by functions within the class, default
+
+//생성자(Constructor)
+#include<iostream>
+
+class Class_name{
+    int instance_member;
+    const int const_member;
+public:
+    Class_name(){ instance_member = 0; }  //생성자메소드, 초기화가 아닌 할당하는 방식
+    //Class_name(){ const_member = 0; } 불가능, 상수멤버는 초기화로만 선언가능(할당불가)
+    Class_name(int x){ instance_member = x; }  //생성자메소드 오버로딩  
+};
+
+
+//생성자 멤버 초기화 리스트(Member initializer list)
+  1) 상수멤버 존재시
+  2) 레퍼런스 멤버 존재시
+  3) 멤버의 생성자 호출시
+  4) 상속받을 클래스 부모 생성자 호출시
+  
+#include<iostream>
+
+class Class_name{
+    int instance_member;
+    const int const_member;
+public:
+    Class_name() : instance_member(0), const_member(0) {}  //생성자 멤버 초기화 리스트, 할당이 아닌 초기화 방식
+    Class_name(int x, int y) : instance_member(x), const_member(y) {}  //생성자 멤버 초기화 리스트 오버로딩
+};
+
