@@ -30,6 +30,11 @@ acct_ptr -> id = 100;  //접근2, arrow member selection operator(->)
 
 
 //the this pointer
+//모든 멤버 함수는 함수가 호출된 객체를 가리키는 this 포인터를 가진다
+  1) 컴파일 시 c1.method(parameter);를 호출하면 컴파일러는 실제로 c1.method(&c1, parameter);로 변환
+  2) method() 멤버함수 내부에서 this pointer는 &c1 객체의 주소값
+  3) method() 내부의 모든 멤버 변수 앞에는 this -> 추가
+
 class Class_name{
     int instance_member;
 public:
@@ -40,3 +45,4 @@ public:
         log(*this);  //void log(Class_name c){}
     }
 };
+
