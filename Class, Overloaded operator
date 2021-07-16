@@ -16,9 +16,39 @@
   function : right-hand operand(a string) is compared with the left-hand operator(also a string)
              to determine if they contain exactly the same characters in exactly the same order
 
+//외부 선언
+class Point{
+public:
+    double x;
+    double y;
+};
+
+Point operator+(const Point& p1, const Point& p2){
+    Point result; 
+    result.x = p1.x + p2.x;
+    result.y = p1.y + p2.y;
+    return result;
+}
+
+std::ostream& operator<<(std::ostream& os, const Point& pt){  //리턴값 레퍼런스
+    os << '( ' << pt.get_x() << ', ' << pt.get_y() << ' )';
+    return os;  //레퍼런스를 다시 리턴
+}
 
 
+//내부 선언
+class Point{
+public:
+    double x;
+    double y;
+    Point operator+(const Point& p) const;  //내부선언으로 인한 this 포인터 발생
+};
 
-
+Point operator+(const Point& p){  //this로 인한 파라미터 감소
+    Point result; 
+    result.x = x + p.x;
+    retult.y = y + p.y;
+    return result;
+}
 
 
