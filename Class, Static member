@@ -1,0 +1,36 @@
+//Static members are instance independent
+//by default, a class member is an instance member
+//정적변수 및 정적메소드는 클래스 객체를 통하지 않고 클래스로 직접 접근가능
+
+#include<iostream>
+#include<cmath>
+
+class Point{
+public:
+    double x;
+    double y;
+    Point(double x, double y) : x(x), y(y) {}
+    
+    static double pi;  //정적변수
+    static double Distance(const Point& p1, const Point& p2);  //정적메소드
+};
+
+double Point::pi = 3.14159;  //정적변수 초기화
+double Point::Distance(const Point& p1, const Point& p2){
+    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
+int main(void){
+    Point p1(10, 5);
+    Point p2(15, 25);
+    double r = 5;
+    
+    std::cout << Point::Distance(p1, p2) << std::endl;  //정적메소드 클래스로 접근
+    std::cout << Point::pi * pow(r, 2) << std::endl;  //정적변수 클래스로 접근
+    return 0;
+}
+
+- 결과 : 20.6155
+        78.5397
+
+
+ 
