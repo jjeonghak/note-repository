@@ -2,15 +2,17 @@
 //they can access the private members of the class as though they were members
 //Friend classes can access the private members of the class which is declaring
 
-class friend F
-class F;
-
 //Friend 선언
 이전에 선언되지 않은 friend 함수를 선언하는 경우 해당 함수가 바깥쪽 비클래스 범위로 보내짐
 friend 선언에서 선언된 함수는 키워드를 사용하여 선언된 것처럼 처리
 전역 범위 함수는 프로토타입 이전에 friend 선언 가능
 멤버 함수는 전체 클래스 선언전에 friend 선언 불가능
 
+friend class F;
+friend F;
+
 //Friend 함수
 클래스의 멤버가 아니지만 클래스의 전용 및 보호된 멤버에 엑세스할 수 있는 함수
 클래스 멤버로 간주되지 않으며 특수 엑세스 권한이 부여된 일반 외부함수
+클래스 범위에 속하지 않으며 멤버 선택연산자() 사용불가
+
