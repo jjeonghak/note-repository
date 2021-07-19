@@ -24,30 +24,38 @@
   =============================================================================            
   - 부모의 private : 상속은 가능하지만 접근불가능, 상속 고려한다면 public, protected로 설정
 
-class B{
+class Base{
+    int num1;
 public:
-    void f(){
-        std::cout << "In function 'f'\n";
+    Base(int n) : num1(n) {}
+    void print() const{ 
+        std::cout << num1 << " base\n";
+    }
+    int Num1() const{
+        return num1;
     }
 };
 
-class D: public B{
+class Derived: public Base{  //int형 num1을 가지고 있지만 접근불가
+    int num2;
 public:
-    void g(){
-        std::cout << "In function 'g'\n";
+    Derived(int n1, int n2) : Base(n1), num2(n2) {}  //num1에 직접접근 불가, 생성자 통해 초기화
+    void print() const{
+        std::cout << Num1()<< " " << num2 <<" derived\n";  //overriding
     }
 };
 
 int main(void){
-    B class_B;
-    D class_D;
-    class_B.f();
-    class_D.f();
-    class_D.g();
+    Base b(2);
+    Derived d(3, 5);
+    b.print();
+    d.print();
+    
+    b = d;  //가능, d의 있는 것으로 b의 모든 것을 채울수 있음
+    //d = b; 불가능, 즉 부모 클래스 객체에 자식클래스 대입만 가능
 }
-- 결과 : In function 'f'
-        In function 'f'
-        In function 'g'
 
+- 결과 : 2 base
+        3 5 derived
 
 
