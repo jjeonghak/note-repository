@@ -10,15 +10,15 @@
   =============================================================================
     Inheritance           type Base access           type Derived access type
   -----------------------------------------------------------------------------
-  private(default)            private               inherited but inaccessible
-                              protected                       private
+     private                  private               inherited but inaccessible
+    (default)                 protected                       private
                               public                          private
   ----------------------------------------------------------------------------- 
      protected                private               inherited but inaccessible
                               protected                      protected
                               public                         protected
   ----------------------------------------------------------------------------- 
-      public                  private               inherited but inaccessible
+     public                   private               inherited but inaccessible
                               protected                      protected
                               public                          public
   =============================================================================            
