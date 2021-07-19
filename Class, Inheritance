@@ -6,3 +6,30 @@
 //Constructors, destructors, nonmember functions, assignment operator, and 
   virtual methods are not inherited
 
+class B{
+public:
+    void f(){
+        std::cout << "In function 'f'\n";
+    }
+};
+
+class D: public B{
+public:
+    void g(){
+        std::cout << "In function 'g'\n";
+    }
+};
+
+int main(void){
+    B class_B;
+    D class_D;
+    class_B.f();
+    class_D.f();
+    class_D.g();
+}
+- 결과 : In function 'f'
+        In function 'f'
+        In function 'g'
+
+
+
