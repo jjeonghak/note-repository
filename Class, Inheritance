@@ -6,6 +6,23 @@
 //Constructors, destructors, nonmember functions, assignment operator, and 
   virtual methods are not inherited
 
+//Inheritacne mechanics
+  =============================================================================
+    Inheritance           type Base access           type Derived access type
+  -----------------------------------------------------------------------------
+  private(default)            private               inherited but inaccessible
+                              protected                       private
+                              public                          private
+  ----------------------------------------------------------------------------- 
+     protected                private               inherited but inaccessible
+                              protected                      protected
+                              public                         protected
+  ----------------------------------------------------------------------------- 
+      public                  private               inherited but inaccessible
+                              protected                      protected
+                              public                          public
+  =============================================================================            
+
 class B{
 public:
     void f(){
