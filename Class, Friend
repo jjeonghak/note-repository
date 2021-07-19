@@ -1,0 +1,4 @@
+//Friend functions are not members of a class, but are associated with it
+//they can access the private members of the class as though they were members
+//Friend classes can access the private members of the class which is declaring
+
