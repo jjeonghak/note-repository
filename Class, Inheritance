@@ -22,6 +22,7 @@
                               protected                      protected
                               public                          public
   =============================================================================            
+  - 부모의 private : 상속은 가능하지만 접근불가능, 상속 고려한다면 public, protected로 설정
 
 class B{
 public:
