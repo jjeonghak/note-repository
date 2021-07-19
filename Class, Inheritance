@@ -1,0 +1,8 @@
+//a class can be derived from more than one classes, which means it can inherit
+  data and functions from multiple base classes
+//to define a derived class, we use a class derivation list to specify the base class
+//where access-specifier is one of public, protected, or private,  and base-class is 
+  the name of a previously defined class
+//Constructors, destructors, nonmember functions, assignment operator, and 
+  virtual methods are not inherited
+
