@@ -1,0 +1,2 @@
+//a virtual function is a member function which is declared within a base class and is re
+  definded(overriden) by a deived class
