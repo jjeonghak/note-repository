@@ -1,3 +1,11 @@
+//가상 메소드 테이블(Virtual method table, vtable)
+//가상 메소드 테이블은 동적 디스패치(런타임 메소드 바인딩)를 지원하기 위해 프로그래밍 언어에서 사용되는 메커니즘
+클래스가 가상함수를 정의할 때마다 대부분의 컴파일러는 클래스에 숨겨진 멤버 변수를 추가하고 이것은 가상함수들에 대한 포인터들의
+배열들을 가리킨다. 이 포인터(vptr)들은 실행 기간 도중에 정확한 함수를 가리키게 되는데 컴파일 타임에는 베이스 함수가 호출될
+것인지 또는 베이스 클래스를 상속한 클래스에 의해서 구현될 지 알려져 있지 않기 때문이다.
+
+
+//가상 함수
 //a virtual function is a member function which is declared within a base class and is re
   definded(overriden) by a deived class
 
