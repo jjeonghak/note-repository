@@ -1,2 +1,44 @@
 //a virtual function is a member function which is declared within a base class and is re
   definded(overriden) by a deived class
+
+class Base{
+public:
+    virtual void f(){  //dynamic dispatch -> polymorphism
+                       //만약 virtual 함수가 아닐 경우 다형성 불가
+        std::cout << "base\n";  
+    }
+};
+
+class Derived : public Base{
+public:
+    void f() override{  //override : virtual overriding 일반 오버라이딩 함수
+                        //final : final virtual overriding 마지막 오버라이딩 함수
+        std::cout << "derived\n";
+    }
+};
+
+int main(void){
+    Base b;
+    Derived d;
+    
+    Base& br = b;  //the type of br is Base&
+    Base& dr = d;  //the type of dr is Base& as well
+    br.f();  //Base::f()
+    dr.f();  //Derived::f()
+    
+    Base* bp = &b;  //the type of bp is Base*
+    Base* dp = &d;  //the type of dp is Base* as well
+    bp -> f();  //Base::f()
+    dp -> f();  //Derived::f()
+    
+    br.Base::f();  
+    dr.Base::f();
+}
+
+- 결과 : base
+        derived
+        base
+        derived
+        base
+        base
+
