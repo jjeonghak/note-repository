@@ -8,5 +8,21 @@ public:
     virtual void f() = 0;
 };
 
+class A: public AB{
+public:
+    virtual void f() {};
+};
+
+AB g();  //error
+statoc_cast<AB> (ab);  //error 
+
 //function AB::f is a pure virtual function
 //a function declaration cannot have both a pure specifier and a definition
+//the compiler would not allow the function declarations AB g() or void h(AB), 
+  declaration of object a, not the static cast of ab to type AB
+//a class derived from an abstract base class will also be abstract unless you override each
+  pure virtual function in the derived class
+//Note that you can derive an abstract class from a nonabstract class, and you can override
+  a non-pure virtual funtion with a pure virtual function
+  
+
