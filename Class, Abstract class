@@ -1,0 +1,12 @@
+//an abstract class is a class that is designed to be specifically used as a base class
+//an abstract class contains at least one pure virtual function
+//declare a pure virtual funtion by using a pure specifier(= 0) in the  declaration of a virtual
+  member function in the class declaration 
+  
+class AB{
+public:
+    virtual void f() = 0;
+};
+
+//function AB::f is a pure virtual function
+//a function declaration cannot have both a pure specifier and a definition
