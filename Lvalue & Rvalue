@@ -6,3 +6,18 @@ c++에서 모든 표현식은 Lvalue와 Rvalue로 구성
 Lvalue는 단일표현식 이후에도 없어지지 않고 지속되는 객체
 Rvalue는 표현식이 종료된 이후에는 더이상 존재하지 않는 임시적인 값
 
+int x = 3;
+int y = 4;
+int z = x + y;
+int* p = &x;
+std::cout << string("lvalue");
+//Lvalue : 왼쪽값, Rvalue : 오른쪽값
+
+const int z = x;  //표현식 이후 양쪽값 모두 존재하므로 모두 Lvalue
+
+++x;  //증가된 x 자신을 리턴하기 때문에 Lvalue
+x++;  //증가된 복사본을 리턴하기 때문에 Rvalue
+
+&(++x)  //가능
+&(x++)  //불가능, & 연산자는 Lvalue를 요구하기 때문
+
