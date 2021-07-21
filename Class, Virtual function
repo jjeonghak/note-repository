@@ -4,6 +4,36 @@
 배열들을 가리킨다. 이 포인터(vptr)들은 실행 기간 도중에 정확한 함수를 가리키게 되는데 컴파일 타임에는 베이스 함수가 호출될
 것인지 또는 베이스 클래스를 상속한 클래스에 의해서 구현될 지 알려져 있지 않기 때문이다.
 
+class NoVTable{
+    int data;
+public:
+    void set(int d) { 
+        data = d;
+    }
+};
+
+class HasVTable {
+    int data;
+public:
+    virtual void set(int d){
+        data = d;
+    }
+};
+
+int main(void){
+    NoVTable no_vtable;
+    no_vtable.set(10);
+    
+    HasVTable has_vtable;
+    has_vtable.set(10);
+    
+    std::cout << "no_vtable size = " << sizeof no_vtable << '\n';
+    std::cout << "has_vtable size = " << sizeof has_vtable << '\n';
+}
+
+- 결과 : no_vtable size = 4
+        has_vtable size = 8  //컴파일러마다 상이
+
 
 //가상 함수
 //a virtual function is a member function which is declared within a base class and is re
