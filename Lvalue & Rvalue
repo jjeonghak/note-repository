@@ -1,0 +1,8 @@
+//Lvalue와 Rvalue는 보통 Left-value와 Right-value로 풀어서 사용
+//이때문에 대입연산자(=)를 기준으로 왼쪽, 오른쪽으로 이해할 수 있지만 잘못된 이해
+
+//Lvalue와 Rvalue 구분
+c++에서 모든 표현식은 Lvalue와 Rvalue로 구성
+Lvalue는 단일표현식 이후에도 없어지지 않고 지속되는 객체
+Rvalue는 표현식이 종료된 이후에는 더이상 존재하지 않는 임시적인 값
+
