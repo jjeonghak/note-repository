@@ -19,7 +19,7 @@ const int z = x;  //표현식 이후 양쪽값 모두 존재하므로 모두 Lva
 x++;  //증가된 복사본을 리턴하기 때문에 Rvalue
 
 &(++x)  //가능
-&(x++)  //불가능, & 연산자는 Lvalue를 요구하기 때문
+&(x++)  //error C2102:'&' requires l-value
 
 //Rvalue 참조자 &&
 & 참조자는 Lvalue참조자가 일반적
@@ -27,3 +27,15 @@ x++;  //증가된 복사본을 리턴하기 때문에 Rvalue
 int rvalue(){
     return 10;
 }
+
+int main(){
+    int lvalue = 10;
+    
+    int& a = lvalue;
+    int& b = rvalue();  //error C2440: 'initializing' : cannot convert from 'int' to 'int&'
+    
+    int&& c = lvalue;  //error C2440: 'initializing' : cannot convert from 'int' to 'int&&'
+    int&& d = rvalue();
+}
+
+
