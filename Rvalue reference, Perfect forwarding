@@ -1,0 +1,29 @@
+//Perfect Forwarding
+//std::forward<T> 템플릿
+
+template<class T>
+void print(T& n){
+    std::cout << "L - value\n";
+}
+
+template<class T>
+void print(const T& n){  //lvalue 레퍼런스 같지만 const로 인해 rvalue 참조가능
+    std::cout << "R - value\n";
+}
+
+template<class T>
+void fnc(T&& n){
+    print(std::forward<T> (n));  //파라미터의 형태에 따라 구분지어 함수 호출
+}
+
+int main(void){
+    int n = 10;
+    fnc(n);  //L-value
+    fnc("hwan");  //R-value
+    fnc(1.123);  //R-value
+    return 0;
+}
+
+
+
+
