@@ -1,0 +1,3 @@
+//a smart pointer is a wrapper class over a pointer with operator overloaded
+//shared_ptr, unique_ptr, weak_ptr(for circular references)
+
