@@ -2,27 +2,32 @@
 //변수를 상수로 설정시 변수 자료형 앞에 const
 //상수변수는 정의할 때 초기화 필수, 할당을 통한 값 변경불가
 
+//Runtime Constant
+런타임 상수는 초기값을 런타임에서만 확인할 수 있는 상수
+아래의 user_data는 컴파일 시에 값을 결정할 수 없으므로 런타임 삼수
+
+//Compile-time Constant
+컴파일 상수는 컴파일 타임에 초기값을 확인할 수 있는 상수
+아래의 gravity는 컴파일 시에 값을 결정할 수 있으므로 컴파일 상수
+
+
+//Const
+컴파일 타임 상수 및 런타임 상수에 적용
+
 const double gravity{9.8};  //preferred use of const before type
 int const sideslnSquare{4};  //ok, but not preferred
 
 gravity = 9.9;  //error
 const double gravity;  //error
 
-//상수변수는 일반 변수값으로 초기화 가능
 int data;
 std::cin >> data;
-const int user_data(data);  
+const int user_data(data);  //상수변수는 일반 변수값으로 초기화 가능
 
-//Runtime Constant
-런타임 상수는 초기값을 런타임에서만 확인할 수 있는 상수
-위의 user_data는 컴파일 시에 값을 결정할 수 없으므로 런타임 삼수
-
-//Compile-time Constant
-컴파일 상수는 컴파일 타임에 초기값을 확인할 수 있는 상수
-위의 gravity는 컴파일 시에 값을 결정할 수 있으므로 컴파일 상수
 
 //Constexpr
 컴파일 타임 상수에 적용
+어떠한 식이 상수식임을 명시
 
 constexpr double gravity(9.8);  //ok, the value can be resolved at compile-time
 constexpr int sum = 4 + 5;  //ok, the value can be resolved at compile-time
@@ -37,9 +42,9 @@ constexpr int user_data = data;  //error, data cannot be resolved at compile-tim
 
 1. #define 사용한 심볼릭 상수 
  #define MAX 999999
- //유의사항
  1) 매크로를 사용한 심볼릭 상수는 디버거에 표시되지 않음
  2) #define된 값은 항상 파일 스코프(범위)에 있으므로 나중에 #define된 값과 충돌가능
 
-2. const 사용
-
+2. const 또는 constexpr 사용
+ 1) 디버거에 표시
+ 2) 일반적인 변수 스코프를 따름
