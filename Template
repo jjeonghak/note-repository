@@ -8,4 +8,23 @@
      //반환값과 호출 매개변수가 모두 형식이 단일 매개변수 T를 사용하는 제네릭 함수 템플릿
  }
  
- 
+//매개변수
+template<typename T, typename U, typename V> class C1{};
+template<class T, class U, class V> class C2{};
+
+template<typename... Argments> calss vtclass;  //줄임표연산자(...), 임의의 수(0개 이상)의 매개변수
+vtclass< > vtinstance1;
+vtclass<int> vtinstance2;
+vtclass<float, bool> vtinstance3;
+
+
+//비형식 매개변수
+template<typename T, size_t L> 
+class MyArray{
+    T arr[L];  //size_t는 const 또는 식
+public:
+    MyArray(){...}
+};
+
+MyArray<MyClass*, 10> arr;  //컴파일 시 템플릿 인수로 전달
+
