@@ -1,3 +1,19 @@
 //a smart pointer is a wrapper class over a pointer with operator overloaded
 //shared_ptr, unique_ptr, weak_ptr(for circular references)
 
+스마트 포인터는 std 헤더 파일의 네임 스페이스에 정의
+
+void UseRawPointer(){
+    //using a raw pointer -- not recommended
+    Song* pSong = new Song(L"Nothing on you", L"Bruno Mars");
+    //use pSong...
+    delete pSong;
+}
+
+void UseSmartPointer(){
+    //declare a smart popinter on stack and pass it the raw pointer
+    unique)ptr<Song> song2(new Song(L"Nothing on you", L"Bruno Mars"));
+    //use song2...
+    wstring s = song2 -> duration_;
+    //...
+}  //song2 is deleted automatically here
