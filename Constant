@@ -33,5 +33,13 @@ constexpr int user_data = data;  //error, data cannot be resolved at compile-tim
 
 
 //Symbolic Constant
+심볼릭 상수는 상수 리터럴 값이 지정된 이름
 
+1. #define 사용한 심볼릭 상수 
+ #define MAX 999999
+ //유의사항
+ 1) 매크로를 사용한 심볼릭 상수는 디버거에 표시되지 않음
+ 2) #define된 값은 항상 파일 스코프(범위)에 있으므로 나중에 #define된 값과 충돌가능
+
+2. const 사용
 
