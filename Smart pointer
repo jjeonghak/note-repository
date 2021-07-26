@@ -1,8 +1,8 @@
 //a smart pointer is a wrapper class over a pointer with operator overloaded
 //shared_ptr, unique_ptr, weak_ptr(for circular references)
+//스마트 포인터는 std 헤더 파일의 네임 스페이스에 정의
 
-스마트 포인터는 std 헤더 파일의 네임 스페이스에 정의
-
+//원시 포인터와 스마트 포인터 선언비교
 void UseRawPointer(){
     //using a raw pointer -- not recommended
     Song* pSong = new Song(L"Nothing on you", L"Bruno Mars");
@@ -17,3 +17,52 @@ void UseSmartPointer(){
     wstring s = song2 -> duration_;
     //...
 }  //song2 is deleted automatically here
+
+//스마트 포인터는 스택에서 선언되고 힙 할당 개체를 가리키는 원시 포인터를 사용하여 초기화하는 포인터
+//스마트 포인트가 초기화되면 원시 포인터를 소유, 원시 포인터가 지정한 메모리를 스마트 포인터가 삭제햐야함
+//스마트 포인터는 스택에 선언되기 때문에 스마트 포인터가 범위를 벗어나면 해당 소멸자 호출
+
+
+//스마트 포인터 필수 단계
+ 1) 스마트 포인터를 자동(지역)변수로 선언금지
+ 2) 형식 매개 변수에서 캡슐화된 포인터가 가리키는 대상의 형식 지정
+ 3) 원시 포인터를 new 스마트 포인터 생성자의-ed 개체에 전달
+ 4) 오버로드된 -> 및 * 연산자 사용하여 개체에 접근
+ 5) 스마트 포인터로 객체 삭제가능
+
+
+//unique_ptr
+#include<memory>
+기본 포인터로 한 명의 소유자만 허용
+새 소유자로 이동할 수 있지만 복사하거나 공유 불가능
+rvalue 참조 지원
+
+class LargeObject{
+public:
+    void DoSomething(){}
+};
+
+void ProcessLargeObject(const LargeObject& lo){}
+void SmartPointerDemo(){
+    //create the object and pass it to a smart pointer
+    std::unique_ptr<LargeObject> pLarge(new LargeObject());
+    //call a method on the object
+    pLarge -> DoSomething();
+    //pass a reference to a method
+    ProcessLargeObject(*pLarge);
+}  //pLarge is deleted automatically when function block goes out of scope
+
+
+//shared_ptr
+#include<memory>
+참조횟수가 계산되는 스마트 포인터
+원시 포인터 하나를 여러 소유자에게 할당하려고 할 경우 사용
+원시 포인터는 모든 shared_ptr 소유자가 범위를 벗어나거나 소유권을 포기할 때까지 삭제되지 않음
+크기는 2개의 포인터 크기, 하나는 개체용, 다른 하나는 참조횟수가 포함된 공유 제어 블록
+
+
+//weak_ptr
+#include<memory>
+shared_ptr과 함께 사용가능
+하나 이상의 shared_ptr 인스턴스가 소유하는 개체에 대한 접근 제공, 참조 수 계산에는 포함안함
+개체를 관찰하는 동시에 해당 개체를 활성상태로 유지하지 않으려는 경우 사용
