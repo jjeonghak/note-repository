@@ -1,0 +1,8 @@
+//a lambda expression allows us to define an anonymous function inside another function
+
+  1) [captureList] (parameterList) mutable -> returnType {body}
+  2) [captureList] (parameterList) -> returnType {body}  //const
+  3) [captureList] (parameterList) {body}  //return type or void
+  4) [captureList] {body}  //no argument
+  
+  
