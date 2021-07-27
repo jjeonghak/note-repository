@@ -1,8 +1,29 @@
 //a lambda expression allows us to define an anonymous function inside another function
+//함수에 인수로 호출되거나 전달되는 위치에서 바로 익명 함수 개체를 정의하는 방법
 
-  1) [captureList] (parameterList) mutable -> returnType {body}
-  2) [captureList] (parameterList) -> returnType {body}  //const
-  3) [captureList] (parameterList) {body}  //return type or void
-  4) [captureList] {body}  //no argument
+  1) [captureList] (parameterList) mutable throw() -> returnType {body}
+  2) [captureList] (parameterList) mutable -> returnType {body}
+  3) [captureList] (parameterList) -> returnType {body}  //const
+  4) [captureList] (parameterList) {body}  //return type or void
+  5) [captureList] {body}  //no argument
   
-  
+//mutable allows body to modify the captured objects by copy 
+//captureList is a comma-separated list of zero or more captures
+//parameterList is a comma-separated list of parameters
+//returnType is the type of the result the function returns 
+
+//CaptureList
+  1) [] : no captureList
+  2) [=] : copy, default는 const(수정불가능), mutable 사용시 수정가능 
+  3) [&] : reference 수정가능
+
+struct S {void f(int i);};
+
+void S::f(int i){
+    [&, i] {};  //ok
+    [&, &i] {};  //error: i preceded by & when & is the default
+    [=, this] {};  //error: this when = is the default
+    [=, *this] {};  //ok: captures this by value
+    [i, i] {};  //error: i repeated
+}
+
