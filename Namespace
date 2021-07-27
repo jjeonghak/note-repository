@@ -12,4 +12,36 @@ namespace identifier{
 
 //Using
 //the keyword using is used to introduce a name from a namespace into the current declarative region
+//the keyword using can be used as a directive to introduce an entire namespace
+
+using namespace std;
+
+namespace first{
+    int x = 5;
+    int y = 10;
+}
+
+namespace second{
+    double x = 15.;
+    double y = 20.;
+}
+
+int main(void){
+    using namespace first;
+    cout << x << endl;
+    cout << y << endl;
+    cout << second::x << endl;
+    cout << second::y << endl;
+    return 0;
+}
+
+- 결과 : 5
+        10
+        15
+        20
+
+//in this case, since we have declared that we were using namespace first, all direct uses of x and y
+  withdout name qualifiers were referring to their declarations in namespace first
+
+
 
