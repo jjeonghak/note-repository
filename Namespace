@@ -1,0 +1,15 @@
+//Namespace allow to group entities like classes, objects and functions under a name
+//this way the global scope can be divided in "sub-scopes", each one with its own name
+
+namespace identifier{
+    entities
+}
+
+//in order to access these variables from outside the namespace we have to use the scope operator ::
+//the functionality of namespaces is especially useful in the case that there is a possibility
+  that a global object or function uses the same identifier as another one, causing redefinition errors
+
+
+//Using
+//the keyword using is used to introduce a name from a namespace into the current declarative region
+
