@@ -45,4 +45,24 @@ int main(){
 - 결과 : 5
         0
 
+#include<iostream>
+#include<functional>
 
+std::function<double(double)> derivative0  //함수<리턴타입(파라미터타입)>
+    (std::function<double(double)> f, double h){ 
+    return [f, h](double x) {return (f(x + h) - f(x))/h;}; 
+    //변수 x를 파라미터로 받는 함수 리턴
+}
+double fun(double x) {return 3 * x*x + 5;}
+
+int main(void){
+    double h = 0.00001;
+    auto der0 = derivative0(fun, h);
+    std::cout << der0(5.) << std::endl;
+    auto der1 = [h](double x) {return (fun(x + h) - fun(x)) / h;};
+    std::cout << der1(5.) << std::endl;
+    return 0;
+}
+
+- 결과 : 30
+        30
