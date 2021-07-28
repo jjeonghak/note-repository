@@ -1,2 +1,34 @@
-//Sets are containers that store unique elements following a specific order
+tmeplate < class T,  //set::key_type/value_type
+           class Compare = less<T>,  //set::key_compare/value_compare
+           class Alloc = allocator<T>> class set;  //set::allocator_type
+
+
+//sets are containers that store unique elements following a specific order
+//in a set, the value of an element also identifies it(the value is itself the key, of type T),
+  and each value must be unique
+//the value of the elements in a set cannot be modified once in the container(the elements are always const),
+  but they can be inserted or removed from the container
+//internally, the elements in a set are always sorted following a specific strict weak ordering criterion indicated
+  by its internal comparison object(of type compare)
+//set containers are generally slower than unordered_set containers to access individual elements by their key,
+  but they allow the direct iteration on subsets based on their order
+//sets are typically implemented as binary search trees
+
+
+//container properties
+  1) Associative
+     elements in associative containers are referenced by their key and not by their absolute position in the container
+     
+  2) Ordered
+     the elements in the container follow a strict order at all times
+     all inserted elements are given a position in this order
+     
+  3) Set
+     the value of an element is also the key used to identify it
+     
+  4) Unique keys
+     no two elements in the container can have equivalent keys
+     
+  5) Allocator-aware
+     the container uses an allocator object to dynamically handle its storage needs
 
