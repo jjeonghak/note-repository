@@ -1,0 +1,30 @@
+//a container is a holder object that stores a collection of other objects(its elements)
+//they are implemented as class templates, which allows a great flexibility 
+  in the types supported as elements
+//the container manages the storage space for its elements and provides functions to access them, 
+  either directly or through iterators(reference objects with similar properties to pointers)
+
+//container replicate structures very commonly used in programming
+  1) dynamic arrays(vector)
+  2) queues(queue)
+  3) stacks(stack)
+  4) heaps(priority_queue)
+  5) linked lists(list)
+  6) trees(set)
+  7) associative arrays(map)
+  8) ...
+
+//container class templates
+  1. Sequence Containers : array, vector, dequeue, forward_list, list
+  
+  2. Container adaptors : stack, queue, priority_queue
+  
+  3. Associative containers : set, multiset, map, multimap
+  
+  4. Unordered associative containers : unordered_set, unordered_multiset, 
+                                        unordered_map, unordered_multimap
+  
+  5. Other : bitset, valarray(two class templates share certain properties with containers, 
+             and are sometimes classified with them)
+ 
+ 
