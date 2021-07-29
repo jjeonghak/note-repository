@@ -48,3 +48,5 @@ constexpr int user_data = data;  //error, data cannot be resolved at compile-tim
 2. const 또는 constexpr 사용
  1) 디버거에 표시
  2) 일반적인 변수 스코프를 따름
+
+
