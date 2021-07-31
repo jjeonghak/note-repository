@@ -1,0 +1,7 @@
+//Double ended queue
+//deque(usually pronounced like "deck") is an irregular acronym double-ended queue
+//double-ended queues are sequence containers with dynamic sizes that can be expanded or contracted on both ends
+
+//they provid a functionality similar to vectors, but with efficient insertion and deletion of elements also 
+  at the beginning of the sequence, and not only at its end
+  
