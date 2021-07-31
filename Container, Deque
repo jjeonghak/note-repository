@@ -1,3 +1,5 @@
+template<class T, class Alloc = allocator<T>> class deque;
+
 //Double ended queue
 //deque(usually pronounced like "deck") is an irregular acronym double-ended queue
 //double-ended queues are sequence containers with dynamic sizes that can be expanded or contracted on both ends
@@ -19,4 +21,16 @@
 //for operations that involve frequent insertion or removals of elements at positions other than the beginning or 
   the end, deque perform worse and have less consistent iterators and references than lists and forward lists
 
+
+//container properties
+  1) Sequence
+     elements in sequence containers are ordered in a strict linear sequence
+     individual elements are accessed by their position in this sequence
+     
+  2) Dynamic array
+     generally implemented as a dynamic array, it allows direct access to any element in the sequence and provides 
+     relatively fast addition/removal of elements at the beginning or the end of the sequence
+  
+  3) Allocator-aware
+     the container uses an allocator object to dynamically hendle its storage needs
 
