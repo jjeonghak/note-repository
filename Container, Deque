@@ -1,4 +1,4 @@
-template<class T, class Alloc = allocator<T>> class deque;
+template< class T, class Alloc = allocator<T> > class deque;
 
 //Double ended queue
 //deque(usually pronounced like "deck") is an irregular acronym double-ended queue
