@@ -4,7 +4,6 @@
 //the container manages the storage space for its elements and provides functions to access them, 
   either directly or through iterators(reference objects with similar properties to pointers)
 
-
 //container replicate structures very commonly used in programming
   1) dynamic arrays(vector)
   2) queues(queue)
