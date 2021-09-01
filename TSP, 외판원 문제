@@ -12,6 +12,36 @@ In general, for i!=1 and vi!=V
 D[vi][A] = minimum(W[i][j] + D[vi][A-{vj}]) (단, A는 공집합이 아닌 경우)
 D[vi][0] = W[i][1] (A는 공집합 0) //vi에서 v1으로 바로 가는 경우
 
+//Handling subsets using Bitwise Operations
+//비트를 이용한 집합표현, 1의 갯수와 위치로 집합표현
+A = {}, 000 = 0
+A = {v2}, 001 = 1
+A = {v3}, 010 = 2
+A = {v4}, 100 = 4
+A = {v2, v3}, 011 = 3
+A = {v2, v4}, 101 = 5
+A = {v3, v4}, 110 = 6
+A = {v2, v3, v4}, 111 = 7
+
+//count(A)
+int count(int A){
+    int cnt = 0;
+    for(; A != 0; A >>= 1) //한칸씩 옮기면서 1의 갯수 카운트
+        if(A & 1) cnt++;
+    return cnt;
+}
+
+//isIn, 인덱스 포함여부
+bool isIn(int i, int A){
+    return (A & (1 << (i - 2))) != 0; //i를 자릿수에 맞게 시프트 연산후 비교
+}
+
+//diff, 부분집합 원소 제거
+int diff(int A, int j){
+    return (A & ~(1 << (j - 2)));
+}
+
+
 int W[MAX][MAX];
 int P[MAX][MAX];
 int D[MAX][MAX];
