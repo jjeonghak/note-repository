@@ -14,6 +14,7 @@ D[vi][0] = W[i][1] (A는 공집합 0) //vi에서 v1으로 바로 가는 경우
 
 //Handling subsets using Bitwise Operations
 //비트를 이용한 집합표현, 1의 갯수와 위치로 집합표현
+//부분집합의 크기 2^(n - 1)
 A = {}, 000 = 0
 A = {v2}, 001 = 1
 A = {v3}, 010 = 2
