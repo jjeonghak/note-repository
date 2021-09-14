@@ -18,3 +18,18 @@ ptr = &nValue;
 ptr = &fValue;
 ptr = &sValue;
 
+
+//however, because the void pointer does not know what type of object it is pointing to, 
+  dereferencing a void pointer is illegal
+//Instead, the void pointer must first be cast to another pointer type before
+  the dereference can be performed
+  
+int valaue{5};
+void *voidPtr{ &value };
+//std::cout << *voidPtr illegal: dereference of void pointer
+
+int *inPtr{ static_cast<int*>(voidPtr) };
+//however, if we cast our void pointer to an int pointer
+
+std::cout << *inPtr << '\n'; //then we can dereference the result
+- 결과 : 5
