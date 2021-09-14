@@ -1,0 +1,20 @@
+//void pointer(generic pointer) is a special type of pointer that can be pointed at 
+  objects of any data type
+//a void pointer is declared like a normal pointer, using the void keyword as the 
+  pointer's type
+
+struct Somthing
+{
+    int n;
+    cloat f;
+}
+
+int nValue;
+float fValue;
+Somthing sValue;
+
+void *ptr;
+ptr = &nValue;
+ptr = &fValue;
+ptr = &sValue;
+
