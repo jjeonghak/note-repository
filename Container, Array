@@ -6,6 +6,7 @@
 //단일 식별자를 통해 같은 자료형의 여러 변수에 접근할 수 있게 해주는 연속적 집계 데이터구조
 //기본적으로 포인터 형식이므로 pass by address 형태 
 
+
 //container properties
   1) Sequence 
      elements in sequence containers are ordered in a strict linear sequence
