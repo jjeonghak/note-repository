@@ -9,7 +9,7 @@
 1) 헤더파일 : #include<stdlib.h> 
 2) 함수원형 : void* malloc(size_t size) //매개변수에 해당하는 size_t만큼의 크기 할당
 3) 메모리 해제 : free(pointerName)
-// 성공시 할당한 메모리의 첫번째 주소 리턴, 실패시 NULL 리턴
+// 성공시 할당한 메모리의 첫번째 주소 리턴, 실패시 NULL 리턴, NULL 가드 필수
 
 int arr[4];
 int* p;
