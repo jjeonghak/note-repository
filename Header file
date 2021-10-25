@@ -13,11 +13,11 @@
 #ifdef __AWESOME_LIB_H__  
 # define __AWESOME_LIB_H__ 
 
-[다른 헤더 파일 include]
+[다른 헤더 파일 # include]
 
 [상수 및 매크로 정의]
 
-[사용자 정의 type, struct, union 등]
+[사용자 정의 type(struct, union, typedef 등)]
 
 [전역 변수 선언]
 
@@ -26,13 +26,13 @@
 #endif
 
 
-//헤더 파일명
+//헤더 파일명.h
 1. 헤더 파일명에서 소문자는 대문자로 변경
 2. 온점(.)은 언더바(_)로 변경
 3. 파일 이름 앞뒤로 언더바 두개(__) 추가
 
 //다른 헤더 파일
-1. 시스템 
+시스템 라이브러리, 다른 라이브러리, 현재 프로젝트 순으로 include
 
 //상수 및 매크로 정의
 상수 또는 매크로 선언시 #define 또는 const 사용
