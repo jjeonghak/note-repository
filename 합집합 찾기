@@ -5,7 +5,7 @@ int getParent(int parent[], int x) { //부모 노드를 찾는 함수
 	if (parent[x] == x) return x;
 	return parent[x] = getParent(parent, parent[x]);
 }
-int unionParent(int parent[], int a, int b) { //두 부모 노드를 합치는 함수(간선 생성)
+void unionParent(int parent[], int a, int b) { //두 부모 노드를 합치는 함수(간선 생성)
 	a = getParent(parent, a);
 	b = getParent(parent, b);
 	if (a < b) parent[b] = a;
