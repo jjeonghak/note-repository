@@ -64,3 +64,18 @@ pros: main.o function.o
           $(CC) $(CFLAG) main.o funtion.o -o pros.exe
 
 
+//의존파일 없는 타겟
+pros 시행시 pros.exe뿐만 아닌 여러 목적파일들도 작업 디렉토리에 생성되므로 이를 제거하는 명령어도 추가
+
+OBJS = main.o function.o
+
+.PHONY: clean
+//만약 디렉토리에 clean파일 존재시, clean 의존파일이 없고 최신상태이므로 명령절 시행무시
+//clean 파일의 유무와 상관없이 명령절 시행
+
+clean:
+          rm -f $(OBJS)
+
+
+
+
