@@ -4,6 +4,7 @@
 //컴파일 명령 시행 목적은 쉘 스크립트와 유사하지만, makefile은 하나의 소스파일 컴파일 가능하고 쉘 스크립트는 전체 컴파일만 가능
 //쉘 스크립트는 위에서부터 순차적으로 명령어가 시행, makefile은 순서에 상관없이 시행
 
+
 //구성요소
 target1 : dependency1 dependency2
           command1
@@ -24,29 +25,29 @@ dependency(의존파일) : 실행명령어들이 건드리는 파일들의 집�
 
 
 //작동방식
-function.o: function.c
-          gcc -c -Wall -Wextra -Werror function.c
+foo: foo.c
+          gcc -c -Wall -Wextra -Werror foo.c
           //c옵션 : 링크를 하지 않고 컴파일만 실행, main.c 없이 파일을 컴파일할 때 사용 
 
 main.o: main.c
           gcc -c -Wall -Wextra -Werror main.c
 
-pros: main.o function.o
-          gcc -Wall -Wextra -Werror main.o funtion.o -o pros.exe
+pros: main.o foo.o
+          gcc -Wall -Wextra -Werror main.o foo.o -o pros.exe
           //o옵션 : 내부적으로 링커를 싱행해서 실행파일 생성
 
 
  1. make pros 입력시
-  1)pros 명령 시행을 위해 main.o, function.o 필요
-  2) main.o, function.o 타겟 탐색
+  1)pros 명령 시행을 위해 main.o, foo.o 필요
+  2) main.o, foo.o 타겟 탐색
   3) 목적파일 타겟을 시행하기 위해 소스코드파일 필요
   4) 소스코드파일 존재 확인 후 명령어 실행(목적파일 컴파일)
   5) pros 의존파일 모두 생성 확인 후 실행파일(pros.exe) 컴파일
 
- 2. function.c 변경후, make pros 재입력
-  1)pros 명령 시행을 위해 main.o, function.o 필요
-  2) main.o, function.o 타겟 탐색
-  3) function의 목적파일의 생성시간이 소스코드파일 수정시간보다 이전이므로 function.o 타겟 시행
+ 2. foo.c 변경후, make pros 재입력
+  1)pros 명령 시행을 위해 main.o, foo.o 필요
+  2) main.o, foo.o 타겟 탐색
+  3) foo의 목적파일의 생성시간이 소스코드파일 수정시간보다 이전이므로 foo.o 타겟 시행
   4) pros 의존파일 모두 생성 확인 후 실행파일(pros.exe) 컴파일
 
 
@@ -54,20 +55,20 @@ pros: main.o function.o
 CC = gcc
 CFLAG = -Wall -Wextra -Werror
 
-function.o: function.c
-          $(CC) $(CFLAG) -c function.c
+foo.o: foo.c
+          $(CC) $(CFLAG) -c foo.c
 
 main.o: main.c
           $(CC) $(CFLAG) -c main.c
 
-pros: main.o function.o
-          $(CC) $(CFLAG) main.o funtion.o -o pros.exe
+pros: main.o foo.o
+          $(CC) $(CFLAG) main.o foo.o -o pros.exe
 
 
 //의존파일 없는 타겟
 pros 시행시 pros.exe뿐만 아닌 여러 목적파일들도 작업 디렉토리에 생성되므로 이를 제거하는 명령어도 추가
 
-OBJS = main.o function.o
+OBJS = main.o foo.o
 
 .PHONY: clean
 //clean 파일의 유무와 상관없이 명령절 시행
@@ -75,7 +76,4 @@ OBJS = main.o function.o
 clean:
           rm -f $(OBJS)
 //만약 디렉토리에 clean파일 존재시, clean 의존파일이 없고 최신상태이므로 명령절 시행무시
-
-
-
 
