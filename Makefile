@@ -6,13 +6,13 @@
 
 
 //구성요소
- target1 : dependency1 dependency2
-           command1
-           command2
+target1 : dependency1 dependency2
+          command1
+          command2
 
- target2 : dependency3 dependency4
-           command3
-           command4
+target2 : dependency3 dependency4
+          command3
+          command4
 
 
 target : 미리 기술되어 있는 일련의 과정에 대응되는 것
