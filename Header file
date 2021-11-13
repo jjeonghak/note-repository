@@ -11,7 +11,7 @@
 //기본 구성
 //this .h file's name is "awesome_lib.h"
 
-#ifdef __AWESOME_LIB_H__  
+#ifndef __AWESOME_LIB_H__  
 # define __AWESOME_LIB_H__ 
 
 [다른 헤더 파일 # include]
