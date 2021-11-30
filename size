@@ -1,0 +1,31 @@
+//int
+C표준 : 최소 16비트(이전에 표준 성능 16bit com), 이후 32bit com 등장으로 32비트로 변경
+       short 크기 이상인 정수형
+
+단순히 정수라는 의미이며 CPU가 알 수 있는 정수값의 크기 보유(16bit com : 16bit, 32bit com : 32bit)
+현재 64bit com이 등장했지만 오랜기간 32비트를 이용했기 때문에 int는 32비트
+
+
+//long
+C표준 : 최소 32비트
+       int 크기 이상인 정수형
+
+int의 32bit 변경후 long과 동일(window 기준, linux는 64bit)
+64bit 정수형 사용을 원할 때는 long long 사용
+
+
+//size_t
+C99표준 : 최소 16bit
+         이론상 가장 큰 사이즈를 담을 수 있는 unsigned 정수형
+         32bit com -> 32bit, 64bit com -> 64bit
+         window -> typedef unsigned int  size_t
+         linux -> typedef unsigned long  size_t
+
+하드웨어 및 운영체제에 따라 가장 큰 정수값을 원할 때 사용
+
+
+//ssize_t
+유닉스 기반 고전함수(open, write, read, close 등)의 반환형으로 사용(정상 : 1, EOF : 0, Error : -1)
+window -> typedef int  ssize_t
+linux -> typedef long  ssize_t
+
