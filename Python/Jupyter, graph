@@ -1,0 +1,35 @@
+# graph
+%matplotlib inline
+
+# 선 그래프 
+변화를 표현하기 위해 사용, x축은 시간(인트형), y축은 관찰 대상(인트형)
+df.plot() : 파라미터로 kind='line'이 기본값, 생략가능, 데이터프레임의 모든 데이터표현
+df.plot(y='col_name') : 원하는 열 하나만 그래프로 표현
+df.plot(y=['col1', 'col2']) : 원하는 열 여러개
+                             =df[['col1', 'col2']].plot()
+
+# 막대 그래프
+카테고리 비교를 위해 사용
+df.plot(kind='bar') : 막대 그래프
+df.plot(kind='barh') : 가로 방향 막대 그래프
+df.plot(kind='bar', stacked=True) : 각각의 행에 대해 열을 스택형식으로 쌓아서 출력
+df['col_name'].plot(kind='bar') : 원하는 열 하나만 그래프로 표현
+
+# 파이 그래프
+절대적인 수치가 아닌 비율을 표현하기 위해 사용
+df.loc['index_name'].plot(kind='pie') : 어떠한 행에 대해서 각 열이 차지하는 비율 그래프
+
+# 히스토그램
+df.plot(kind='hist', y='col_name', bins=n) : 어떠한 열에 대해 범위를 n으로 히스토그램 출력 
+
+# 박스 플롯
+최댓값, Q3(75%), Q2(중간점), Q1(25%), 최솟값, 이상치(outliers)
+describe() 적용한 결과를 시각적으로 표현
+df.plot(kind='box', y='col_name') : 어떠한 열에 대해 박스 플롯 출력
+df.plot(kind='box', y=['col1', 'col2']) : 여러가지 열에 대해 박스 플롯 출력
+
+# 산점도(scatter plot)
+두 항목의 연관성을 나타내기 위해 사용, 퍼져있는 정도
+df.plot(kind='scatter', x='col1', y='col2') : 두 열에 대한 산점도 출력
+
+

@@ -1,0 +1,81 @@
+# 절차 지향과 객체 지향
+1. 절차 지향 프로그램은 프로그램에 필요한 데이터를 관련있는 함수와 묶어서 관리하기 힘들다.
+   객체 지향 프로그램은 서로 관련있는 데이터와 함수를 객체로 묶어 클래스로 관리
+2. 절차 지향 프로그램은 프로그램을 단지 명령어들을 순서대로 실행하는 것으로 취급한다.
+   객체 지향 프로그램은 객체간의 소통으로 취급
+   
+# 인스턴스
+클래스를 통해 만들어진 각각의 객체
+
+# 인스턴스 메소드 및 변수
+인스턴스를 파라미터로 전당
+class Class_name:  #클래스의 첫 글자는 대문자
+    pass  #클래스 변수 없음
+    
+    def function(self, a, b):  #self 대신 다른 단어도 실행에 문제 없지만 스타일가이드 self사용
+        self.variable1 = a  #self로 인스턴스 변수에 접근
+        self.variable2 = b
+
+class1 = Class_name()  #인스턴스 선언
+Class_name.function(class1, a, b)  #인스턴스를 넘기며 메소드 실행
+
+class1.function(a, b)  #이것 또한 인스턴스를 넘기며(self에) 메소드 실행
+class1.function(class1, a, b)  #오류, 인스턴스가 2개
+
+# __init__ 메소드
+인스턴스 선언과 동시에 인스턴스 변수 선언을 위한 메소드
+class Class_name:  
+    pass
+    
+    def __init__(self, a, b):  #인스턴스의 모든 변수 지정해주는 메소드
+        self.variable1 = a
+        self.variable2 = b
+
+class1 = Class_name(a, b)  #선언과 동시에 인스턴스와 파라미터를 넘겨 메소드 실행 
+
+# __str__ 메소드
+인스턴스를 넘겨받아 인스턴스의 정보 출력을 위한 메소드
+class Class_name:  
+    pass
+    
+    def __str__(self):  #print()에 호출됨
+        return "{} {}".format(self.variable1, self.variable2) 
+
+print(class1)  #return값을 출력
+
+
+# 클래스 메소드 및 변수
+클래스를 파라미터로 전달, 인스턴스 변수를 사용하지 않는 경우(self를 사용하지 않는 경우)
+class Class_name:  
+    class_variable
+    
+    @classmethod  #데코레이터, 파라미터로 함수를 받아 그 함수를 꾸며줌
+    def class_function(cls):  #cls 대신 다른 단어도 실행에 문제 없지만 스타일가이드 cls사용
+        cls.class_variable = a  #cls로 클래스 변수에 접근
+
+# 클래스 메소드 및 인스턴스 메소드 비교
+1. 인스턴스 메소드(인스턴스 변수 사용, 클래스 변수 사용가능)
+  def function(self):
+      Class_name.class_variable = a  #인스턴스 메소드에서 클래스 변수 접근
+      
+  Class_name.function(class1)  #클래스를 통한 인스턴스 전달
+  class1.function()  #자동으로 인스턴스 전달
+  
+2. 클래스 메소드(클래스 변수만 사용, 인스턴스 변수 사용불가)
+  Class_name.class_function()
+  class1.class_function()  #두가지 모두 클래스 전달, 데코레이터 사용으로 인한
+
+
+# 정적 메소드
+인스턴스 변수, 클래스 변수 사용안하는 경우
+class Class_name:  
+    pass
+    
+    @staticmethod  #데코레이터
+    def static_function(a):  #cls, self 사용안함
+        b = a + 1
+        return b
+        
+Class_name.static_function(a)
+class1.static_function(a)  #둘다 접근 가능, 하지만 인스턴스, 클래스 파라미터 사용안함
+

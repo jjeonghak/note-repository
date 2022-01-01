@@ -1,0 +1,45 @@
+# 리스트(List)
+# 동적 배열로 구현
+# 리스트 내에 값 존재 여부
+
+# 시간 복잡도
+접근 : O(1)
+추가 : O(1) 분할 상환
+맨 뒤 삭제 : O(1) 분할 상환
+길이 확인 : O(1)
+삽입 : O(n)
+삭제 : O(n)
+탐색 : O(n)
+
+list = [1, 2, 3, 4, 5]
+print(8 in list) 
+print(1 in list)
+print(8 not in list)
+print(1 not in list)
+- 결과 : False
+        True
+        True
+        False
+
+# 리스트 안의 리스트(Nested List)
+nested_list = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+print(nested_list[0], nested_list[2][1])
+- 결과 : [1, 2, 3] 8
+
+# Index
+list = ["a", "b", "c"]
+print(list.index("a"))
+- 결과 : 0
+
+# Remove
+list = ["a", "b", "c"]
+list.remove("b")
+print(list)
+- 결과 : ['a', 'c']
+
+# List comprehension
+list = [1, 2, 3, 4, 5]
+squares = [x**2 for x in list]  #원하는 식과 for문으로 리스트 
+print(squares)
+- 결과 : [1, 4, 9, 16, 25]
+

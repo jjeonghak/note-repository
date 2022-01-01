@@ -1,0 +1,49 @@
+// id 태그 선택
+특정 id에 해당하는 태그 저장, 해당 태그 내에 존재하는 모든 태그 포함
+id는 하나의 고유한 존재이며 존재하지 않는 id 호출시 undefind이 아닌 null값
+
+const myTag = document.getElementById('id_name');  
+console.log(myTag);
+
+// class 태그 선택
+class에 해당하는 모든 태그 저장, class의 깊이와 상관없이 윗줄부터 차례로 저장
+HTMLCollection 형식 유사배열에 저장, 존재하지 않는 class 호출시 비어있는 HTMLCollection 
+- 유사배열(array-like object) : 인덱싱, length 프로퍼티 가능, 그외 배열 기본 메소드 사용불가
+
+const myTags = document.getElementsByClassName('class_name');
+console.log(myTags[0]);
+
+for(let tag of myTags){
+  console.log(tag);
+}
+
+// tag 선택
+HTML 태그 자체 이름으로 선택
+
+const myTag = docoment.getElementsByTagName('tag_name');
+const allTags = docoment.getElementsByTagName('*');  // 모든 태그 선택
+
+// css 선택자를 이용한 태그 선택
+const myTag = document.querySelector('#id_name');
+const myTag = document.querySelector('.class_name');  // 가장 첫번째 요소만
+const myTags = document.querySelectorAll('.class_name');  // 모든 요소, Nodelist 형식
+
+// 이벤트와 버튼
+이벤트 : 웹 페이지에서 일어나는 모든 행동(마우스 이동 및 클릭, 키보드 입력, 스크롤 등)
+이벤트 핸들링(event handling) : 이벤트 발생시 특정한 행동을 하도록 이벤트를 다루는 것
+이벤트 핸들러(event handler) : 특정한 행동, 함수
+
+1. HTML 핸들링
+이 방법은 JavaScript 파일과 HTML 파일의 형식이 혼합되므로 사용하지 않는 것이 좋음
+<button id="button_click" onclick="console.log(`click`)"></button>  
+
+2. JS 핸들링
+const btn = document.querySelector('#button_click');
+btn.onclick = fuction(){  // 이벤트 핸들링
+  console.log(`click`);  // 이벤트 핸들러, 버튼 클릭 이벤트 발생시 할당된 함수 실행
+}
+
+
+
+
+

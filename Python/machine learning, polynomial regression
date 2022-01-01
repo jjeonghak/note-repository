@@ -1,0 +1,29 @@
+# 단일 속성 다항 회귀 
+가설함수가 직선이 아닌 곡선
+가설 함수 : theta_0 + (theta_1 * x) + theta_2 * (x ** 2), 이차식 이상
+
+# 다중 다항 회귀
+속성이 x1, x2, x3라면
+이차항 : x1x2, x2x3, x1x3, x1**2, x2**2, x3**2 
+입력변수가 3개가 아닌 9개인 다중 선형회귀로 취급
+
+# scikit-learn, PolymonialFeatures
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+polynomial_transformer = PolynomialFeatures(n) : 다항변형기, n차식 다항 속성
+polynomial_data = polynomial_transformer.fit_transform(dataset.data) : 기본데이터셋 다항변형
+ - 기본 속성과 속성 간의 조합을 통해 열이 많아짐
+polynomial_name = polynomial_transformer.get_feature_names(dataset.feature_names) : 다항속성이름
+
+X = pd.DataFrame(polynomial_data, columns=polynomial_name) : 데이터프레임 생성, 인풋
+y = pd.DataFrame(dataset.target, columns=['col_name']) : 아웃풋
+
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=5)
+model = LinearRegression()
+model.fit(X_tr, y_tr) 
+y_test_prediction = model.predict(X_te)
+mean_squared_error(y_te, y_test_prediction) ** 0.5
+

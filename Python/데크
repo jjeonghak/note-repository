@@ -1,0 +1,34 @@
+# 데크(Deque)
+# 더블리 링크드 리스트로 구현
+
+# 시간 복잡도 
+맨 앞 삭제 : O(1)
+맨 앞 삽입 : O(1)
+맨 뒤 삭제 : O(1)
+맨 뒤 삽입 : O(1)
+길이 확인 : O(1)
+
+from collections import deque
+
+deq = deque()
+
+deq.append(a)  #a를 데크의 오른쪽 끝에 삽입
+deq.appendleft(a)  #a를 데크의 왼쪽 끝에 삽입
+
+deq.pop()  #데크의 오른쪽 끝 엘리먼트를 가져오는 동시에 삭제
+deq.popleft()  #데크의 왼쪽 끝 엘리먼트를 가져오는 동시에 삭제
+
+deq.extend(array)  #주어진 배열을 순환하면서 데크의 오른쪽에 추가
+deq.extendleft(array)  #주어진 배열을 순환하면서 데크의 왼쪽에 추가
+
+deq.remove(a)  #a를 데크에서 찾아 삭제 
+deq.rotate(num)  #데크를 num만큼 회전(+:오른쪽, -:왼쪽)
+ 
+ deq = deque([1, 2, 3, 4, 5])
+ deq.rotate(2)
+ print(deq)
+ - 결과 : ([3, 4, 5, 1, 2])
+ 
+if deq:  #!deq.empty()와 동일
+else:  #deq.empty()와 동일
+

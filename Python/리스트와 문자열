@@ -1,0 +1,75 @@
+# 문자열 검색 함수
+문자열 내에 문자열의 존재를 탐색, 존재하면 시작 인덱스, 없으면 -1
+문자열 내에 구간을(시작점, 끝점) 정해줄 수 있음
+str.find("search", start_index, end_index)
+
+# 문자열 탐색 함수
+문자열 내에 특정문자, 특정 문자열이 포함되어있는지 계산, 몇개가 존재하는지 리턴
+str.count("search", start_index, end_index)
+
+# 인덱싱(Indexing)
+두 자료형 모두 인덱싱 가능
+ list = ['a', 'b', 'c', 'd', 'e']
+ str = "abcde"
+ print(list[0], str[0])
+ print(list[-1],str[-1])
+ print(list[-5],str[-5])
+ - 결과 : a a
+         e e
+         a a
+
+# for 반복문
+인덱싱이 가능한 자료형은 for 반복문 활용가능
+ for alphabet in list:
+     print(alphabet)
+ for alphabet in str:
+     print(alphabet)
+
+# 슬라이싱(Slicing)
+두 자료형 모두 슬라이싱 가능
+ print(list[0:3], str[0:3])
+ print(list[3:], str[3:])
+ print(list[:2], str[:2])
+ - 결과 : ['a', 'b', 'c'] abc
+         ['d', 'e'] de
+         ['a', 'b'] ab
+
+# 덧셈 연산
+두 자료형 모두 덧셈으로 연결 가능
+
+# 길이함수(len)
+두 자료형 모두 len() 사용가능, 문자열의 띄어쓰기도 길이에 포함
+
+# 수정가능 여부
+리스트는 수정 가능(Mutable), 문자열은 수정 불가능(Immutable)
+list[0] = 'f'
+str[0] = 'f'
+print(list, str)
+- 결과 : ['f', 'b', 'c', 'd', 'e'] TypeError
+
+# Zfill 메소드
+문자열의 최소 자릿수를 채워주는 함수, 모자란 부분은 왼쪽에 "0"으로 채움
+만약 문자열이 최소 자릿수보다 길 경우 그대로 출력
+print("a".zfill(5))
+print("abc".zfill(2))
+- 결과 : 0000a
+        abc
+
+# 문자열 포맷팅
+# 가장 오래된 방식, %
+s = "abc"
+num = 1
+print("문자열:%s 인트형:%d" % (s, num))
+- 결과 : 문자열:abc 인트형:1
+
+# 가장 대중화 방식, format 
+print("문자열:{} 인트형:{}".format(s, num)) #','이 아닌 '.'
+- 결과 : 문자열:abc 인트형:1
+print("{0:<5d}{2:>5d}{1:^5d}".format(0, 1, 2))  # (<) : 왼쪽정렬, (>) : 오른쪽정렬, (^) 가운데정렬
+- 결과 : 0        2  1  
+
+
+# 새로운 방식, f-string
+print("문자열:{s} 인트형:{num}")
+- 결과 : 문자열:abc 인트형:1
+

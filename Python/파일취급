@@ -1,0 +1,32 @@
+# 파일 읽기
+with open('filename','r') as f:  #'r'은 read, f는 변수명
+    for line in f:  #파일의 줄 단위로 사용가능
+        print(line)  #출력결과는 \n 하나씩 더 출력됨 
+
+# 파일 쓰기
+with open('new_filename','w') as f:  #'w'은 write(기존파일에 덮어씀), f는 변수명
+    f.write("abcde\n")
+
+with open('new_filename','a') as f:  #'a'은 append(기존파일에 내용추가, 없을시 새로 생성)
+    f.write("abcde\n")
+
+# 화이트 스페이스 제거
+print(line.strip())  #문자열의 맨 앞,뒤의 화이트 스페이스 제거, 중앙의 화이트 스페이스는 존재  
+
+# 문자열 나누기
+string = "a, b, c, d, e"
+print(string.split(", "))  #괄호 안의 조건을 기준으로 문자열 나눔
+- 결과 : ['a', 'b', 'c', 'd', 'e']  #리스트(문자열) 형식으로 나눔
+
+string = "\n 1   \t\n2      3\n"
+str_data = string.split()  #괄호 안의 조건이 없는 경우 화이트 스페이스 기준으로 나눔
+s1 = str_data[0]  #리스트처럼 취급
+s2 = str_data[1]
+s3 = str_data[2]
+print(s1+s2)
+- 결과 : 12  #문자열 계산
+
+s4 = int(str_data[0])
+s5 = int(str_data[1])
+print(s4+s5)
+- 결과 : 3  #인트형 계산

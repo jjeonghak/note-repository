@@ -1,0 +1,151 @@
+# 스크립트 
+실제로 프로그램을 작동시키는 코드를 담은 실행 용도의 파일
+
+# 모듈
+프로그램에 필요한 변수들이나 함수들을 정의해 놓은 임포트 용도의 파일
+
+# name 특수변수
+__name__ 모듈의 이름을 저장해 놓은 변수
+- 스크립트 : __name__ = "__main__"
+  모듈 : __name__ = "modulename"
+
+# module
+여러 기능을 모아둔 파이썬 파일
+import module_name
+from module_name import members  #특정 모듈 함수
+from module_name import *  #전체 모듈 함수
+as new_name  #키워드 설정
+
+# modeule namespace
+dir(module_name)  #모듈에서 사용하는 특수변수*함수명 출력, 괄호 안을 비우면 현재 파일의 정보출력 
+
+# sys module
+모듈 검색 경로 정보, 리스트 표현이기 때문에 추가 가능
+import sys
+sys.path.append
+print(sys.path)
+
+# math module
+import math  
+1. math.cos()  #코사인 함수(라디안), 실수형 반환
+2. math.log10()  #로그 함수, 실수형 반환
+
+# os module
+운영체제를 조직하거나 운영체제에 대한 정보 사용가능
+import os 
+1. os.getlogin()  #현재 로그인된 계정 확인
+2. os.getcwd()  #현재 파일의 디렉토리 확인 
+3. os.getpid()  #현재 프로세스 ID 확인
+
+# os.path module
+파일 경로를 다룰때 사용
+import os.path
+1. os.path.abspath('..')  #주어진 경로를 절대경로로
+2. os.path.relpath()  #주어진 경로를 현재 디렉토리를 기준으로 한 상대경로
+3. os.path.join()  #주어진 경로들 병합
+
+# random module
+import random
+from random import function_name  #함수가 있는 파일에서 함수만 
+
+1. randint() : 두수 사이의 어떤 랜덤한 정수를 리턴
+   random.randint(a, b)
+   
+2. uniform() : 두수 사이의 어떤 랜덤한 소수를 리턴
+   random.uniform(a, b)
+
+# datetime module
+import datetime
+
+1. datetime() : 날짜를 표현
+   datetime.datetime(YYYY, MM, DD)  #시간은 00:00:00
+   datetime.datetime(YYYY, MM, DD, h, m, s)
+   today = datetime.datetime.now()  #현재 날짜 및 시간 정보
+   today.year  #연도
+   today.month  #월
+   today.day  #일
+   today.hour  #시
+   today.minute  #분
+   today.second  #초
+   today.microsecond  #마이크로초
+   
+2. timedelta() : 두 datetime 값 사이의 기간, 날짜 간 연산가능
+   today = datetime.datetime.now()
+   delta = datetime.timedelta(days=d, hours=h, minutes=m, seconds=s)
+   sum_datetime = today + dleta
+   
+3. datetime 포맷팅 : 정해진 형식출력이 아닌 원하는 형식출력(strtime)
+   print(today.strtime("%"))
+   %a : 짧은 요일, Mon
+   %A : 풀 요일, Monday
+   %W : 숫자(0~6, 0 = 일요일) 요일
+   %d : 일, 25
+   %b : 짧은 월, Nov
+   %B : 풀 월, November
+   %m : 숫자 월
+   %y : 짧은 연도, 21
+   %Y : 풀 연도, 2021
+   %H : 시간(00~23)
+   %I : 시간(00~12)
+   %p : AM/PM
+   %M : 분(00~59)
+   %S : 초(00~59)
+   %f : 마이크로초(000000~999999)
+   %Z : 표준시간대, PST
+   %j : 1년 중 몇일(001~366)
+   %U : 1년 중 몇주(00~53)
+   %W : 1년 중 몇주(00~53)
+
+# re module
+정규 표현식(re, Regular Expression)은 특정한 규칙*패턴을 가진 문자열 표현 
+import re
+pattern = re.compile('^[A-Za-z]+$')  #알파벳 구성된 단어 매칭
+pattern = re.compile('.*\d+')  #숫자 포함된 단어 매칭
+
+# pickle module 
+파이썬 객체를 바이트 형식으로 파일에 저장
+import pickle
+obj = {'a':'b'}  #객체 생성
+with open('filename.pickle','wb') as f
+    pickle.dump(obj, f)  #obj를 filename.pickle 파일에 저장
+with open('filename.pickle','rb') as f
+    obj = pickle.load(f)  #filename.pickle의 객체를 읽어옴
+
+# json module
+객체를 JSON 형식으로 저장(기본 데이터 타입, 리스트, 사전만 가능)
+import json
+obj = {'a':'b'}  #객체 생성
+with open('filename.json','w') as f
+    json.dump(obj, f)  #obj를 filename.json 파일에 저장
+with open('filename.json','r') as f
+    obj = json.load(f)  #filename.json의 객체를 읽어옴
+    
+# copy module
+파이썬 객체 복사
+import copy
+a = [1, 2, 3]  #단일 객체
+b = a  #에일리어싱
+c = a[:]  #슬라이싱
+d = copy.copy(a)  #슬라이싱과 같은 새로운 객체 형성
+
+a = [[1, 2, 3], [4, 5, 6]]  #객체 안의 객체
+b = copy.copy(a)  #가장 바깥 객체만 복사
+c = copy.deepcopy(a)  #재귀적 복사
+a[0] = 4
+print(a, b, c)
+- 결과 : [[4, 2, 3], [4, 5, 6]]
+        [[4, 2, 3], [4, 5, 6]]
+        [[1, 2, 3], [4, 5, 6]]
+
+# sqlite3 module
+파이썬에서 SQLite 데이터베이스 사용가능
+import sqlite3
+conn = sqlite3.connect('database_name.db')  #데이터베이스 연결
+c = conn.cursor()  #SQL문 실행
+c.execute('''SELECT...FROM...WHERE...''')
+rows = c.fetchall()  #가져온 데이터를 파이썬에서 사용
+for row in rows:
+    print(row)
+conn.close()  #연결 종료
+
+

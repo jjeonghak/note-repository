@@ -1,0 +1,35 @@
+# 결정 트리 : y/n 형식의 질문을 따라 분류, leaf 노드는 항상 특정 분류 예측값, 나머지 노드는 질문
+           이상적인 머신러닝 모델 불가능, 부정확성, 응용하여 성능이 좋은 모델 제작 가능
+
+# 지니 불순도(gini impurity) : 데이터 셋 안에 서로 다른 분류들이 얼만큼 섞여있는지
+                            작을수록 데이터 셋이 섞여있지 않고 순수함
+                            분류노드, 질문노드 평가 시 이용, 가장 낮은 질문노드가 root 노드
+                            GI = 1 - p1^2 - p2^2  # 분류 예측값의 갯수에 따라
+
+from sklearn.tree import DecisionTreeClassifier
+
+model = DecisionTreeClassifier(max_depth=n)  
+model.fit(X_train, y_train)
+model.predict(X_test)  # 분류 모델 결과는 0, 1(class 종류에 따라)
+model.score(X_test, y_test)  # 분류 모델 평가는 실제 값과 비교해서 맞은 비율
+
+
+# 속성중요도(Feature importance)
+평균지니감소(mean gini decrease) : 특정 속성이 결정 트리안에서 평균적으로 얼마나 불순도를 낮추는지
+                                MGD = NI_feature/NI_total
+                                
+노드 중요도 : 부모노드에서 자식노드로 내려오면서, 불순도가 얼마나 줄어들었는지 계산
+           NI = (n/m)GI - (n_left/m)GI_left - (n_right/m)GI_right
+            
+import matplotlib.pyplot as plt  # 시각화를 위해
+
+importances = model.feature_importances_  # 속성중요도 np 배열
+indices_sorted = np.argsort(importances)  # 시각화
+
+plt.figure()
+plt.title("Feature importances")
+plt.bar(range(len(importances)), importances[indices_sorted])
+plt.xticks(range(len(importances)), X.columns[indices_sorted], rotation=90)
+plt.show()
+
+

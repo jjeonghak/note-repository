@@ -1,0 +1,78 @@
+// window : 전역객체(global object)
+console.log(window);
+console.log(window.innerWidth);
+console.log(window.innerHeight);
+
+콘솔창에서
+window.open();  // 새로운 창
+window.close();  // 창 닫기
+
+// DOM(document object model) : 문서객체모델 
+console.log(document);  // HTML 형식, 값 자체 출력
+console.dir(document);  // 객체 형식(문자열), 속성 출력
+
+// DOM tree : DOM을 최상위 노드로 계층 구조
+12가지 노드 타입 존재, 요소와 텍스트 노드 위주로 사용
+1. 요소 노드(element node) : 태그
+2. 텍스트 노드(text node, leaf node) : 여러가지 텍스트 내용, 자식노드를 가질 수 없는 최하위 노드
+3. 코멘트 노드(comment node) : 코멘트
+4. 문서 노드(document node) : 문서
+
+const myTag = document.querySelector('#id_name'); 
+console.log(myTag.children[0]);  // 자식 노드 출력, 인덱싱 가능
+console.log(myTag.firstElementChild);  // 자식 노드 중 첫번째
+console.log(myTag.lastElementChild);  // 자식 노드 중 마지막
+
+console.log(myTag.parentElement);  // 부모 노드 출력
+
+console.log(myTag.previousElementSibling);  // 이전 형제 출력
+console.log(myTag.nextElementSibling);  // 다음 형제 출력
+
+console.log(myTag.parentElementSibling.nextElementSibling);  // 혼합사용가능
+
+// 주요 프로퍼티 : 덮어쓰기
+1. innerHTML : 요소 내에 존재하는 HTML 형식을 문자열로 리턴, 들여쓰기, 줄바꿈 등 형식 포함
+   console.log(myTag.innerHTML);
+   myTag.innerHTML += '<li>add_text</li>';  // 기존 요소에 내용 추가
+
+2. outerHTML : 해당 요소를 포함하는 전체 HTML 형식을 문자열로 리턴
+   console.log(myTag.outerHTML);
+   myTag.outerHTML += '<li>add_text</li>';  // 기존 요소에 내용 추가
+
+3. textContent : 요소 내에 존재하는 내용 중 HTML 태그를 제외한 텍스트만 리턴
+   console.log(myTag.textContent);
+   myTag.textContentHTML += 'add_text';  // 내용 추가, 태그 형식 적용불가(덱스트로 인식)
+
+// 노드
+1. 요소 노드 생성 : const first = document.createElement('tag_name');
+2. 요소 노드 꾸미기 : textContent, innerHTML 등
+3. 요소 노드 추가 : node_name.prepend(add_node_name), append(), after(), before()
+4. 요소 노드 삭제 : node_name.remove();
+
+// 표준속성 
+1. 속성 접근 : nodeName.getAttribute('class');
+             nodeName.ClassName;  // class 속성은 함수를 쓸때 ClassName으로 접근
+2. 속성 수정('속성', '값') : nodeName.setAttribute('class', 'list'); 
+3. 속성 삭제 : nodeName.removeAttribute('class'); 
+
+- 스타일 : 기존 style 문법을 카멜문법으로 변경
+nodeName.children[0].style.textDecoration = 'line-through';
+nodeName.children[0].style.backgroundColor = 'line-through';
+
+- 원하는 스타일을 클래스로 생성 후
+nodeName.children[0].className = 'class_name';  // 기존 클래스에 덮어씀
+nodeName.children[0].classList.add('class_name') // 기존 클래스 리스트에 추가
+nodeName.children[0].classList.remove('class_name') // 기존 클래스 리스트에 삭제
+nodeName.children[0].classList.toggle('class_name') // 존재하면 삭제, 아니면 추가, 파라미터 하나만
+
+// 비표준 속성
+1. 선택자 활용 : dociment.querySelectorAll('[field]');  
+2. 값을 표시할 태그를 구분할 때 활용 
+3. 스타일이나 데이터 변경에 활용
+
+- dataset 프로퍼티
+비표준 속성을 사용해서 코드 작성시 그 속성이 표준으로 등록되면 문제가 발생
+비표준 속성 방식 : data-*
+비표준 속성 접근 : element.dataset.target_name  // data-속성은 모두 dataset이라는 프로퍼티에 저장
+
+

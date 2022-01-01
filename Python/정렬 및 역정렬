@@ -1,0 +1,27 @@
+# 정렬(Sort)
+list = [2, 5, 3, 1, 4]
+print(sorted(list)) #임시적 오름차순
+list.sort(reverse=True)  #내림차순 정렬
+list.sort()  #오름차순은 reverse=False 생략가능
+- 결과 : [1, 2, 3, 4, 5]
+        [5, 4, 3, 2, 1]
+        [1, 2, 3, 4, 5]
+
+for i in sorted(list, reverse=False):  #반복문으로 임시 정렬된 리스트 사용가능
+for i in sorted(list)
+
+list = [[3, 4], [1, 2], [5, 6]]
+list.sort(key = lambda x:x[0])  #정렬 기준은 0인덱스, 오름차순
+list.sort(key = lambda x:(x[0], x[1])  #정렬 기준 0인덱스, 그 후 1인덱스 오름차순
+list.sort(key = lambda x:-x[0])  #정렬 기준은 0인덱스, 내림차순
+list.sort(key = lambda x:(-x[0], -x[1])  #정렬 기준은 0인덱스, 그 후 1인덱스 내림차순
+- 결과 : [[1, 2], [3, 4], [5, 6]]
+        [[5, 6], [3, 4], [1, 2]]
+
+# 역정렬(Reverse)
+list = [2, 5, 3, 1, 4]
+print(reversed(list)) #임시적 역순
+list.reverse()
+print(list)
+- 결과 : [4, 1, 3, 5, 2]
+        [4, 1, 3, 5, 2]

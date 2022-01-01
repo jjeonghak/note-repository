@@ -1,0 +1,9 @@
+# 파라미터에 기본값(Default value) 설정가능
+def function(x, y, s = "abc")
+    print(x, y, s)
+
+function(1, 2, "cba") #파라미터 삽입시 옵셔널 파라미터 무시
+function(1, 2) #옵셔널 파라미터의 존재로 인해 실행가능
+- 결과 : 1 2 cba
+        1 2 abc
+  # 옵셔널 파라미터는 꼭 괄호의 마지막 인덱스에 설정, 오류발생

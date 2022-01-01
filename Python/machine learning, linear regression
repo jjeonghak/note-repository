@@ -1,0 +1,85 @@
+# 고차원 미분
+고차원 함수를 편미분하면 아래정보를 알 수 있다.
+1. 얼마나 기울었는지
+2. 현재 세타0와 세타1 지점에서 가장 가파르게 올라가는 방향
+
+# 선형 회귀(Linear Regression) : 데이터를 대표하는 일차식 최적선, 가설 함수(hypothesis function) 중에 최적인 함수
+1. 목표 변수(target variable/ output variable)
+2. 입력 변수(input variable/ feature)
+3. 가설 함수 : theta_0 + (theta_1 * x)
+4. 가설 함수 평가법
+   1) 평균제곱오차(MSE, Mean Squared Error) : 데이터의 실제값과 가설 함수의 오차 제곱의 평균, 적을수록 최적선, 변수 세타
+   2) 손실 함수(loss function) : 가설 함수를 평가, 손실 함수가 적을수록 최적선, 인풋이 세타
+      - 경사 하강법(Gradient Descent) : 편미분을 통해 가파르게 배려가는 방향으로 손실함수를 감소시킴
+
+# 경사 하강법
+def prediction(theta_0, theta_1, x):
+    """주어진 학습 데이터 벡터 x에 대해서 모든 예측 값을 벡터로 리턴하는 함수"""
+    return theta_0 + theta_1 * x
+    
+def prediction_difference(theta_0, theta_1, x, y):
+    """모든 예측 값들과 목표 변수들의 오차를 벡터로 리턴해주는 함수"""
+    return prediction(theta_0, theta_1, x) - y
+    
+def gradient_descent(theta_0, theta_1, x, y, iterations, alpha):
+    """주어진 theta_0, theta_1 변수들을 경사 하강를 하면서 업데이트 해주는 함수"""
+    for _ in range(iterations):  # 정해진 번만큼 경사 하강을 한다
+        error = prediction_difference(theta_0, theta_1, x, y)  # 예측값들과 입력 변수들의 오차를 계산
+        theta_0 = theta_0 - alpha * error.mean()
+        theta_1 = theta_1 - alpha * (error * x).mean()
+    return theta_0, theta_1
+
+# 모델 평가(가설 함수 평가)
+평균 제곱근 오차(RMSE, root mean square error) : 평균제곱오차에 루트
+같은 데이터에 맞게 학습시켰기 때문에 평균제곱오파가 낮을 수밖에 없다.
+그렇기 때문에 같은 데이터 셋에 학습데이터(training set)와 평가데이터(test set)를 나누어 사용
+
+# 다중 선형회귀
+선형회귀를 하나의 입력변수가 아닌 여러개의 입력변수를 사용해서 목표변수를 예측
+1. i번째 데이터의 j번째 속성(입력변수) : xj^(i)
+2. 가설 함수 : theta_0 + (theta_1 * x1) + ... + (theta_n * xn)
+
+def prediction(X, theta):
+    """다중 선형 회귀 가정 함수. 모든 데이터에 대한 예측 값을 numpy 배열로 리턴한다"""
+    return X @ theta
+    
+
+def gradient_descent(X, theta, y, iterations, alpha):
+    """다중 선형 회귀 경사 하강법을 구현한 함수"""
+    m = len(X)  # 입력 변수 개수 저장
+    
+    for _ in range(iterations):
+        # 코드를 쓰세요
+        error = prediction(X, theta) - y
+        theta = theta - alpha / m * (X.T @ error)
+        
+    return theta
+
+# scikit-learn, LinearRegression
+from sklearn.datasets import load_boston  # 미리 준비된 어떤 데이터셋
+from sklearn.model_selection import train_test_split  # 학습데이터와 평가데이터 분리를 위해
+from sklearn.linear_model import LinearRegression  # 선형회귀
+from sklearn.metrics import mean_squared_error  # 평균제곱오차
+
+x_tr, x_te, y_tr, y_te = train_test_split(x, y, test_size=0.2, random_state=5)
+ - test_size : 전체 데이터 셋 중 평가데이터 비율
+   random_state : 평가데이터 선택 기준, 옵셔널 파라미터로 안넘기면 기본값 사용
+
+model = LinearRegression() : 선형회귀 모델 선언
+model.fit(x_tr, y_tr) : 모델의 선형회귀 학습
+model.coef_ : 세타1의 값
+model.intercept : 세타0의 값
+y_te_prediction = model.predict(x_te) : 평가데이터 x에 따른 y 예측값
+mean_squared_error(y_te, y_te_prediction) : 평균제곱오차 평가
+mean_squared_error(y_te, y_te_prediction) ** 0.5 : 평균제곱근오차 평가
+
+# 정규 방정식
+학습율 alpha를 정할 필요가 없지만 입력 변수의 개수 n이 커지면 커질수록 월등히 비효율적
+theta = (X.T @ X)^(-1) @ X.T @ y
+
+def normal_equation(X, y):
+    """설계 행렬 X와 목표 변수 벡터 y를 받아 정규 방정식으로 최적의 theta를 구하는 함수"""
+    inverse = np.linalg.pinv(X.T @ X) 
+    return inverse @ X.T @ y
+
+

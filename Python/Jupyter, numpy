@@ -1,0 +1,70 @@
+# 실행
+command : jupyter notebook
+
+# 모드
+1. 커맨드 모드(esc)
+2. 에딧 모드(enter)
+
+# 단축키
+1. 셀 실행 : command + enter
+2. 셀 추가 : a(above) 선택된 셀 이전에 추가, b(below) 선택된 셀 이후에 추가
+3. 셀 삭제 : d + d(shift로 여러개 선택 후)
+4. 셀 시행 후 셀 추가 : option + enter
+5. 셀 시행 후 셀 선택(추가) : shift + enter
+
+# 동작 방식
+모든 셀들을 같은 세션을 공유, 변수와 함수 등
+셀 작성 순서와 상관없이 이전 실행된 셀의 영향을 받음
+
+# 출력
+1. print() 사용 : 한 셀에 여러개의 print함수가 다 출력, 꾸며주는 효과 없음 
+2. 변수명으로 출력 : 한 셀의 마지막 줄의 결과만 출력, 꾸며주는 효과
+
+# numpy(numerical python) : 숫자와 관련한 파이썬 도구, numpy.array 제공
+1. module : import numpy as np
+2. type : numpy.ndarray
+3. shape : 1차원 배열 (length, ), 2차원 배열 (width, height)
+4. size : 원소 갯수
+
+# numpy.array
+arr = numpy.array : 배열 선언
+           .full(size, value) : 원하는 갯수만큼 원하는 값으로 채운 배열 선언
+           .random.random(size) : 원하는 갯수만큼 랜덤하게 채운 배열 선언(0~1사이)
+           .random.rand(i, j) : i행, j열의 2차원 배열
+           .arange(size) : 원하는 갯수만큼 연속된 값(인덱스값) 채운 배열 선언
+                  (a, b) : a부터 b-1까지 채운 배열 선언
+                  (a, b, c) : a부터 b-1까지 등차가 c인 배열 선언 
+
+# 사칙연산
+numpy.array는 for 문을 사용하지 않고 해결가능, 단 일시적이며 결과가 저장되지 않음
+arr + 2 : 모든 인덱스에 계산한 결과 출력
+arr1 + arr2 : 같은 인덱스끼리 계산한 결과 출력
+np.dot(A, B) : 행렬내적(행렬곱)
+              = A @ B
+
+# 불린연산
+arr > 4 : 모든 인덱스에 불린값으로 출력
+numpy.where(arr > 4) : True가 있는 인덱스만 출력
+arr[True, False, True, False] : True가 있는 인덱스만 출력
+
+# 특이값
+arr.min() : 배열의 최솟값
+arr.max() : 배열의 최댓값
+arr.mean() : 배열의 평균값
+arr.std() : 배열의 표준편차
+arr.var() : 배열의 분산
+np.median(arr) : 배열의 중앙값, numpy array의 메소드가 아닌 numpy의 메소드
+
+
+# 인덱싱, 슬라이싱
+arr1 = np.array([0, 2, 4, 6, 8, 10])
+arr2 = np.array([1, 2, 3])
+
+arr1[[1, 2, 3]]
+arr1[arr2]
+- 결과 : arr1([2, 4, 6])
+
+arr1[1:6:2]  #두칸씩 등차로 슬라이싱
+- 결과 : arr1([2, 6, 10])
+
+

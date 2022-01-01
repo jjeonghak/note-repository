@@ -1,0 +1,125 @@
+# pandas 
+2차원 numpy array를 기반으로 만들어진 dataframe
+numpy array는 같은 자료형, 인덱스만 가능하나 pandas는 여러가지 데이터 자료형, 문자형 인덱스 가능
+1. module : import pandas as pd
+2. type : pandas.core.frame.DataFrame
+          pandas.DataFrame(2차원 리스트, columns=[열이름 리스트], index=[행이름 리스트])
+          - index_col=0 설정시 index 이름으로 0번째 col값 사용
+
+# DataFrame
+데이터프레임은 여러가지 형태로 만들 수 있다.
+1. 2차원 리스트
+2. 2차원 numpy array
+3. pandas Series
+4. 위의 2차원 데이터들을 이용한 사전
+5. 사전이 담긴 리스트
+
+two_dimensional_list = [['a', 0], ['b', 1], ['c', 2]]
+two_dimensional_array = np.array(two_dimensional_list)
+list_of_series = [
+    pd.Series(['a', 0]), 
+    pd.Series(['b', 1]), 
+    pd.Series(['c', 2])
+]
+- 모두 같은 데이터프레임 생성
+
+dict1 = {
+    'col_name1': list_name1, 
+    'col_name2': list_name2, 
+    'col_name3': list_name3
+}
+
+dict2 = {
+    'col_name1': np.array(list_name1), 
+    'col_name2': np.array(list_name2), 
+    'col_name3': np.array(list_name3)
+}
+
+dict3 = {
+    'col_name1': pd.Series(list_name1), 
+    'col_name2': pd.Series(list_name2), 
+    'col_name3': pd.Series(list_name3)
+}
+- 모두 같은 데이터프레임 생성
+
+# csv(comma-separated values)
+값들이 쉼표로 나누어짐, 맨 첫줄은 col 이름(header)
+직접 데이터프레임 생성이 아닌 읽어들이기 가능
+1. pd.read_csv('절대경로') : 일반적인 데이터프레임 생성
+2. pd.read_csv('절대경로', header=None) : 맨 첫줄이 col 이름이 아닌 경우
+
+# 인덱싱, 슬라이싱
+dataframe_name.loc['index_name', 'col_name'] : 데이터프레임 행, 열에 맞는 값 출력
+dataframe_name.loc['index_name', :] : 데이터프레임의 한 행 출력
+dataframe_name.loc[:, 'col_name'] : 데이터프레임의 한 열 출력
+                                    = dataframe_name['col_name']
+
+dataframe_name.loc[:'index_name'] : 데이터프레임 행 슬라이싱
+dataframe_name.loc[:, 'col_name1':'col_name2'] : 데이터프레임 열 슬라이싱
+dataframe_name.loc['index_name1':'index_name2', 'col_name1':'col_name2'] : 행, 열 
+
+dataframe_name.iloc[index_num, col_num] : 인트형 인덱스 사용
+dataframe_name.iloc[[index1, index2],[col1, col2]] : index1, 2에 해당하는 col1, 2 출력
+dataframe_name.iloc[index1 : index2, clo1 : col2] : 슬라이싱
+
+# 값 추가, 삭제
+dataframe_name.loc['new_index'] = [index_value] : 행 추가, 존재하지 않는 인덱스 값에 새로운 행 선언
+dataframe_name['new_col'] = 'col_value' : 열 추가, 존재하지 않는 열에 같은 값으로 열 선언
+
+dataframe_name.drop('index_name', axis='index', inplace=False) : 행이름, 삭제할 축, 일시적 삭제
+dataframe_name.drop('col_name', axis='columns', inplace=True) : 열이름, 삭제할 축, 완전 삭제
+dataframe_name.drop(['index1', 'index2'], axis='index', inplace=False) : 리스트로 여러개 삭제
+
+# 행, 열 이름 설정
+인덱스값은 값이 중복되지 않는 값을 사용하는 것이 좋다.
+dataframe_name.rename(columns={'col_name':'new_col_name'}, inplace=True) : 기존이름, 새이름 사전으로
+dataframe_name.index.name = 'index_name' : 행의 이름을 나타내는 열의 이름 생성(행 대표 이름)
+dataframe_name.set_index('col_name', inplace=True) : 지정한 열을 행으로 사용, 원래 사용하던 행은 삭제
+dataframe_name['index_name'] = dataframe.index : 현재 사용하는 행들을 이용해 새로운 열 생성
+
+# 열 합계
+dataframe_name.sum(axis='columns') : 행별 모든 열의 합계
+
+# 문자열 필터링
+dataframe_name['col_name'].str.contains('filtering_str') : 문자열을 포함 행 불린리스트
+dataframe_name['col_name'].str.startwith('filtering_str') : 문자열로 시작하는 행 불린리스트
+
+# 문자열 분리
+df['col_name'].str.split() : 문자열을 나누어 행 값을 리스트를 값으로 저장
+df['col_name'].str.split(n=1) : 문자열을 나누어(n에 해당하는 횟수만큼) 행 값을 리스트를 값으로 저장
+df['col_name'].str.split(n=1, expand=True) : 문자열을 나누어(n에 해당하는 횟수만큼) 새로운 df(새로운 열)
+
+# 카테고리 분류
+df['col_name'].map(dic) : 특정한 열의 행값을 key로 하는 value값으로 행값 변경
+df.groupby('col_name') : DataFrameGroupBy 타입
+df.groupby('col_name').count() : 각 카테고리의 갯수
+df.groupby('col_name').max() : 각 카테고리 별 최댓값
+df.groupby('col_name').first() : 각 카테고리 별 첫번째 값
+df.groupby('col_name').last() : 각 카테고리 별 마지막 값
+df.groupby('col_name').plot(kind='box', y='col_name') : 각 카테고리마다 그래프 출력
+
+# 데이터 합치기
+1. inner join : 두 데이터의 특정열 중 겹치는 부분만 합침
+                pd.merge(df1, df2, on='col_name')
+2. left outer join : 왼쪽 데이터 기준으로 합침(왼쪽 + 왼쪽에 겹치는 부분만 합침)
+                     pd.merge(df1, df2, on='col_name', how='left')
+3. right outer join : 오른쪽 데이터 기준으로 합침(오른쪽 + 오른쪽에 겹치는 부분만 합침)
+                      pd.merge(df1, df2, on='col_name', how='right')
+4. full outer join : 두 데이터를 모두 합침(왼쪽 + 오른쪽)
+                     pd.merge(df1, df2, on='col_name', how='outer')
+
+# 큰 데이터프레임
+dataframe_name.head(n) : 위에서 n번째 행까지 출력
+dataframe_name.tail(n) : 밑에서 n번째 행까지 출력
+dataframe_name.shape : (행, 열) 형태로 출력
+dataframe_name.info() : 열 정보출력
+dataframe_name.describe() : 통계 정보
+dataframe_name.sort_values(by='col_name', ascending=False) : 열을 기준으로 내림차순 정렬, 일시적
+
+# 큰 시리즈
+dataframe_name['col_name'].unique() : 해당 열의 중복을 제외한 행 종류
+dataframe_name['col_name'].value_counts() : 해당 열의 행 종류마다 갯수
+dataframe_name['col_name'].describe() : 해당 열에 대한 요약본 출력
+
+
+

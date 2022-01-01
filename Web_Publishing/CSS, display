@@ -1,0 +1,49 @@
+# display 속성
+모든 html 요소는 한가지 display 속성을 갖는다.
+inline, block, inline-block, list-item, table, flex, none 등
+
+1. inline : 다른 요소들과 같은 줄에 머무르려고 하는 성향, 가로길이는 필요한 만큼만 차지하는 성향
+            <span>,<img>, <b>, <i>, <a>, <button>
+            -replaced element(대체요소) : <img>와 같이 inline이지만 가로와 세로 설정가능
+            
+2. block : 새로운 줄에 가려고 하는 성향, 가로길이는 최대한 많이 차지하려는 성향
+           <div>, <h1 ~ h6>, <p>, <nav>, <ul>, <li>
+           
+3. inline-block : 가로, 세로 설정 가능한 block 성향과 같은 줄에 머무르는 inline 성향
+  
+
+# baseline
+모든 텍스트는 베이스라인 기준으로 정렬되어 있다. img와 inline-block의 베이스라인은 가장 밑단이다.
+vertical-align의 조건들을 충족시키면서 줄의 높이를 최소화시키는 곳에 위치한다.
+
+# vertical-align
+block과 inline의 성향을 이용해 정렬
+1. <span>의 display: inline-block; height:100%; vertical-align: middle; 설정
+2. 정렬하고자 하는 타겟을 inline으로 변경
+3. height 100% span과 같은 줄의 타겟 vertical-align: middle; 설정
+
+
+# position
+1. static : 원래 있어야할 위치, static을 제외한 모든 상태는 포지셔닝 된 상태
+
+2. relative : 원래 있어야할 위치에서 상대적으로 이동(top, right, bottom, left)
+              - 타겟을 기준으로 원래 있어야할 위치에서의 거리를 나타내므로 이동하고자 하는 방향의 반대
+
+3. fixed : 브라우저를 기준으로, 스크롤을 해도 고정, 원래 있어야할 위치에는 타겟을 제외하고 연결
+           - 상단 고정바, 광고베너
+
+4. absolute : 가장 가까운 포지셔닝이 된 조상(ancestor) 요소 기준
+
+
+# float : 떠는 물건, 기존 xy평면에 z축 추가
+          z축이 추가되면 타겟이 뜨면서 생기는 공간은 타겟 밑 태그들이 자동 채움
+          left(왼쪽으로 떠있음), right(오른쪽으로 떠있음)
+          - inline 요소(text)는 빈공간을 채울 수 없기때문에 타겟 옆에서부터 시작, 인터넷 기사형태
+
+# grid : float에 의해 떠있는 여러개의 물건이 이루는 그리드
+
+# clear : 타겟 주변의 떠있는 물건이 없도록, 새로운 줄 생성
+          그리드와 텍스트를 나누고 싶은 경우, clearfix div 생성 후 clear: left; 
+
+
+

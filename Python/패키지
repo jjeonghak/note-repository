@@ -1,0 +1,56 @@
+# 패키지
+모듈들을 모아 놓은 디렉토리
+import package  #오류, init 파일 필요
+import package.module.function  #오류, 패키지나 모듈만 임포트 가능
+from package import *  #오류, 특수변수 필요
+
+import package.module  #정상작동
+from package import module  #정상작동
+from package.module import function  #정상작동
+
+# __init__ 파일
+init(initialize)파일은 폴더가 패키지라는 것을 주장하는 파일
+from package import modeul  #init 파일에 선언
+VARIABLE = constant  #init 파일에 변수 선언
+
+import package  #정상작동
+from package import VARIABLE #정상작동
+
+# __all__ 특수변수
+import * 선언시 어떤 대상을 참조해야하는지 설정
+__all__ = ["module1", "module2"]  #패키지라면 init 파일에 선언
+__all__ = ["function", "variable"]  #모듈 내에서 선언 가능
+
+
+# 서브패키지
+패키지 안에 또 다른 패키지가 존재할 경우
+1. from package import subpackage
+2. from package.subpackage import module
+3. from package.subpackage.module import function
+
+from package import subpackage.module  #오류, import 뒤에 '.' 불가능
+
+
+# 외부 
+# 데이터 분석 & 시각화
+1. numpy : 행렬(다차원 배열)을 다루는 패키지
+2. pandas : 데이터를 테이블 형식으로 변환
+3. matplotlib : 데이터 시각화(그래프) 라이브러리
+4. seaborn : matplotlib 기반 시각화 라이브러리
+
+# 머신 러닝
+1. sklearn : 대중적인 머신 러닝 라이브러리
+2. tensorflow, pytorch, keras : 딥러닝 최적화 라이브러리
+3. nltk : 텍스트 데이터 가공, 시각화 등 자연어 처리 라이브러리
+
+# 웹 개발
+1. django : 웹 프레임 워크, 비교적 복잡
+2. flask : 웹 프레임 워크, 비교적 간단
+
+# 기타
+1. beautifulsoup4 : html 또는 xml 문서를 파싱하는 라이브러리 웹 스크레이핑 사용
+2. selenium : 웹 브라우저 동작 자동화 패키지(클릭, 로그인, 검색, 스크롤링)
+3. requests : 간편한 http 라이브러리
+4. opencv : 컴퓨터 비전 라이브러리(이미지 프로세싱, 얼굴 인식, 문자 인식)
+
+

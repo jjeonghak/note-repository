@@ -1,0 +1,5 @@
+#argc(arguments count) : main()에 전달되는 인자의 갯수
+#argv(arguments vector) : 가변적인 갯수의 문자열, 문자형 포인터 배열
+ *argv[0] 첫번째 고정인자는 아무것도 전달받지 않은 상태에서는 경로가 들어감, 이후 [1]부터 데이터 삽입
+ 
+int main(int argc, char *argv[])  #외부에서 데이터 받음

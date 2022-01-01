@@ -1,0 +1,65 @@
+# 기본 구정원
+1. 컨테이너(container)
+2. 행(row)
+3. 열(column)
+
+# 기본 규칙
+1. 행<div class="row">은 꼭 컨테이너<div class="container"> 안에
+2. 열<div class="col">은 꼭 행<div class="row">안에, 행의 직속 자식은 열만 가능
+3. 콘텐츠(그리드에 들어가는 내용)는 열<div class="col">안에
+
+부트스트앱 그리드에는 한줄에 기본적으로 12칸의 열이 있다. 이 12칸을 분할해서 사용
+<div class="col-6"> * 2
+<div class="col-4"> * 3
+<div class="col-10> <div class="col-2">
+만약 한 행에 12칸이 넘는 열이 들어간다면, 새로운 줄로 넘어감
+열을 또 여러 열로 나는 중첩(nesting)을 하기위해서는 우선 열안에 새로운 행을 선언해야함
+
+# 반응형 웹 디자인 사이즈
+1. Extra Small(< 576px) : 모바일
+2. Small(>= 576px) : 모바일
+3. Medium(>= 768px) : 타블릿
+4. Large(>= 992px) : 데스크탑
+5. Extra Large(>= 1200px) : 와이드 데스크탑
+
+# 컨테이너
+기본적으로 가운데 정렬, 그리드의 행들을 감싸주는 역할
+1. <div class="container"> : 구간별로 그리드에 고정된 width를 설정함
+2. <div class="container-fluid"> : 그리드는 항상 width: 100%;
+
+# 열
+구간설정에 따른 웹사이즈별 열 갯수
+<div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
+1. 12칸 2. 6칸 3. 4칸 4. 3칸 5. 2칸
+
+<div class="col-12 col-lg-3">
+1. 12칸 2. 12칸 3. 12칸 4. 3칸 5.3칸
+
+<div class="col-6">
+1. 6칸 2. 6칸 3. 6칸 4. 6칸 5.6칸
+
+# 중첩
+<div class="container">
+    <div class="row">
+      <div class="col-6">
+        <div class="row"> <!-- 중첩을 위한 새로운 행 -->
+          <div class="col-3 first">1</div>
+          <div class="col-3 second">2</div>
+          <div class="col-3 third">3</div>
+          <div class="col-3 fourth">4</div>
+        </div>
+      </div>
+
+      <div class="col-6">
+        <div class="row"> <!-- 중첩을 위한 새로운 행 -->
+          <div class="col-3 first">5</div>
+          <div class="col-3 second">6</div>
+          <div class="col-3 third">7</div>
+          <div class="col-3 fourth">8</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+

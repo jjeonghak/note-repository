@@ -1,0 +1,96 @@
+# CSS(Cascading Style Sheets) : 웹사이트의 스타일 담당
+
+# 코멘트 : /* 코멘트 내용 */
+
+# 기본 문법
+스타일링 요소 {
+    속성: 속성 값;
+}
+
+# 링크 : css파일을 따로 만들어 적용하고 싶은 곳의 head 태그에 첨부
+<link href="css/stylse.css" rel="stylesheet">
+
+# 속성
+1. font-size : 폰트 크기(절대적: px,pt 상대적(부모와 비교): em,% ) pt = 1.33px
+       -weight : 100 ~ 900의 폰트 굵기(100이 가장 얇음, 100단위), normal = 400, bold = 700
+       
+2. line-height : 폰트 크기에 따라서 실제내용이 들어가는 콘텐츠영역(content area)이 정해지고,
+                 콘텐츠영역에 영향을 주지않는 각 줄이 차지하는 공간 크기 설정
+
+3. font-family : 폰트 설정, 원하는 폰트, 대안 폰트, 폰트 종류 순으로 작성(뛰어쓰기 있을시 "")
+   font-family : "Times New Roman", Times, serif              
+
+3. text-align : 텍스트 정렬(left, right, center)
+       -decoration : 텍스트 장식(underline, overline, line-through, none)
+
+4. vertical-align : 텍스트 수직 정렬 기준(top, middle, bottom)
+       
+5. margin-top(-bottom, -left, -right) : 여백 크기(px) 
+
+6. color : 텍스트 색, rgb(97,249,107)값, HEX값(16진법) 설정, htmlcolorcodes 참고
+
+# 폰트 종류
+1. serif : 구부러진 폰트(Times New Roma, 궁서체)
+2. sans-serif : 구부러지지 않은 깔끔한 폰트(Arial, 굴림체)
+3. monospace : 글자마다 차지하는 공간이 똑같은 폰트(Courier, Courier New)
+4. cursive : 필기체(Comic Sans MS, Monotype Corsiva)
+5. fantasy : 그 외 특이한 폰트(Impact, Haettenschweller)
+ - 저장되지 않은 폰트 사용은 구글폰트(fonts.google) 링크로 연결
+
+# 폰트 파일 사용
+@font-face{
+    src: url("폰트파일상대경로");
+    font-family: "font_name";
+}
+
+# 이미지 가운데 정렬
+img{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+    
+# 각각의 객체 설정
+1. class : 여러 요소 .class_name{}
+2. id : 한 요소만(중복불가) #id_name{}
+3. <div> : 큰 문단을 하나로 묶음, 새로운 문단으로 설정
+4. <span> : 문단을 하나로 묶음, 문단에 영향을 끼치지 않음
+
+# pseudo-class(가상클라스)
+콜론(:)을 사용
+.div1 p:nth-child(3){} #.div1의 자식인 <p> 태그 중 3번째
+       :first-child{} #.div1의 자식인 <p> 태그 중 첫번째
+       :last-child{} #.div1의 자식인 <p> 태그 중 마지막
+       :not(:first-child){} #.div1의 자식 중 첫 번째 자식이 아닌 <p> 태그
+
+# hover(마우스 오버)
+마우스가 태그에 올라갔을 때 설정
+tag_name:hover{} #태그에 콜론(:)과 hover를 추가해 설정
+
+# 상속
+부모의 속성이 자식에게 영향을 주는 것, 모든 태그와 속성이 상속되는 것은 아님
+color, font-family, font-size, font-weight, line-height, list-style, text-align 등
+속성이 상속되지 않는 경우 해당 속성에 inherit 값을 써서 억지로 상속받을 수 있다.
+
+# 선택자 연산
+1. or 연산 : 쉼표(,) 사용, 두 선택자중 하나라도 해당되면 선택
+            .class1, .class2 {}
+2. and 연산 : 두 선택자 모두 핻ㅇ하는 요소만 선택
+            .class1.class2 {}
+
+# 명시도(specificity)
+같은 요소를 가리키지만 선택지가 다른 경우(충돌), 명시도에 따라 우선순위 결정
+1. 인라인 스타일
+2. 선택자에 id 많을수록
+3. 선택자에 class, attribute, pseudo-class 많을수록
+4. 일반요소(또는 가상요소)가 많을수록
+
+# 단위
+1. px : 절대적인 값, 다른 요소의 값에 영향을 받지 않음
+2. rem : 상대적인 값, <html> 태그의 font-size에만 영향을 받음(2rem = 2배), 
+3. em : 상대적인 값, 자기 자신의 font-size를 기준(2em = 2배)
+4. % : 상대적인 값, font-size, width를 기준
+
+# 반응형 웹 : 브라우저 사이즈에 상관없이 반응
+@media(min-width: 800px){} 브라우저의 가로가 최소 800이상일때 따로 style
+

@@ -1,0 +1,33 @@
+# 데이터
+1. 완결성(completeness) : 필수적인 데이터는 모두 기록, 결측값(NaN, Not a Number) 없음
+2. 유일성(uniqueness) : 동일한 데이터가 불필요하게 중복불가
+3. 통일성(conformity) : 데이터가 동일한 형식으로 존재해야함.
+4. 정확성(acuracy) : 데이터가 정확해야함
+
+# 완결성
+1. 결측값 확인
+df.isnull() : NaN이 있는 인덱스에 True, 아니면 False
+df.isnull().sum() : 각 열의 결측값의 갯수 표시
+
+2. 결측값 처리
+df.dropna(inplace=True) : NaN이 존재하는 행 삭제
+df.dropna(axis='columns', inplace=True) : NaN이 존재하는 열 삭제
+df.fillna(0) : NaN인 값 0으로 대체
+
+# 유일성
+df.T : 열과 행 교체
+df.index.value_counts() : 중복된 행 확인
+df.drop_duplicates(inplace=True) : 중복된 행(모든 열에 대해 같은 값) 삭제
+df.T.drop_duplicates().T : 중복된 열 삭제, 일시적
+
+# 정확성
+관계적 이상점(relational outer) : 두 변수의 관계를 고려했을 때 이상한 데이터
+이상점(outlier) : 다른 값들과 다르게 너무 동떨어져 있는 데이터, 1.5*IQR보다 먼 거리의 점
+IQR(Interquartile Range) : 박스 플롯의 Q1 ~ Q3 사이 거리
+q1 = df['col_name'].quantile(0.25)
+q3 = df['col_name'].quantile(0.75)
+iqr = q3 - q1
+(df['col_name'] < q1 - 1.5*iqr) | (df['col_name'] > q3 + 1.5*iqr) : 불린 리스트
+
+
+

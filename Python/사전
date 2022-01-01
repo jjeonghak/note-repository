@@ -1,0 +1,33 @@
+# 사전은 대응관계를 가지는 자료형으로 연관배열(Associative array) 또는 해시(Hash)라고 한다.
+# 사전은 리스트나 튜플처럼 순차적으로 해당 요솟값을 구하지 않고 key값을 통해 value에 접근한다.
+# 해시 테이블로 구현
+
+# 시간 복잡도
+탐색 : O(1) 평균
+삽입 : O(1) 평균
+삭제 : O(1) 평균
+길이 확인 : O(1)
+
+dic = {}  #선언
+dic = {"key":"value"}  #선언 및 문자열 삽입 
+dic = {key:value}   #선언 및 숫자 삽입
+dic = {key:[value, value]}  #선언 및 리스트 삽입
+ - 단, 리스트를 key값으로 사용할 수 없다
+
+del dic[key]  #사전의 key에 해당하는 값 삭제
+
+dic[key]  #key에 해당하는 value 접근
+
+# 함수
+1. key 리스트 : dic.keys()  #dic의 key값만을 모아 dict_keys 객체를 리턴
+ - 리스트 고유의 함수들 사용 불가
+2. value 리스트 : dic.values()  #dic의 value값만을 모아 dict_values 객체를 리턴
+3. key, value 리스트 : dic.items  #dic의 쌍을 모아 dict_items 객체를 리턴
+4. 사전 지우기 : dic.clear  #모든 요소 삭제
+5. key값을 통한 value 접근 : dic.get(key)  #key에 대응하는 value값 리턴
+6. key값 조사 : key in dic  #key 값이 존재하면 True
+
+# 정렬
+list = sorted(dic.items(), key = lambda x:x[0])  #[(key, value)] 기준 오름차순
+list = sorted(dic,items(), key = lambda x:(x[1][0], x[1][1])  #[(key, [val1, val2])]
+

@@ -1,0 +1,42 @@
+# 앙상블(Ensemble) : 여러 독립적인 객체들이 만들어내는 조화로운 단체
+                   하나의 모델을 쓰지않고 수많은 모델들을 사용해 종합적인 판단을 하는 것
+
+# 랜덤 포레스트 : 트리 모델들을 임의로 많이 만들어서 다수결 투표로 결과를 종합하는 알고리즘
+
+1. Boorstrapping : 갖고 있는 데이터 셋으로 다른 데이터 셋을 만들어내는 방법
+                   모든 모델을 정확히 똑같은 데이터 셋으로 학습시키면 결과 다양성이 떨어지기 때문
+
+- Bagging : bootstrap 데이터 셋을 만들어 모델들의 결정을 합침(aggregating)
+
+from sklearn.ensemble import RandomForestClassifier
+
+model = RandomForestClassifier(n_estimators=100, max_depth=4)
+ - n_estimators : 기본값 10, 얼마나 많은 모델들을 제작할지
+   max_depth : 모델 트리들의 최대 깊이
+
+model.fit(X_train, y_train)
+model.predict(X_test)
+model.score(X_test, y_test)
+model.feature_importances_
+
+2. Boosting : 성능이 안좋은 모델(weak learner)부터 사용, 전 모델들의 성능이 후 모델의 데이터 셋에 영향
+              모델들의 예측을 종합할 때 성능이 좋은 모델의 예측에 가산점
+
+ - Adaboost : 스텀프만을 사용, 틀리게 예측한 데이터 중요도를 올리고 나머지는 낮춤, 전 모델의 실수를 바로잡음
+              모든 데이터의 중요도가 존재, 처음엔 모두 같은 값으로 설정, 점차 변함
+              틀린 경우 weight_new = weight_old * e^P_tree
+              맞은 경우 weight_new = weight_old * e^(-P_tree)
+              
+ - 스텀프(stump) : root노드 하나와 분류노드 두개인 트리, 평균적으로 50%보다 조금 좋은 성능
+                 성능 = (1/2)log((1 - total_error)/total_error)
+
+from sklearn.ensemble import AdaBoostClassifier
+
+model = AdaboostClassifier(n_estimators=100)
+model.fit(X_train, y_train)
+model.predict(X_test)
+model.score(X_test, y_test)
+model.feature_importances_
+
+
+

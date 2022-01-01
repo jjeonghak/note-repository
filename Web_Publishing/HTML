@@ -1,0 +1,52 @@
+# HTML(Hyper Text Markup Language) : 웹사이트에 들어갈 내용 담당
+
+# <!DOCTYPE html> : 웹브라우저에게 HTML 버전을 알려주는 역할(html5 사용), 텍스트 맨윗줄에
+
+# <meta charset="utf-8"> : 한글을 지원해주는 인코딩, 한글 지원안하는 브라우저용
+
+# 코멘트 : <!-- 코멘트 내용 --> (command + /)
+
+# HTML 태그(요소) 구성
+1. 시작태그 : <태그>
+2. 내용
+3. 종료태그 : </태그>
+
+# 옵셔널 태그(구조) : 환경마다 생략가능(구글가이드는 생략)
+1. <html> = <head> + <body>
+2. <head> = <title> + <meta charset> + <style> 
+3. <body> = 페이지 내용(h1 ~ h6 + p)
+
+
+# 태그
+1. <title> : 브라우저의 탭이나 방문기록에 나와 있는 제목
+2. <h1> ~ <h6>(heading) : 머리말, 숫자에 따라 크기조절(숫자가 작을수록 글씨크기 커짐) 
+3. <p>(paragraph) : 긴 문단의 내용
+
+
+# 시각적인 태그
+1. <b>(bold) : 텍스트를 굵게
+2. <i>(italic) : 텍스트를 날려서
+3. <br> : \n
+4. <style> : css의 설정 스타일 반영
+5. <img src="사진주소" width="" height=""> : 사진 추가, 크기를 하나만 입력시 비율에 맞게 
+
+# Phrase Tags : 시각적 + 의미
+1. <strong> : 텍스트를 굵게, 텍스트 중요도 있음, 스크린리더 활용시 강조해서 읽음
+2. <em> : 텍스트를 날려서, 텍스트 중요도 있음
+
+
+# 하이퍼링크(Anchor)
+<a href="https://***.com"> 내용 </a> : 링크추가
+<a href="https://***.com" target="_blank"> : 다른 탭에서 열림
+
+<a href="상대경로 또는 절대경로"> : 사이트 내에 여러 페이지 이동
+
+
+# href, src, url
+in CSS, url
+in HTML, href = links  #하이퍼 링크
+         src = source  #파일내의 소스
+
+# JavaScript
+<script src="file_name.js"></script> 
+

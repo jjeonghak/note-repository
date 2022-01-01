@@ -1,0 +1,101 @@
+# 머신러닝 : 기계학습, 프로그램이 특정 작업(T)을 하는데 있어서 경험(E)을 통해 작업의 성능(P)을 향상
+
+# 학습유형
+1. 지도학습(Supervised learning) : 답이 존재하며 이 답을 맞추는 것이 학습 목표
+   1) 분류(Classfication) : 몇가지 케이스를 분류하는 것
+   2) 회귀(Regression) : 무수히 많고 연속적인 값을 맞추는 것
+
+2. 비지도학습(Unsupervised learning) : 답이 존재하지 않으며 이 답을 맞추는 것이 학습 목표
+                                    대표적으로 클러스터링(Clustering)
+   
+3. 강화학습(Reinforcement learning) : 답이 존재하지 않으며 자신이 한 행동에 대한 보상을 받으며 학습
+                                    에어전트, 환경, 상태, 행동, 보상
+
+# 행렬
+np.dot(A, B) : 행렬내적(행렬곱)
+              = A @ B
+1. 전치행렬(transposed matrix) : 대각선 인덱스를 기준으로 뒤집은 행렬(행과 열이 뒤집힘)
+                              A_transpose = np.transpose(A)
+                              A_transpose = A.T
+2. 단위행렬(identity matrix) : 대각선 인덱스 1, 나머지 0
+                             I = np.identity(n) : n사각 단위행렬
+3. 역행렬(inverse matrix) : 행렬곱 결과가 단위행렬이 나오는 행렬
+                          A_inverse = np.linalg.pinv(A) : 역행렬이 존재하지 않아도 비슷하게 리턴
+                          - 역행렬 존재확인 : A @ A_inverse 결과가 I가 나오면 역행렬 존재
+
+# 데이터 전처리 : 데이터를 그대로 사용하지 않고 가공해서 좀더 효율적으로 모델 학습
+수치형(numerical) 데이터 : 정수형 데이터
+범주형(categorial) 데이터 : 연속적이지 않고 정수형이 아닌 데이터
+
+1. Feature Scaling : 머신 러닝 모델에 사용할 입력 변수의 크기를 조정해서 일정 범위 내에 떨어지도록 바꿈
+                  좀더 빠른 경사하강법 가능
+
+   1) min-max normalization : 최솟값과 최댓값을 이용해서 데이터의 크기를 0과 1사이로 바꿈
+                              Xnew = (Xold - Xmin)/(Xmax - Xmin)
+
+   2) standardization : 데이터의 평균과 표준편차를 이용한 표준화
+                        Xnew = (Xold - Xavg)/sigma
+
+from sklearn import preprocessing
+
+scaler_nor = preprocessing.MinMaxScaler()  # 변환도구
+normalized_data = scaler_nor.fit_transform(dataframe_name)  # 변환도구를 이용한 스케일링
+normalized_df = pd.DataFrame(normalized_data, columns=['col_name'])  # 데이터프레임
+
+scaler_sta = preprocessing.StandardScaler()
+standardized_data = scaler_sta.fit_transform(dataframe_name)
+standardized_df = pd.DataFrame(standardized_data, columns=['col_name']) 
+
+2. One-hot Encoding : 범주형 데이터를 정수형으로 변환, 각 범주마다의 대소관계 발생 문제 해결
+                      각 범주마다 열을 만들어 인덱스가 각 범주 열에 속하면 1, 아니면 0
+
+select_col_df = dataframe_name[['col_name']]  # 선택해 놓은 데이터프레임
+one_hot_df = pd.get_dummies(select_col_df)
+
+one_hot_df = pd.get_dummies(data=dataframe_df, columns=['col_name'])  # 전체 데이터프레임
+
+# 정규화(Regularization) : 가설함수의 theta 값이 너무 커지는 것 방지
+편향(bias) : 편향이 높을수록 모델이 간단해지며 주어진 데이터의 관계를 잘 학습하지 못함
+분산(variance) : 데이터 셋 별로 모델이 얼마나 일관된 성능을 보이는지
+- 과소적합 : 편향이 높고 분산이 낮은 모델, 복잡도 떨어져 곡선관계 학습불가, 새로운 데이터에도 일관적인 성능
+  과적합 : 편향이 낮고 분산이 높은 모델, 기존 데이터 성능 높지만 새로운 데이터 성능 낮음
+
+1. L1 정규화(Lasso 모델) : 손실함수에 정규화항, 절대값 theta 추가
+                        여러 theta 값들을 0으로 만듬, 모델에 중요하지 않은 속성 삭제
+                        손실 함수의 모양은 마름모형, 꼭지점에서 평균 제곱 오차의 등고선과 닿을 확률 높음
+                        
+2. L2 정규화(Ridge 모델) : 손실함수에 정규화항, theta^2 추가
+                        theta들을 0이 아닌 값으로 줄여줌, 속성 갯수 변화없음
+                        손실 함수의 모양은 원형, 축에서 평균 제곱 오차의 등고선과 닿을 확률 낮음
+
+from sklearn.linear_model import Lasso
+
+L1_model = Lasso(alpha=0.001, max_iter=1000, normalize=True)
+L2_model = Ridge(alpha=0.001, max_iter=1000, normalize=True)  
+- alpha : 알파값에 따라 정규화항의 크기가 조절
+  normalize : 데이터의 크기를 0과 1사이로 처리
+
+# 모델 평가
+k겹 교차 검증(k-fold cross validation) : 대이터 셋을 k개의 그룹으로 나누어 모델 성능 평가
+
+from sklearn.model_selection import cross_val_score  # train할 필요가 없기 때문에
+
+np.average(cross_val_score(model, X, y.values.ravel(), cv=5))  # cv = k
+
+# 하이퍼 파라미터(Hyperparameter): 학습을 하기 전에 미리 정해주는 변수 또는 파라미터
+그리드 서치(grid search) : 여러 후보 파라미터값 중에 가장 성능이 좋은 하이퍼 파라미터값 탐색
+
+from sklearn.model_selection import GridSearchCV
+
+hyper_parameter = {
+      'alpha':[0.01, 0.1, 1, 10],
+      'max_iter':[100, 500, 1000, 1500, 2000]
+}
+model = Lasso()  # 파라미터 넣지 않음
+hyper_parameter_tuner = GridSearchCV(model, hyper_parameter, cv=5)
+hyper_parameter_tuner.fit(X, y)
+hyper_parameter_tuner.best_params_
+
+
+
+

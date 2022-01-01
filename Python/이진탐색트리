@@ -1,0 +1,142 @@
+# 이진탐색트리는 꼭 완전이진트리는 아니다
+# 배열 및 파이썬 리스트가 아닌 연결리스트로 구현
+# in-order 순회시 오름차순으로 출력가능
+
+# 시간 복잡도
+탐색 : O(H)
+삽입 : O(H)
+삭제 : O(H)
+높이 : H = lnN(균형잡힌 이진트리), N(한쪽노드씩만 채움)
+
+class Node:
+    """이진 탐색 트리 노드 클래스"""
+    def __init__(self, data):
+        self.data = data
+        self.parent = None  
+        self.left_child = None
+        slef.rigth_child = None
+
+
+class BinarySearchTree:
+    """이진 탐색 트리 클래스"""
+    def __init__(self):
+        self.root = None
+        
+    def insert(self, data):
+        new_node = Node(data)  # 삽입할 데이터를 갖는 새 노드 생성
+        
+        # 트리가 비었으면 새로운 노드를 root 노드로 만든다
+        if self.root is None:
+            self.root = new_node
+            return
+        
+        index = self.root
+        while True:
+            if index.data > new_node.data:
+                if index.left_child is not None:
+                    index = index.left_child
+                else:
+                    new_node.parent = index
+                    index.left_child = new_node
+                    return
+                
+            elif index.data < new_node.data:
+                if index.right_child is not None:
+                    index = index.right_child
+                else:
+                    new_node.parent = index
+                    index.right_child = new_node
+                    return
+                    
+    def delete(self, data):
+        """이진 탐색 트리 삭제 메소드"""
+        node_to_delete = self.search(data)  # 삭제할 노드를 가지고 온다
+        parent_node = node_to_delete.parent  # 삭제할 노드의 부모 노드
+
+        # 경우 1: 지우려는 노드가 leaf 노드일 때
+        if node_to_delete.left_child is None and node_to_delete.right_child is None:
+            if self.root is node_to_delete:
+                self.root = None
+            else:  # 일반적인 경우
+                if node_to_delete is parent_node.left_child: 
+                    parent_node.left_child = None
+                else:
+                    parent_node.right_child = None
+
+        # 경우 2: 지우려는 노드가 자식이 하나인 노드일 때:
+        elif node_to_delete.left_child is None:  # 지우려는 노드가 오른쪽 자식만 있을 때:
+            # 지우려는 노드가 root 노드일 때
+            if node_to_delete is self.root:
+                self.root = node_to_delete.right_child
+                self.root.parent = None
+            # 지우려는 노드가 부모의 왼쪽 자식일 때
+            elif node_to_delete is parent_node.left_child:
+                parent_node.left_child = node_to_delete.right_child
+                node_to_delete.right_child.parent = parent_node
+            # 지우려는 노드가 부모의 오른쪽 자식일 때
+            else:
+                parent_node.right_child = node_to_delete.right_child
+                node_to_delete.right_child.parent = parent_node
+
+        elif node_to_delete.right_child is None:  # 지우려는 노드가 왼쪽 자식만 있을 때:
+            # 지우려는 노드가 root 노드일 때
+            if node_to_delete is self.root:
+                self.root = node_to_delete.left_child
+                self.root.parent = None
+            # 지우려는 노드가 부모의 왼쪽 자식일 때
+            elif node_to_delete is parent_node.left_child:
+                parent_node.left_child = node_to_delete.left_child
+                node_to_delete.left_child.parent = parent_node
+            # 지우려는 노드가 부모의 오른쪽 자식일 때
+            else:
+                parent_node.right_child = node_to_delete.left_child
+                node_to_delete.left_child.parent = parent_node
+
+        # 경우 3: 지우려는 노드가 2개의 자식이 있을 때
+        else:
+            successor = self.find_min(node_to_delete.right_child)  # 삭제하려는 노드의 successor 노드 받아오기
+
+            node_to_delete.data = successor.data  # 삭제하려는 노드의 데이터에 successor의 데이터 저장
+
+            # successor 노드 트리에서 삭제
+            if successor is successor.parent.left_child:  # successor 노드가 오른쪽 자식일 때
+                successor.parent.left_child = successor.right_child
+            else:  # successor 노드가 왼쪽 자식일 때
+                successor.parent.right_child = successor.right_child        
+        
+            if successor.right_child is not None:  # successor 노드가 오른쪽 자식이 있을 떄
+                successor.right_child.parent = successor.parent
+    
+    @staticmethod
+    def find_min(node):
+        """(부분)이진 탐색 트리의 가장 작은 노드 리턴"""
+        # 코드를 쓰세요
+        temp = node  # 탐색 변수. 파라미터 node로 초기화
+
+        # temp가 node를 뿌리로 갖는 부분 트리에서 가장 작은 노드일 때까지 왼쪽 자식 노드로 간다
+        while temp.left_child is not None:
+            temp = temp.left_child      
+
+        return temp  
+        
+    def search(self, data):
+        """이진 탐색 트리 탐색 메소드, 찾는 데이터를 갖는 노드가 없으면 None을 리턴한다"""
+        if self.root is None:
+            return None
+        
+        index = self.root
+        while True:
+            if index is None:
+                return None
+            elif index.data is data:
+                return index
+            elif index.data > data:
+                index = index.left_child
+            else:
+                index = index.right_child
+
+    def print_sorted_tree(self):
+        """이진 탐색 트리 내의 데이터를 정렬된 순서로 출력해주는 메소드"""
+        print_inorder(self.root)  # root 노드를 in-order로 출력한다
+        
+        

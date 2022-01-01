@@ -1,0 +1,120 @@
+# 커밋(commit) : 프로젝트 디렉토리의 특정 모습을 하나의 버전으로 남기는 행위, 결과물
+                staging area에 존재하는 git add 파일들만 커밋에 반영
+                수정된 파일은 git add, 아닌 파일은 그대로 staging area에 보존
+
+# 작업영역 
+1. working tree(directory) : 작업이 수행되는 프로젝트 디렉토리
+2. staging area : 커밋 대상으로 지정된 파일이 커밋 대기하는 영역 
+3. repository : 커밋이 저장되는 곳, .git 파일
+
+# 브랜치(branch) : 코드를 관리하는 하나의 흐름, 어떠한 커밋을 가리키는 포인터
+
+# HEAD
+1. 일반적으로 가장 최근 커밋을 간접적으로 가리키는 포인터(브랜치 포인터)
+2. HEAD가 가리키는 커밋에 따라 working tree 구성
+3. git checkout 커맨드를 통해 HEAD가 가리키는 브랜치 변경
+
+# 파일상태
+1. untracked : 추적되지 않고 있는, git add되지 않은 상태
+2. tracked : 파일이 git에 의해 그 변동사항이 추적되고 있는 상태
+   1) staged : 파일의 내용이 수정되고 staging area에 존재하는 상태
+   2) unmodified : 최신 커밋의 모습 비교시 변경사항이 없는 상태
+   3) modified : 최신 커밋의 모습과 비교시 변경사항이 있는 상태
+
+# 명령어
+1. git init : 현재 디렉토리를 git이 관리하는 프로젝트 디렉토리로 설정, 레포지토리 생성
+
+2. git config user.name "user_name" : 커밋하기 전에 커밋한 사람의 이름 및 이메일 기록
+   git config alias.new_name 'old_name' : 엘리어싱, 기존 커맨드를 사용자 지정 커맨드로 대체
+
+3. git add file_name : 커밋할 파일 지정, 수정된 파일의 모습이 커밋에 포함될 것이라는 지정
+   git add . : 현재 프로젝트 디렉토리 내에서 변경사항이 생긴 모든 파일들 staging area
+
+4. git commit : 커밋, vim으로 연결되며 커밋 메세지 작성가능
+   git commit -m "commit_massage" : 커밋과 동시에 커밋 메세지 기록
+   git commit --amend : 가장 최근 커밋 수정
+
+5. git status : 깃이 인식하고 있는 프로젝트 디렉토리의 현재 상태를 출력, 변경사항 및 staging area 상태
+
+6. git reset file_name : staging area에 존재하는 파일 삭제, 실제 파일에는 영향없음
+   git reset --soft wanted_commit_id : HEAD가 과거 커밋을 가리킴, repository만 바뀜
+             --mixed : repository, staging area 바뀜
+             --hard : repository, staging area, working tree 모두 바뀜
+                    HEAD^ : HEAD의 이전 커밋
+                    HEAD~n : HEAD의 n번째 이전 커밋
+
+7. git push : 로컬 레포지토리(git) 내용을 리모트 레포지토리(github)에 반영
+   git push -u origin master : 처음으로 리모트 레포지토리에 올릴 때 사용
+   git push --set -upstream origin master
+
+8. git pull : 리모트 레포지토리 내용을 로컬 레포지토리에 반영, 자동으로 merge
+
+9. git clone URL : 깃허브 프로젝트의 레포지토리를 그대로 복제, 원하는 url을 인자로 추가
+
+10. git log : 커밋 기록, 일지, 가장 오래된 커밋이 맨 아래에 존재
+    git log --pretty=oneline : 깔끔하게 보기옵션, 한줄씩 출력 인자
+    git log --pretty=oneline --all --graph : 커밋과 브랜치의 관계를 그래프화
+    git log --pretty=format:"%h - %an, %ar : %s" : 형식을 정해서 출력
+    * %H(커밋해시) %h(짧은커밋해시) %T(트리해시) %t(짧은트리해시) %p(부모해시) %P(짧은부모해시)
+      %an(저자이름) %ae(저자메일) %ad(저자시각) %ar(저자상대적시각) %cn(커밋터이름) %ce(커밋터메일)
+      %cd(커밋터시각) %cr(커밋터상대적시각) %s(요약)
+
+11. git show commit_id : 자세한 변경사항 출력, 커밋아이디를 인자로 추가
+             tag_name : 태그가 가리키는 커밋 출력
+
+12. git diff commit_id1 commit_id2 : 두 커밋의 차이 출력, 오래된 커밋을 먼저 인자로 추가
+             branch1 branch2 : 두 브랜치의 차이 출력
+    * 패치하기
+    git diff > patch_file : 패치파일 생성
+    cd ~/directory : 패치하고자 하는 위치
+    patch -p0 < patch_file : 패치적용
+    
+    diff -urN old_file new_file > patch.patch : 두 파일의 차이를 패치파일로 생성         
+
+13. git tag tag_name commit_id : 커밋 메세지뿐만 아니라 태그를 추가적으로
+    git tag : 태그 조회
+    
+14. git branch new_branch_name : 새로운 브랜치 생성, 생성 후 이동필수
+    git branch : 브랜치 조회
+    git branch -d delete_branch : 브랜치 삭제
+    
+15. git checkout wanted_branch : 원하는 브랜치로 이동
+    git checkout -b new_branch : 브랜치 생성과 동시에 이동
+
+16. git merge target_branch : 현재있는 브랜치에 타겟 브랜치의 커밋 내용을 합침, conflict 발생우려
+    git merge --abort : merge 취소
+    - 두 브랜치의 공통 부모 커밋의 base와 비교하여 변화가 있는 부분을 채택, 두 브랜치 모두 변화시 출동
+
+17. git fetch : 리모트 레포지토리에 있는 브랜치의 내용을 일단 가져와서 확인, diff 후에 merge
+                로컬 레포지토리에서 현재 HEAD가 가리키는 브랜치의 업스티림 브랜치로부터 최신 커밋들을 가져옴
+                (가져오기만 한다는 점에서, 가져와서 머지까지 하는 git pull과는 차이가 있음)
+
+18. git blame : 어떤 파일의 특징 코드를 누가 작성했는지 탐색
+
+19. git revert commit_id : 특정 커밋에서 이루어진 작업을 되돌리는 커밋을 새로 생성
+               commit_id1..commit_id3 : commit_id2부터 id3까지의 커밋 작업 취소
+
+20. git reflog : HEAD가 이때까지 카리켜왔던 커밋들 기록 출력, reset 이후 커밋아이디 탐색가능
+
+21. git rebase : 베이스를 다시 지정, 커밋 재배치
+                 브랜치 끝에 다른 브랜치를 꺾어 이어 붙임, 머지는 서로 다른 브랜치의 끝을 이어서 하나로
+                 새로운 커밋을 만들지 않음, 커밋 히스토리가 깔끔
+    git rebase --continue : 컨플릭트 발생으로 제대로 진행되지 못한 리베이스 진행
+    
+22. git stash : working tree에서 작업하던 내용을 깃이 따로 스택에 보관, 커밋하지 않고 이동할 때 임시저장
+    git stash list : 저장한 내용 출력
+    git stash apply : 스택에 있는 내용을 다시 working tree로 가져와 적용
+    git stash drop stash_id : 스택에 있는 내용 삭제
+    git stash pop : 스택에서 특정 작업 내용을 적용함과 동시에 제거
+
+23. git cherry-pick : 자신이 원하는 작업이 들어있는 커밋들만 가져와 현재 브랜치에 추가
+
+24. vim .gitignore :  원하지 않는 파일들을 git에서 제외, .girignore에 등록되면 제외됨 
+
+25. git remote -v : 원격저장소의 주소 확인
+    git remote add origin git_hub_repo_address : 원격저장소 등록
+
+26. git ls -files : 인덱스 및 작업트리에 있는 파일 정보 표시
+
+
+

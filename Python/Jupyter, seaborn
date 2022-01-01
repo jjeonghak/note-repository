@@ -1,0 +1,47 @@
+# seaborn : Statistical Data Visualization
+            통계를 기반으로 한 데이터 시각화
+            !pip install seaborn==0.9.0(버전은 선택)  # 설치
+            import seaborn as sns
+
+# PDF(Probability Density Function)
+확률 밀도 함수, 데이터셋의 분포 밑 확률
+히스토그램의 막대 갯수를 무한히 증가시킨 그래프 형태
+
+# KDE(Kernel Density Estimation)
+실제 관측 데이터를 정규화된 확률 밀도 함수형태로 변경
+sns.kdeplot(df['col_name']) : 실제 데이터 기반으로 추측한 확률밀도 함수 출력
+sns.kdeplot(df['col_name'], bw=n) : 추측한 정도 조절(0<n), 클수록 확률밀도 함수에 근사
+
+# KDE 활용
+sns.distplot(df['col_name'], bins=n) : 히스토그램 위에 kde 그래프
+sns.violinplot(y=df['col_name']) : 박스 플롯의 양 쪽을 kde 그래프로 대체
+sns.kdeplot(df[col1], df[col2]) : 산점도 안에 등고선 표현
+sns.jointplot(data=df, x='col1', y='col2') : 산점도와 히스토그램
+
+# 시각화
+LM plot : 산점도의 회귀선을 통해 예측, 상관관계가 클수록 정확
+          sns.lmplot(data=df, x='col1', y='col2') 
+Categorical plot : 어떠한 열의 값(카테고리)에 따른 성질 비교
+                   sns.catplot(data=df, x='col1', y='col2', kind='strip', hue='col3')
+                   - strip plot : 통계적 허점을 방지, 박스플롯, 바이올린플록의 시각화 직전
+                                  데이터 수와 데이터 분포를 한눈에 볼 수 있다.
+                   - swarn plot : strip 그래프의 모여있는 점을 옆으로 산개시킨 그래프
+                   - hue='col3' : col1과 col2의 그래프에 col3의 값에 따라 색깔 변경
+
+# 상관관계
+df.corr() : 데이터 사이의 상관계수(-1<= a<= 1), 절대값 a의 값이 1에 가까울수록 상관관계 높음
+df.corr()['col_name'].sort_values(ascending=False) : 특정 열에 대해 상관관계 내림차순 정렬
+sns.heatmap(df.corr()): 상관계수 결과를 히트맵으로 시각화, 색이 밝을수록 상관관계 높음
+sns.heatmap(df.corr(), annot=True) : 숫자도 같이 출력
+
+# EDA(Exploratory Data Analysis)
+탐색적 데이터 분석, 주어진 데이터셋을 다양한 관점에서 살펴보고 탐색
+
+# 클러스터 분석(Cluster analysis)
+무리를 만들어 분석, 각 열에 대해 상관관계를 탐색해 무리를 만듬
+sns.clustermap(df.curr()) : 히트맵, 연관성 있는 종목끼리 연결
+
+
+
+
+

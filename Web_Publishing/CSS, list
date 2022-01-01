@@ -1,0 +1,15 @@
+1. <ol> : ordered list, 해야할 일의 순서(기본 숫자)를 정함
+          기본적으로 padding-left값 가지고 있어서 li를 꾸며줌
+          type="a" : 소문자
+          type="A" : 대문자
+          type="i" : 로마숫자
+          type="I" : 대문자 로마숫자 
+
+2. <ul> : unordered list, 해야할 일의 순서가 없음(점)
+          기본적으로 padding-left값 가지고 있어서 li를 꾸며줌
+
+3. <li> : list item, 해야할 일
+          display: list-item;이기 때문에 꾸며주는 접두사 생성(원하지 않으면 block으로 변경)
+          list-style-type: square;
+
+

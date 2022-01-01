@@ -1,0 +1,111 @@
+// 이벤트 핸들러 등록
+btn.addEventListener('event_type', handler1);
+btn.addEventListener('event_type', handler2);  // 여러 이벤트 추가시
+btn.addEventListener('event_type', handler3());  // 오류, 함수가 실행된 후 리턴값이 파라미터로
+
+btn.removeEventListener('event_type', handler1);  // 해당 이벤트 삭제, 위의 파라미터와 동일해야 가능
+
+// 마우스 이벤트
+1. mousedown : 마우스 버튼을 누르는 순간
+2. mouseup : 마우스 버튼을 눌렀다 떼는 순간
+3. click : 왼쪽 버튼을 클릭한 순간
+4. dblclick : 왼쪽 버튼을 빠르게 두번 클릭한 순간
+5. contextmenu : 오른쪽 버튼을 클릭한 순간
+6. mousemove : 마우스를 움직이는 순간
+7. mouseover : 마우스 포인터가 요소 위로 올라온 순간
+8. mouseout : 마우스 포인터가 요소에서 벗어나는 순간
+9. mouseenter : 마우스 포인터가 요소 위로 올라온 순간(버블링이 일어나지 않음)
+10. mouseleave : 마우스 포인터가 요소에서 벗어나는 순간(버블링이 일어나지 않음)
+
+// 키보드 이벤트
+1. keydown : 키보드의 버튼을 누르는 순간
+2. keypress : 키보드의 버튼을 누르는 순간('a', '5' 등 출력이 가능한 키에서만 반응, shift, esc 등 반응안함)
+3. keyup : 키보드의 버튼을 눌렀다 떼는 순간
+
+// 포커스 이벤트
+1. focusin : 요소에 포커스가 되는 순간
+2. focusout : 요소로부터 포커스가 빠져나가는 순간
+3. focus : 요소에 포커스가 되는 순간(버블링이 일어나지 않음)
+4. blur : 요소로부터 포커스가 빠져나가는 순간(버블링이 일어나지 않음)
+
+// 입력 이벤트
+1. change : 입력된 값이 바뀌는 순간
+2. input : 값이 입력되는 순간
+3. select : 입력 양식의 하나가 선택되는 순간
+4. submit : 폼을 전송하는 순간
+
+// 스크롤 및 창 이벤트
+1. scroll : 스크롤 바가 움직일 때
+2. resize : 윈도우 사이즈를 움직일 때 발생
+
+// 이벤트 객체(event object)
+웹 페이지 내에 이벤트 발생시 자동으로 이벤트 객체 생성
+1. 공통 프로퍼티
+   type : 이벤트 이름('click', 'mousup' 등)
+   target : 이벤트가 발생한 요소
+   currentTarget : 이벤트 핸들러가 등록된 요소
+   timeStamp : 이벤트 발생 시각(페이지 로드 후 경과된 밀리초)
+   bubbles : 버블링 단계인지 판단하는 값
+2. 마우스 이벤트
+   button : 누른 마우스의 버튼(왼쪽 0, 가운데(휠) 1, 오른쪽 2)
+   clientX, clientY : 마우스 커서의 브라우저 표시 영역에서의 위치
+   pageX, pageY : 마우스 커서의 문서 영역에서의 위치
+   offsetX, offsetY : 마우스 커서의 이벤트 발생한 요소에서의 위치
+   screenX, screenY : 마우스 커서의 모니터 화면 영역에서의 위치
+   altKey : 이벤트가 발생시 alt키를 눌렀는지
+   ctrlKey : 이벤트 발생시 ctrl키를 눌렀는지
+   shiftKey : 이벤트 발생시 shift키를 눌렀는지
+   metaKey : 이벤트 발생시 meta키를 눌렀는지(window키, cmd키)
+3. 키보드 이벤트
+   key : 누른 키가 가지고 있는 값
+   code : 누른 키의 물리적인 위치
+   altKey : 이벤트가 발생할 때 alt키를 눌렀는지
+   ctrlKey : 이벤트 발생시 ctrl키를 눌렀는지
+   shiftKey : 이벤트 발생시 shift키를 눌렀는지
+   metaKey : 이벤트 발생시 meta키를 눌렀는지(window키, cmd키)
+
+// 이벤트 버블링(event bubbling)
+요소에 이벤트 발생시 같은 타입에 한해서 부모, 자식의 핸들러가 모두 동작, 최상단의 window 객체까지 반복
+타겟은 변하지 않음(e.target), 하지만 버블링된 요소를 볼수있음(e.currentTarget)
+e.stopPropagation();  // 함수 끝에 선언, 버블링 안됨
+
+// 이벤트 캡처링(event capturing)
+이벤트 발생시 가장 먼저 실행, 버블링의 반대 방향으로 진행되는 이벤트 전파 방식
+캡처링 단계 핸들러 동작 : addEventListener 세번째 프로퍼티에 true 또는 {capture:true} 
+
+1. 캡처링 단계 : 이벤트가 하위 요소로 전파되는 단계
+2. 타겟 단계 : 이벤트가 실제 타깃 요소에 전달되는 단계
+3. 버블링 단계 : 이벤트가 상위 요소로 전파되는 단계
+
+// 이벤트 위임(event delegation)
+버블링을 활용한 위임, 자식 요소 각각에 이벤트 핸들러를 하나씩 등록할 필요 없이 부모 요소에서 한번에 
+자식 요소들에 발생한 이벤트를 관리할 수도 있다. 
+
+// 브라우저 기본 동작
+event.preventDefault();  // 기본동작 제어
+
+const link = document.querySelector('#link');
+const checkbox = document.querySelector('#checkbox');
+const input = document.querySelector('#input');
+const text = document.querySelector('#text');
+
+link.addEventListener('click', function(e){
+  e.preventDefault();
+  alert('지금은 이동할 수 없습니다.');
+});
+
+input.addEventListener('keydown', function(e){
+  if(!checkbox.checked){
+    e.preventDefault();
+    alert('체크박스를 먼저 클릭해 주세요.');
+  }
+});
+
+text.addEventListener('contextmenu', function(e){
+  e.preventDefault();
+  alert('마우스 오른쪽 클릭은 사용할 수 없습니다.');
+});
+
+
+
+
