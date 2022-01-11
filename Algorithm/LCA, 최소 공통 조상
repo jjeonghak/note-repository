@@ -5,3 +5,46 @@
 2. 최소 공통 조상을 찾을 두 노드 확인
   - 두 노드의 깊이가 동일하도록 설정
   - 이후 부모가 같아질 때까지 반복적으로 노드의 부모 방향으로 탐색
+
+pair<int, int> depth[100001]; //first : 부모노드, second : 깊이
+vector<int> v[100001];
+
+void    bfs()
+{
+    queue<int> q;
+    
+    q.push(1);
+    depth[1].second = 1;
+    while (!q.empty())
+    {
+        int current = q.front();
+        q.pop();
+        for (int i = 0; i < v[current].size(); i++)
+        {
+            if (depth[v[current][i]].second == 0)
+            {
+                depth[v[current][i]].second = depth[current].second + 1;
+                depth[v[current][i]].first = current;
+                q.push(v[current][i]);
+            }
+        }
+    }
+    return ;
+}
+
+int lca(int a, int b)
+{
+    if (depth[a].second < depth[b].second)
+        while (depth[b].second != depth[a].second)
+            b = depth[b].first;
+    else
+        while (depth[a].second != depth[b].second)
+            a = depth[a].first;
+    while (a != b)
+    {
+        a = depth[a].first;
+        b = depth[b].first;
+    }
+    return a;
+}
+
