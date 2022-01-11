@@ -6,8 +6,8 @@
   - 두 노드의 깊이가 동일하도록 설정
   - 이후 부모가 같아질 때까지 반복적으로 노드의 부모 방향으로 탐색
 
-pair<int, int> depth[100001]; //first : 부모노드, second : 깊이
-vector<int> v[100001];
+pair<int, int> depth[n]; //first : 부모노드, second : 깊이
+vector<int> v[n]; //트리
 
 void    bfs()
 {
