@@ -100,7 +100,7 @@ int lca(int x, int y)
     }
     for (int i = MAX; i >= 0; i--)
         if (depth[y] - depth[x] >= (1 << i))
-            y = dp[y][i];  //두 깊이의 차이가 2^(i - 1) 이상이면 i번째 부모부터 탐색
+            y = dp[y][i];  //두 깊이의 차이가 2^i 이상이면 i번째 부모부터 탐색
             
     if (x == y) return x;
     
