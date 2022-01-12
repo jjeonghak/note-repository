@@ -1,11 +1,14 @@
 //최소공통조상(lowest common ancestor)
 //두 노드의 공통된 조상 중에서 가장 가까운 조상 노드 탐색
+//트리이기 때문에 간선의 갯수 n - 1 확인 필수
 
 1. 모든 노드에 대한 깊이 계산
 2. 최소 공통 조상을 찾을 두 노드 확인
   - 두 노드의 깊이가 동일하도록 설정
   - 이후 부모가 같아질 때까지 반복적으로 노드의 부모 방향으로 탐색
 
+
+//단순 완전 탐색
 pair<int, int> depth[n]; //first : 부모노드, second : 깊이
 vector<int> v[n]; //트리
 
@@ -47,4 +50,70 @@ int lca(int a, int b)
     }
     return a;
 }
+
+
+//2의 제곱으로 탐색, 2^n - 1 = 2^(n - 1) + 2^(n - 2) + ... + 2^1 + 2^0
+int n, k;
+int depth[100001];  //깊이
+int dp[100001][MAX + 1];  //노드별로 2^i번째 부모를 저장
+vector<int> v[100001];
+
+void    bfs()
+{
+    queue<int> q;
+    
+    q.push(1);
+    depth[1] = 1;
+    while (!q.empty())
+    {
+        int current = q.front();
+        q.pop();
+        for (int i = 0; i < v[current].size(); i++)
+        {
+            if (depth[v[current][i]] == 0)
+            {
+                depth[v[current][i]] = depth[current] + 1;
+                dp[v[current][i]][0] = current;  //dp에 2^0번째 부모저장
+                q.push(v[current][i]);
+            }
+        }
+    }
+    return ;
+}
+
+void    set_dp()
+{
+    for (int i = 1; i < MAX; i++)
+        for (int j = 1; j <= n; j++)
+            dp[j][i] = dp[dp[j][i - 1]][i - 1];
+            //부모노드(2^(i - 1))의 부모노드(* 2^1)가 현재노드의 2^i번째 부모노드
+    return ;
+}
+
+int lca(int x, int y)
+{
+    if (depth[x] > depth[y])
+    {
+        int temp = x;
+        x = y;
+        y = temp;
+    }
+    for (int i = MAX; i >= 0; i--)
+        if (depth[y] - depth[x] >= (1 << i))
+            y = dp[y][i];  //두 깊이의 차이가 2^(i - 1) 이상이면 i번째 부모부터 탐색
+            
+    if (x == y) return x;
+    
+    //2^n - 1 = 2^(n - 1) + 2^(n - 2) + ... + 2^1 + 2^0 원리 이용
+    for (int i = MAX; i >= 0; i--)
+    {
+        if (dp[x][i] != dp[y][i])
+        {
+            x = dp[x][i];
+            y = dp[y][i];
+        }
+    }
+    return dp[x][0];
+}
+
 
