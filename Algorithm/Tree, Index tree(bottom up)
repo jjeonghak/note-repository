@@ -13,7 +13,7 @@ Leaf노드의 첫번째 index 혹은 Leaf노드 개수 구하기
 for(B=1; B<N; B<<=1);
 
 //값 Update
-  1. 변경하고자 하는 값의 index 변경  index가 1부터 시작하면 Leaf노드 첫번째 index -1 을 더해주고 0부터 시작하면 Leaf노드 첫번째 index를 더해준다
+  1. 변경하고자 하는 값의 index 변경
   2. 부모로 이동(index/2 혹은 index>>=1)
   3. 왼쪽(index2 혹은 index<<1), 오른쪽(index2+1 혹은 (index<<1)|1 ) 자식 값으로 부모 값을 갱신
   4. 2~3을 Root까지 반복 (결국 LogN에 Update 가능)
@@ -30,7 +30,7 @@ void update(int p, int v)
 
 //구간 값 구하기
   1. 구간 왼쪽(L), 오른쪽(R) 노드 index를 입력 받는다
-  2. 왼쪽(L), 오른쪽(R) 노드 index 값을 각각 변경한다.  index가 1부터 시작하면 Leaf노드 첫번째 index -1 을 더해주고 0부터 시작하면 Leaf노드 첫번째 index를 더해준다
+  2. 왼쪽(L), 오른쪽(R) 노드 index 값을 각각 변경한다. 
   3. L이 홀수 일 경우 L번째 노드를 선택하여 구간 대표 값 갱신
   4. L은 L+1 노드로 이동
   5. R이 짝수 일 경우 R번째 노드를 선택하여 구간 대표 값 갱신
