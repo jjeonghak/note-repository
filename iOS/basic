@@ -1,21 +1,56 @@
 //Swift 언어 특징
 //safe type, 강타입, 타입 엄격
-
 //var : 변수 선언, let : 상수 선언
+
 
 //type annotations, 타입 정의
 var intVal: Int = 1;
 let intConst: Int = 1;
 
-//tuples (n쌍, n짝)
+
+//튜플(tuples), (n쌍, n짝)
 var topTitle = ("메인화면", "mainIcon.png")
 topTitle.0  //메인화면
 topTitle.1  //mainIcon.png
+
 
 //http status code, 주로 토플사용
 var httpError = (200, "success")
 var httpError = (statusCode: 404, description: "not found")
 httpError.statusCode  //httpError.0
 httpError.description  //httpError.1
+
+
+//유니코드(unicode)
+//16진수표현
+"\u{30}" <= inputValue && inputValue <= "\u{39}"  //숫자(0 ~ 9)
+"\u{41}" <= inputValue && inputValue <= "\u{7a}"  //영어(A ~ z)
+
+
+//배열(array)
+var strArr = Array<String>()
+var intArr = [Int]()
+
+intArr.append(1)  //배열인덱스 추가
+intArr.append(contentsOf: [1, 2, 3])  //배열인덱스 배열형태로 추가
+
+intArr = intArr + [1]  //배열인덱스 추가, 같은 자료형으로 연산
+intArr = intArr + [1, 2, 3]  //배열인덱스 배열형태로 추가
+
+intArr.insert(1, at: n)  //n번째 인덱스 추가
+
+intArr.count  //배열크기
+
+intArr.remove(at: n)  //n번째 인덱스 삭제
+intArr.removeFirst()  //첫번째 인덱스 삭제
+intArr.removeLast()  //마지막 인덱스 삭제
+intArr.removeAll()  //모든 인덱스 삭제
+
+intArr.isEmpty()  //인덱스 유무 판별
+
+
+//반복문
+for value in intArr {}  //배열의 인덱스 값에 접근
+for (index, value) int intArr.enumerated {}  //배열의 인덱스와 인덱스 값을 튜플 형식으로 접근
 
 
