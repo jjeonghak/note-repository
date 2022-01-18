@@ -49,8 +49,34 @@ intArr.removeAll()  //모든 인덱스 삭제
 intArr.isEmpty()  //인덱스 유무 판별
 
 
-//반복문
+//셋(set)
+//순서 및 중복 없음, 배열의 중복제거에 사용, (Set)intArr
+var intSet = set<Int>()
+var intSet: Set = [1, 2, 3]
+intSet.insert(1)  //append 함수 불가능
+intSet.insert(1)  //이미 들어있는 값이라 들어가지 않음
+
+intSet1.intersection(intSet2)  //교집합
+intSet1.union(intSet2)  //합집합, 중복제외
+intSet1.symmetricDifference(intSet2)  //합집합 - 교집합(대치차집합)
+intSet1.subtracting(intSet2)  //여집합
+ 
+
+//사전(dictionary)
+//키-값, 옵셔널 타입 지정하지 않아도 nil 값 가능(잘못된 키값 입력시 nil 반환)
+var strDic = [String : Any]()  //Any 타입은 모든 타입가능
+var strDic = ["key1" : "value", "key2" : false, "key3" : 3]
+strDic["key1"] = "value"
+strDic["key2"] = false
+strDic["key3"] = 3
+
+strDic.keys  //키값 출력
+
+
+//흐름제어(control flow)
 for value in intArr {}  //배열의 인덱스 값에 접근
 for (index, value) int intArr.enumerated {}  //배열의 인덱스와 인덱스 값을 튜플 형식으로 접근
-
+for index in 0..5 {}  //숫자범위로 반복문 실행(0 ~ 5)
+for index in 0..<5 {}  //숫자범위로 반복문 실행(0 ~ 4)
+for index in 0..<intArr.count
 
