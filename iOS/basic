@@ -80,3 +80,13 @@ for index in 0..5 {}  //숫자범위로 반복문 실행(0 ~ 5)
 for index in 0..<5 {}  //숫자범위로 반복문 실행(0 ~ 4)
 for index in 0..<intArr.count
 
+let flag = 1
+switch flag {
+case 1, 2, 3:  //콤마 사용으로 여러값
+     command1
+case 4..8:   //범위
+     command2
+default:
+     command3
+}
+
