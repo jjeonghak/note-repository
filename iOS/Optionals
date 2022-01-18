@@ -1,0 +1,35 @@
+//옵셔널(Optionals)
+//값이 있을수도 있고, 없을수도 있다
+//nil : 값이 없는 상태(== null)
+
+var intVal: Int = 0
+intVal = nil  //error, 'nil' cannot be assigned to type 'Int'
+
+var intVal: Int? = 0  //optional int type, can assign 'nil'
+intVal = nil
+
+var a: Int? = 10
+var b: Int? = 20
+var c = a + b  //error, Value of optional type 'Int?' must be unwrapped to a type 'int'
+
+
+//unwrapping
+1. coalesce
+  var c = (a ?? 0) + (b ?? 0)  //옵셔널 타입의 값이 있는지 확인 후 없으면 0으로 대체
+
+2. force-unwrap  //값이 없는 경우(nil) 오류발생, 무조건 값이 있는 경우만 사용
+  var d = a! + b!  //강제로 값이 있는 것으로 취급
+
+3. if Statements
+  if var hasNumber = a {  //a값이 존재할 때 값을 받아 실행
+  
+  }
+  
+4. guard Statements  //클래스나 함수내에서 사용가능
+  func  testFunc() {
+    guard var hasNumber = a else {  //a값이 존재하지 않는 경우 실행
+        return
+    }
+  }
+
+
