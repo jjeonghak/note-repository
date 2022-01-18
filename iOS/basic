@@ -1,5 +1,21 @@
 //Swift 언어 특징
-// Safe type, 강타입, 타입 엄격
+//safe type, 강타입, 타입 엄격
 
-//var : 변수 선언
-//let : 상수 선언
+//var : 변수 선언, let : 상수 선언
+
+//type annotations, 타입 정의
+var intVal: Int = 1;
+let intConst: Int = 1;
+
+//tuples (n쌍, n짝)
+var topTitle = ("메인화면", "mainIcon.png")
+topTitle.0  //메인화면
+topTitle.1  //mainIcon.png
+
+//http status code, 주로 토플사용
+var httpError = (200, "success")
+var httpError = (statusCode: 404, description: "not found")
+httpError.statusCode  //httpError.0
+httpError.description  //httpError.1
+
+
