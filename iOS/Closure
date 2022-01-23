@@ -1,0 +1,39 @@
+//function
+func functionName(arg: Int) -> String
+{
+   return "\(arg)"
+}
+ 
+//closure
+let closureName1 = { (arg: Int) -> String in
+    return "\(arg)"
+}
+
+//closure 축약
+let closureName2 = { (arg: Int) -> String in
+    "\(arg)"  //body의 명령어가 리턴만 존재할 경우 생략가능
+}
+
+let closureName3 = { (arg: Int) in  //결과값 타입추론으로 리턴타입 생략가능
+    "\(arg)"
+}
+
+let closureName4: (Int) -> String = { arg in
+    "\(arg)"
+}
+
+let closureName5: (Int, Int) -> String = { 
+    "\($0 + $1)"  //알규먼트의 인덱스($), in과 함께 사용불가
+}
+
+
+//sort함수 축약
+list.sort { (lhs, rhs) -> Bool in
+    return lhs < rhs
+}
+
+list.sort{ $0 < $1 }  //closure 알규먼트
+list.sort(){ $0 < $1 }
+list.sort(by: { $0 < $1 })
+list.sort(by: <)
+
