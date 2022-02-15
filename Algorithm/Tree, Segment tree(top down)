@@ -6,3 +6,38 @@ Leaf노드의 Index번호를 따로 구해야 함
 범위를 반씩 나누어 가지기 때문에 Leaf노드의 Index번호가 어떻게 나올지 모름
 Index 구해서 따로 index저장 배열에 저장해야 함
 
+ll set_tree(int Node, int Start, int End)
+{
+    if (s == e) return segTree[Node] = Arr[s];
+    
+    int mid = (s + e) / 2;
+    ll lbResult = set_tree(node * 2, s, mid);
+    ll rbResult = set_tree(node * 2 + 1, mid + 1, e);
+    segTree[Node] = lbResult + rbResult;
+    return segTree[node];
+}
+ 
+ll sum_tree(int node, int s, int e, int lb, int rb)
+{
+    if (lb > e || rb < s) return 0;
+    if (lb <= s && e <= rb) return segTree[Node];
+ 
+    int mid = (s + e) / 2;
+    ll lbResult = sum_tree(node * 2, s, mid, lb, rb);
+    ll rbResult = sum_tree(node * 2 + 1, mid + 1, e, lb, rb);
+    return lbResult + rbResult;
+}
+ 
+void update_tree(int node, int s, int e, int index, ll diff)
+{
+    if (index < s || index > e) return;
+    segTree[Node] = segTree[Node] + diff;
+ 
+    if (s != e)
+    {
+        int mid = (s + e) / 2;
+        update_tree(node * 2, s, mid, index, diff);
+        update_tree(node * 2 + 1, mid + 1, e, index, diff);
+    }
+}
+
