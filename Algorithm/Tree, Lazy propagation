@@ -1,0 +1,45 @@
+//갱신 또는 쿼리가 한번 수행될 때 관여되는 노드는 O(log N)
+//더 내려가지 않고 멈출 때마다 해당 노드에 flag 표시
+//후에 flag 표시가 있는 노드를 만나면 더 내려가기 전에 아래로 전파(propagation)
+//전파를 필요할 때마다만 수행(lazy)
+
+tree[] : 각 노드에 대해 실제로 구하는 값
+lazy[] : 각 노드에 flag 표시
+
+void  propagation(int node, int s, int e)  //flag 전파를 위한 함수
+{
+    int mid = (s + e) / 2;
+    tree[2 * node] += (mid - s + 1) * lazy[node];
+    lazy[2 * node] += lazy[node];
+    tree[2 * node + 1] += (e - mid) * lazy[node];
+    lazy[2 * node + 1] += lazy[node];
+    lazy[node] = 0;
+}
+
+void  update(int lb, int rb, int add, int node, int s, int e)
+{
+    if (rb < s || e < lb) return ;
+    if (lb <= s && e <= rb)
+    {
+        tree[node] += (e - s + 1) * add;
+        lazy[nod] += add;
+        return ;
+    }
+    propagation(node, s, e);  //업데이트 전 flag 전파
+    int mid = (s + e) / 2;
+    update(lb, rb, add, 2 * node, s, mid);
+    update(lb, rb, add, 2 * node + 1, mid + 1, e);
+    tree[node] = tree[2 * node] + tree[2 * node + 1];
+    return ;
+}
+
+int query(int lb, int rb, int add, int node, int s, int e)
+{
+    if (rb < s || e <= rb) return 0;
+    if (lb <= s && e <= rb) return tree[node];
+    propagation(node, s, e);
+    int mid = (s + e) / 2;
+    return query(lb, rb, add, 2 * node, s, mid) 
+           + query(lb, rb, add, 2 * node + 1, mid + 1, e);
+}
+
