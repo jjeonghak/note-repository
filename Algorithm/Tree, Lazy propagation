@@ -33,13 +33,13 @@ void  update(int lb, int rb, int add, int node, int s, int e)
     return ;
 }
 
-int query(int lb, int rb, int add, int node, int s, int e)
+int query(int lb, int rb, int node, int s, int e)
 {
     if (rb < s || e <= rb) return 0;
     if (lb <= s && e <= rb) return tree[node];
     propagation(node, s, e);
     int mid = (s + e) / 2;
-    return query(lb, rb, add, 2 * node, s, mid) 
-           + query(lb, rb, add, 2 * node + 1, mid + 1, e);
+    return query(lb, rb, 2 * node, s, mid) 
+           + query(lb, rb, 2 * node + 1, mid + 1, e);
 }
 
