@@ -22,7 +22,7 @@ void  update(int lb, int rb, int add, int node, int s, int e)
     if (lb <= s && e <= rb)
     {
         tree[node] += (e - s + 1) * add;
-        lazy[nod] += add;
+        lazy[node] += add;
         return ;
     }
     propagation(node, s, e);  //업데이트 전 flag 전파
