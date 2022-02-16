@@ -35,7 +35,7 @@ void  update(int lb, int rb, int add, int node, int s, int e)
 
 int query(int lb, int rb, int node, int s, int e)
 {
-    if (rb < s || e <= rb) return 0;
+    if (rb < s || e < rb) return 0;
     if (lb <= s && e <= rb) return tree[node];
     propagation(node, s, e);
     int mid = (s + e) / 2;
