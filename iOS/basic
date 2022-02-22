@@ -48,10 +48,14 @@ httpError.description  //httpError.1
 
 //배열(array)
 var strArr = Array<String>()
+var intArr: [Int] = [Int]()
 var intArr = [Int]()
+var intArr: [Int] = []
 
 intArr.append(1)  //배열인덱스 추가
 intArr.append(contentsOf: [1, 2, 3])  //배열인덱스 배열형태로 추가
+
+intArr.contains(1)  //해당 인덱스값을 소유하고 있는지 판별
 
 intArr = intArr + [1]  //배열인덱스 추가, 같은 자료형으로 연산
 intArr = intArr + [1, 2, 3]  //배열인덱스 배열형태로 추가
