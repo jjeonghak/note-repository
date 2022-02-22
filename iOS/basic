@@ -3,7 +3,9 @@ safe type, 강타입, 타입 엄격
 
 //data type
 var : 변수 선언, let : 상수 선언
-Bool, Int, UInt, Float, Double, Character, String
+Bool, Int, UInt, Float, Double, Character, String, nil
+Any : swift의 모든 타입을 지칭 키워드, 어떤 타입도 수용가능(단, nil 할당불가)
+AnyObject : 모든 클래스 타입을 지칭하는 프로토콜(단, nil 할당불가)
 
 //coding style
 lower camel case : function, method, variable, constant
