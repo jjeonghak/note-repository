@@ -1,6 +1,9 @@
 //swift 언어 특징
-//safe type, 강타입, 타입 엄격
-//var : 변수 선언, let : 상수 선언
+safe type, 강타입, 타입 엄격
+
+//data type
+var : 변수 선언, let : 상수 선언
+Bool, Int, UInt, Float, Double, Character, String
 
 //coding style
 lower camel case : function, method, variable, constant
