@@ -8,13 +8,18 @@ func  functionName(arg1: dataType, arg2 : dataType) -> returnType
 - 함수 호출
 functionName(arg1: dataValue1, arg2: dataValue2)
 
-
 //argument lable(_)
-//함수 호출 시 데이터 이름 생략가능
+함수 호출 시 데이터 이름 생략가능
 func  functionName(_ arg: dateType) {}
+func  functionName(to arg1: dataType, from arg2: dataType)
 - 함수 호출
 functionName(dataValue)
+functionName(to: dataValue1, from: dataValue2)
 
+//가변 매개변수
+func  functionName(arg1: dataType, arg2: dataType...) -> returnType {}
 
-//func argument
+//함수 매개변수
 func  functionName(funcArg: (dataType1, datatype2) -> returnType) {}
+var someFunction: (dataType1, dataType2) -> returnType = functionName(to:from:)
+
