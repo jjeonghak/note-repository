@@ -1,0 +1,15 @@
+for item in items {
+    code
+}
+
+for (key, value) in dictionary {
+    code
+}
+
+while condition {
+    code
+}
+
+repeat {  //do-while과 흡사
+    code
+} whihle condition
