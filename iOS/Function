@@ -20,6 +20,6 @@ functionName(to: dataValue1, from: dataValue2)
 func  functionName(arg1: dataType, arg2: dataType...) -> returnType {}
 
 //함수 매개변수
-func  functionName(funcArg: (dataType1, datatype2) -> returnType) {}
+func  functionName(function: (dataType1, datatype2) -> returnType) {}
 var someFunction: (dataType1, dataType2) -> returnType = functionName(to:from:)
 
