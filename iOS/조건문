@@ -1,0 +1,21 @@
+//스위프트의 조건에는 항상 Bool 타입만 가능
+
+if condition {
+    statements
+} else if condition {
+    statements
+} else {
+    statements
+}
+
+switch value {
+case pattern:
+    code  //break 없어도 break
+default:  //모든 케이스를 적지않은 경우 default 필수
+    code
+}
+
+//범위 연산자
+1..<100  //1이상 100미만
+100...Int.max  //100이상
+
