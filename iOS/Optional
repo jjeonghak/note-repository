@@ -1,10 +1,17 @@
-//옵셔널(Optionals)
-//값이 있을수도 있고, 없을수도 있다
+//옵셔널(Optional)
+//값이 있을수도 있고, 없을수도 있다, nil의 가능성 암시
+//기존 변수처럼 사용불가(일반타입과의 연산불가)
 //nil : 값이 없는 상태(== null)
+
+enum  Optional<Wrapped> : ExpressibleByNilLiteral {
+    case  none
+    case  some(Wrapped)
+}
 
 var intVal: Int = 0
 intVal = nil  //error, 'nil' cannot be assigned to type 'Int'
 
+var intVal: Optional<Int> = 0
 var intVal: Int? = 0  //optional int type, can assign 'nil'
 intVal = nil
 
@@ -13,12 +20,19 @@ var b: Int? = 20
 var c = a + b  //error, Value of optional type 'Int?' must be unwrapped to a type 'int'
 
 
-//unwrapping
+//암시적 추출 옵셔널(Implicitly unwrapped optional)
+var intVal: Int! = 0
+intVal = intVal + 1  //기존 변수처럼 사용 가능
+intVal = nil  //nil 할당 가능
+intVal = intVal + 1  //잘못된 접근으로 에러발생
+
+
+//Optional unwrapping
 1. coalesce
   var c = (a ?? 0) + (b ?? 0)  //옵셔널 타입의 값이 있는지 확인 후 없으면 0으로 대체
 
 2. force-unwrap  //값이 없는 경우(nil) 오류발생, 무조건 값이 있는 경우만 사용
-  var d = a! + b!  //강제로 값이 있는 것으로 취급
+  var d = a! + b!  //강제로 값이 있는 것으로 취급, 옵셔널 -> 암시적 추출 옵셔널화
 
 3. if Statements
   if var hasNumber = a {  //a값이 존재할 때 값을 받아 실행
