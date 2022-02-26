@@ -1,0 +1,32 @@
+//enum : 대문자 카멜케이스
+//case : 소문자 카멜케이스, 그 자체로 고유의 값
+//메소드 추가 가능
+
+enum EnumName {
+    case c1
+    case c2
+    case c3, c4, c5
+    
+    func function() {
+        code
+    }
+}
+
+//원시값(rawValue)
+//c 언어의 enum가 유사하게 정수값
+//초기 선언 이후로 1씩 증가
+//정수 타입 뿐만 아니라 hashable 프로토콜을 따르는 모든 타입이 원시값 가능
+//정수 타입이 아닐 경우 원시값이 선언되지 않은 값은 case name 값
+
+enum EnumName {
+    case c1 = 0
+    case c2 = 1
+    case c3, c4, c5
+}
+
+enum EnumName {
+    case c1 = "ab"
+    case c2 = "cd"
+    case c3, c4, c5
+}
+
