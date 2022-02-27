@@ -107,5 +107,5 @@
               [interface] [IP} : 해당 인터페이스 ip 설정변경
               * IPv4(inet) Subbetmask(netmask) Brodcastaddress(brodcast) MACaddress(ether)
 
-
+25. control + u : 커맨드 
 
