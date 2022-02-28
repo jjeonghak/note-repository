@@ -1,0 +1,27 @@
+//property
+구조체, 클래스, 열거형 내부에 구현가능(열거형 내부에는 연산 프로퍼티만)
+
+  1. 저장 프로퍼티(stored property) : 저장을 위한 프로퍼티
+      var name: dataType = value
+      
+  2. 연산 프로퍼티(computed property) : 연산프로퍼티 사용불가
+      get {}, set {}  //알규먼트 newValue 사용
+      
+  3. 인스턴스 프로퍼티(instance property)
+  
+  4. 타입 프로퍼티(type property) : 타입 저장을 위한 프로퍼티
+
+
+//프로퍼티 감시자
+프로퍼티 값이 변경될 때 원하는 동작 실행
+
+struct StructName {
+    var instanceName: returnType = 0 {
+        willSet {  //값 변경 전 호출, 알규먼트 newValue 사용
+            code
+        }
+        didSet {  //값 변경 후 호출, 알규먼트 oldValue 사용
+            code
+        }
+    }
+}
