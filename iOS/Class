@@ -1,0 +1,48 @@
+//스위프트의 모든 인스턴스는 초기화와 동시에 모든 프로퍼티에 유효한 값이 할당
+//이니셜라이저를 통해 초기값 전달가능(생성자)
+
+class ClassName {
+    var varialbe: Int = 0
+}
+
+class ClassName {
+    var varialbe1: Int
+    var varialbe2: Int
+    var varialbe3: Int?  //비어있을 가능성이 있는 경우 옵셔널 사용
+    
+    convenience init(variable1: Int, variable2: Int, variable3: Int) { 
+    //자신의 
+        self.init(variable1: Int, variable2: Int)  
+        self.variable3 = 3
+    }
+    init(variable1: Int, variable2: Int) {  //이니셜라이저
+        self.variable1 = 1
+        self.variable2 = 2
+    }
+}
+
+
+//스위프트의 상속은 클래스, 프로토콜 등에서 사용가능(구조체, 열거형 불가능)
+//자식 클래스는 override func으로 함수 오버라이딩(재정의)
+//부모 클래스 메서드 호출시 super.function()
+
+class ClassName: InheritanceName {
+    var varialbe: Int = 0
+    
+    final func function() {  //자식 클래스에서 final func 오버라이딩(재정의) 불가
+        code
+    }
+    
+    static func function1() {  //재정의 불가 타입 메서드
+        code
+    }
+    
+    class func function2() {  //재정의 가능 타입 메서드
+        code
+    }
+    
+    final class func function3() {  //static과 유사
+        code
+    }
+}
+
