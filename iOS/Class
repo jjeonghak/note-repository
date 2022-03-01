@@ -1,23 +1,32 @@
 //스위프트의 모든 인스턴스는 초기화와 동시에 모든 프로퍼티에 유효한 값이 할당
 //이니셜라이저를 통해 초기값 전달가능(생성자)
+//디이니셜라이저는 메모리 해제시 자동 호출(소멸자)
 
 class ClassName {
     var varialbe: Int = 0
 }
 
 class ClassName {
-    var varialbe1: Int
+    var varialbe1: Int!  //꼭 있어야하는 경우 암시적 추출 옵셔널
     var varialbe2: Int
     var varialbe3: Int?  //비어있을 가능성이 있는 경우 옵셔널 사용
     
     convenience init(variable1: Int, variable2: Int, variable3: Int) { 
-    //자신의 
+    //자신의 이니셜라이저 호출시 convenience
         self.init(variable1: Int, variable2: Int)  
         self.variable3 = 3
     }
-    init(variable1: Int, variable2: Int) {  //이니셜라이저
+    
+    init?(variable1: Int, variable2: Int) {  //실패가능성 있는 경우 옵셔널 이니셜라이저 
+        if (0...100).contains(variable1) == false {
+            return nil
+        }
         self.variable1 = 1
         self.variable2 = 2
+    }
+    
+    deinit {  //디이니셜라이저는 매개변수 가질수 없음
+        code
     }
 }
 
