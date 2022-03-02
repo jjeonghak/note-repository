@@ -1,0 +1,51 @@
+//연속적인 nil 체크 방법
+
+class ClassName1 {
+    var varialbe1: String
+    var varialbe2: String?
+    var varialbe3: ClassName2?
+    
+    init(variable1: String) {
+        self.variable1 = varialbe1
+    }
+}
+
+class ClassName2 {
+    var varialbe4: String
+    var varialbe5: String
+    var varialbe6: ClassName1?
+    var varialbe7: ClassName1?
+    
+    init(variable4: String, varialbe5: String) {
+        self.variable4 = variable4
+        self.variable5 = variable5
+    }
+}
+
+//옵셔널 체이닝 사용하지 않는 경우
+func  noOptionalChaining(variable7: ClassName1?) {
+    if let variable7 = variable7 {
+        if let variable3 = variable.variable3 {
+            if let variable6 = variable3.variable6 {
+                if let variable2 = variable6.varialbe2 {
+                    code
+                } else {
+                    code
+                }
+            }
+        }
+    }
+}
+
+//옵셔널 체이닝 사용, 값이 nil 경우 바로 nil 반환
+func  optionalChaining(variable7: ClassName1?) {
+    if let varialbe2 = variable7?.variable3?.variable6?.variable2 {
+        code
+    } else {
+        code
+    }
+}
+
+//nil 병합 연산자, 값이 nil인 경우 대체하는 값
+varialbe2 = variable7?.variable3?.variable6?.variable2 ?? "Value"
+
