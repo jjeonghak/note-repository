@@ -1,0 +1,40 @@
+//인스턴스의 타입을 확인하는 용도(클래스의 인스턴스를 부모 혹은 자식 클래스 타입으로)
+
+let someInt: Int = 0
+let someDouble: Double = Double(someInt)
+  * 타입캐스팅이 아닌 새로운 상수선언
+  
+//is : 타입 확인
+class Class1 {
+    var variable1: String = ""
+    func  function1() {
+        code
+    }
+}
+  
+class Class2: Class1 {
+    var variable2: String = ""
+    func  function2() {
+        code
+    }
+}
+
+var result1: Bool = CLass1Instance is Class2  //false
+var result2: Bool = Class2Instance is Class1  //true
+
+switch Class1Instance {  //switch, if문으로 사용가능
+case is Class1:
+    code
+default:
+    code
+}
+
+//업캐스팅 : as 사용, 부모클래스 인스턴스로 사용할 수 있도록 컴파일러에게 타입정보 전환
+var classInstance: Class1 = CLass2() as Class1
+
+//다운캐스팅 : as?(조건부) 또는 as!(강제) 사용, 자식클래스 인스턴스 사용
+var optinalCaseted: Class2? = claseeInstacne as? class2  //불가능할 경우 nil
+var optinalCaseted: Class2? = claseeInstacne as! class2  //불가능할 경우 런타임에러
+
+
+
