@@ -1,0 +1,29 @@
+//애플리케이션 동작 중에 생성하는 다양한 결과값을 동적으로 확인하여 처리
+
+//Assertion
+assert(_:_:file:line:) 함수 사용
+ * 디버깅 모드에서만 동작, 배포된 애플리케이션에서는 제외
+ 
+var variable: Int = 0
+assert(variable == 0, "variable != 0")  //조건 true인 경우 함수 지나침, false인 경우 동작 중지
+
+func  function(variable: Int?) {
+    assert(variable != nil, "variable == nil")
+    code
+}
+
+
+//Early Eixt
+guard 사용하여 잘못된 값 전달시 특정 실행구문 종료
+ * 디버깅 뿐만 아니라 어떤 조건에서도 동작
+guard의 else 구문에는 종료하는 예약어(return, break 등) 필수, 없는 경우 컴파일에러
+
+func  function(variable: Int?) {
+    guard let unwrappedVariable = variable,  //nil일시 else
+        unwrappedVariable != 0,  //여러 조건 가능
+        unwrappedVariable < 100 else {
+            return
+        }
+    code  //여기서 unwrappedVariable 사용가능
+}
+
