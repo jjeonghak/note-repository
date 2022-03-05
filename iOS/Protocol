@@ -44,3 +44,43 @@ struct  StructName: ProtocolName {  //프로토콜 채택
         self.property2 = property2
     }
 }
+
+//프로토콜 상속, 클래스와 다르게 다중상속 가능
+//클래스의 경우 클래스 -> 프로토콜 순으로 상속
+protocol ProtocolName: SuperProtocolList {
+    code
+}
+
+protocol  Readable {
+    func read()
+}
+
+protocol  Writeable {
+    func write()
+}
+
+protocol  ReadSpeakable: Readable {
+    //func read()
+    func speak()
+}
+
+protocol  ReadWriteSpeakable: Readable, Writeable {
+    //func read()
+    //func write()
+    func speak()
+}
+
+class   SubClass: SuperClass, Writeable, Readable {
+    func read() { code }
+    func write() { code }
+}
+
+//프로토콜 준수확인
+let sup: SubClass = SubClass()
+var someAny: Any = sup
+someAny is Readable  //true
+someAny is ReadSpeakable  //false
+
+if let someReadable: Readable = someAny as? Readable {
+    someReadable.read()
+}
