@@ -1,0 +1,46 @@
+//특정역할을 수행하기 위한 메서드, 프로퍼티, 이니셜라이저 등의 요구사항 정의
+//구조체, 클래스, 열거형은 프로토콜을 채택해서 요구사항 구현가능
+//어떤 프로토콜의 요구사항을 모두 따르는 타입은 프로토콜 준수(conform)라고 표현
+
+protocol  ProtocolName {
+    //프로퍼티 요구, 항상 var 사용
+    var property1: String { get }  //get : 읽기 가능
+    var property2: String { get set }  //get set : 읽기 쓰기 모두 가능
+    
+    //메서드 요구
+    func  function()
+    
+    //이니셜라이저 요구
+    init(property1: String, property2: String)
+}
+
+//프로토콜 채택 및 준수
+struct  StructName: ProtocolName {  //프로토콜 채택
+    var variable: String = ""
+    
+    //저장 프로퍼티로 준수
+    let property1: String  //읽기만 가능 { get }
+    var property2: String  //읽기, 쓰기 가능 { get set }
+    
+    //연산 프로퍼티로 준수
+    var property1: String { get { return "string" } }
+    var property2: String {
+        set {
+            self.variable = newValue
+        }
+        get {
+            return self.variable
+        }
+    }
+    
+    //메서드 준수
+    func  function() {
+        code
+    }
+    
+    //이니셜라이져 준수
+    init(property1: String, property2: String) {
+        self.property1 = property1
+        self.property2 = property2
+    }
+}
