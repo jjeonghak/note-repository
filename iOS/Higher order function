@@ -1,0 +1,46 @@
+//전달인자로 함수를 전달받거나 함수실행 결과를 함수로 반환하는 함수
+
+//map
+컨테이너 내부의 기존 데이터를 변형하여 새로운 컨테이너 생성
+
+let numbers: [Int] = [0, 1, 2, 3, 4]
+var doubledNumbers = [Int]()
+var strings = [String]()
+
+doubledNumbers = numbers.map({ (number: Int) -> Int in  //클로저
+    return number * 2
+})
+
+doubledNumbers = numbers.map { $0 * 2 }  //후행 클로저
+
+
+strings = numbers.map({ (number: Inㅅ) -> String in
+    return "\(number)"
+})
+
+//filter
+컨테이너 내부의 값을 걸러서 새로운 컨테이너로 추출
+
+let evenNumbers: [Int] = numbers.filter {
+    (number: Int) -> Bool in
+    
+    return number % 2 == 0  //이값이 참일 때만 추출
+}
+
+let oddNumbers: [Int] = numbers.filter {  //후행 클로저
+    $0 % 2 != 0
+}
+
+//reduce
+컨테이너 내부의 콘테츠를 하나로 통합
+
+let someNumbers: [Int] = [2, 8, 15]
+let sum: Int = someNumbers.resuce(0, {  //초기값 지정
+    (first: Int, second: Int) -> Int in
+    
+    return first + second
+})
+
+let sumFromThree = someNumbers.reduce(3) { $0 + $1 } 
+
+
