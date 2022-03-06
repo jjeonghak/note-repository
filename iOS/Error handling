@@ -1,0 +1,55 @@
+//Error protocol과 열거형 주로 사용
+//오류밠생 여지가 있는 메서드에 throws를 이용해서 오류를 내포하는 함수임을 표시
+
+enum ErrorName: Error {
+    case errorType1
+    case errorType2
+}
+
+class ClassName {
+    func  function(_ variable: Int) throws -> returnType {
+        guard variable > 0 else {
+            throw ErrorName.errorType2
+        }
+        code
+    }
+}
+
+//오류처리
+오류발생의 여지가 있는 throws 메소드 호출시 try 사용
+주로 do-catch 구문 사용
+
+var instance: ClassName = ClassName()
+
+//오류 발생시 해당하는 catch 구문 실행
+do {
+    try instance.function(0)
+} catch ErrorName.errorType1 {  
+    error code1
+} catch ErrorName.errorType2 {
+    error code2
+}
+
+//무슨 오류인지 상관없이 한번에 처리
+do {
+    try instance.function(0)
+} catch {  
+    error code
+}
+
+//오류발생무시
+do {
+    try instance.function(0)  
+}
+
+//try?
+별도의 오류처리 결과 통보받지 않고 오류발생이 결과값 nil
+정상작동 후에도 옵셔널 타입으로 결과값 반환
+
+result = try? instacne.function(0)
+
+//try!
+오류가 발생하지 않을 경우 사용
+정상동작 후에 바로 결과값 반환
+오류 발생시 런타임에러로 인한 애플리케이션 동작 중지
+
