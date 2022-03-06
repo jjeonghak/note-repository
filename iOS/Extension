@@ -1,0 +1,38 @@
+//구조체, 클래스, 열거형, 프로토콜 타입에 새로운 기능을 추가할 수 있는 기능
+//기능을 추가하려는 타입의 구현된 코드를 알지 못해도 타입만 알고 있다면 그 타입의 기능 확장가능
+
+//추가할 수 있는 기능(단, 기존에 존재하는 기능 재정의 불가)
+1. 연산 타입 & 인스턴스 프로퍼티
+2. 타입 & 인스턴스 메서드
+3. 이니셜라이저
+4. 서브스크립트
+5. 중첩타입
+6. 특정 프로토콜 준수를 위한 기능 추가
+
+extension typeName {
+    extension code
+}
+
+extension typeName: Protocol1, Protocol2 {
+    protocol requirements
+}
+
+extension Int {
+    var isEven: Bool {
+        return self % 2 == 0
+    }
+    var isOdd: Bool {
+        return self % 2 == 1
+    }
+}
+
+extension String {
+    init(intTypeNumber: Int) {
+        self = "\(intTypeNumber)"
+    }
+}
+
+1.isEven  //false
+1.isOdd  //true
+let stringFromInt: String = String(intTypeNumber: 100)  //"100"
+
