@@ -10,6 +10,7 @@
 //Fortran - Pascal - C [Language History]
 //Simula(1964)에서 시작한 OOP는 GUI 환경(1990 ~)에서 만개
 //C에도 OOP 패러다임 적용
+//struct(instance)는 pass by value, class(object)는 pass by reference
 
 
 //Swift
@@ -19,4 +20,5 @@
   - lamda 표현식
   - 멀티코어 시대엔 새로운 패러다임 필요
   - Java, Objective-C 등에도 함수형 문법 추가
+
 
