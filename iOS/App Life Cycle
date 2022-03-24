@@ -1,0 +1,42 @@
+//Subclass(자식 클래스)
+//OOP에서 필수적인 요소
+//확장을 통한 효율적인 프로그래밍 가능
+//하지만 부모 클래스의 동작 방식을 정확히 모두 알아야 사용가능
+//이전까지는 UIApplication을 상속받은 MyApplication 사용
+
+
+//Delegate
+//Subclass를 하지않고 원하는 결과를 얻는 방식
+//어떤 오브젝트를 생성후 UIApplication과 계약(UIApplicationDelegate)
+//UIApplication의 모든 동작 및 내부상황을 몰라도 사용가능
+//오브젝트에 DidFinishLaunch, WillResignActive등 원하는 동작 구현해 놓으면, 필요한 상황에 호출
+
+
+//App Life Cylce
+1. Not Running : 메모리를 차지하지 않는 상태
+
+2. Foreground : 메모리에 올라가 있고 앱이 화면을 점유
+   - InActive : Active 상태를 감싸는 상태
+                실행 전후로 한번씩 잠깐 거치는 상태
+                사용자가 full control하지 못하는 상태
+                외부적인 요인(interrupt)에 의해서 가능
+     
+   - Active(Run loop) : 실질적인 어플리케이션 동작
+   
+3. Background : 메모리에 올라가 있지만 앱이 화면을 점유하지 않음
+   - Suspend : 아무 동작도 하지않고 대기하는 상태
+   
+   - Background Running : 일정 부분 가능, 러닝타임은 5분 내외
+                          시간 내에 작업완료하면 suspend 상태로 대기
+                          만약 suspend 상태에서 메모리 부족시 ios에 의해 not running 상태
+                          타임아웃인 경우 마무리 작업을 위한 함수 호출후, not running 상태
+                        
+//실행순서
+AppDelegate 기준 실행
+application:DidFinishLaunchingWithOptions 호출(Not Running -> InActive)
+applicationDidBecomeActive 호출(InActive -> Active)
+applicationWillResignActive 호출(Active -> InActive)
+applicationDidEnterBackground 호출(Foreground -> Background)
+applicationWillTerminate 호출(Background Running -> Not Running)  //타임아웃 및 메모리 부족시 
+
+
