@@ -1,0 +1,20 @@
+//함수가 1급 객체 시민(1st class citizen)
+//함수는 매개변수, 리턴타입, 할당이 가능
+
+//해스켈 브룩스 커리(Haskell Brooks Curry)에 의해 발전
+//다중 인수 혹은 여러 인수 튜플을 갖는 함수를 단일 인수를 갖는 함수들의 함수열로 치환
+//많은 수의 인자가 필요한 함수의 경우 모든 인자가 들어올 때까지 동작불가
+//인자가 결정될 때마다 저장하며 그때마다 가능한 동작하며 다음 인자 대기
+
+func  makeAdder(x: Int) -> (Int) -> Int {  //함수타입 매개변수 사용시 파라미터에 가로필수
+    func  adder(a: Int) -> Int {
+        return x + a
+    }
+    return adder
+}
+
+let add5 = makeAdder(x: 5)
+
+print(add5(2))  //결과 : 7
+print(makeAdder(x: 5)(2))  //결과 : 7
+
