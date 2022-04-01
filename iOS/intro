@@ -1,0 +1,33 @@
+//스토리보드와 코드연결
+//화면전환
+
+class ViewController: UIViewController {
+
+    @IBOutlet week var buttonName: UIButton!  //화면과 연결된 버튼
+    
+    @IBAction func functionName(_ sender: Any) {  //버튼과 연결된 동작
+        //버튼의 색깔 변경
+        buttonName.backgroundColor = UIColor.orange
+        
+        //클래스만 가져오면 코드만 가져오는 것
+        //화면과 연결된 클래스를 인스턴스화 해야함
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let className = storyboard.instantiateViewController(identifier: "storyboardId") as ClassName
+        //일반적으로 스토리보드 아이디는 클래스 이름으로 설정(고유한 이름), 이후 타입 캐스팅
+        
+        self.present(viewControllerToPresent: className, animated: true, completion: nil)
+        //화면 전환
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        buttonName.backgroundColor = .red  //유추 가능한 타입이면 생략가능
+    }
+}
+
+
+class ClassName: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+}
