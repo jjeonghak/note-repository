@@ -145,7 +145,7 @@
               self.dataLabel.text = str
           }
           
-          self.present(detailVC, animated: True, completion: nil)
+          self.present(detailVC, animated: true, completion: nil)
       }
   }
   
@@ -156,7 +156,7 @@
       
       @IBAction func  closurePassData(_ sender: Any) {
           myClosure?("passing data")  //호출부
-          self.dismiss(animated: True, completion: nil)
+          self.dismiss(animated: true, completion: nil)
       }
       
       override func viewDidLoad() {
@@ -172,10 +172,24 @@
       overrride func  viewDidLoad() {
           super.viewDidLoad()
           
-          let notificationName = Notification.Name("sendString")
+          //sendSomeString이란 이름으로 무언가 호출된 경우 showSomeString 호출
+          let notificationName = Notification.Name("sendSomeString")
           
           //notification의 정보를 받을 수 있는 함수
+          //addObserver가 같은 이름으로 여러개 있는 경우, 한번 호출에 여러번 실행
           NotificationCenter.default.addObserver(self, selector: #selector(showSomeString), name: notificationName, object: nil)
+          
+          //키보드 관련 이벤트
+          NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+          NotificationCenter.default.addObserver(self, selector: #selector(keyboardDidShow), name: UIResponder.keyboardDidShowNotification, object: nil)
+      
+          //지우기
+          NotificationCenter.default.removeObserver(self, name: notificationName, object: nil)
+      }
+      
+      @IBAction func  moveToNoti(_ sender: Any) {
+          let detailVC = NotiDetailViewController(nibName: "NotiDetailViewController", bundle: nil)
+          self.present(detailVC, animated: true, completion: nil)
       }
       
       //구현부
@@ -184,6 +198,31 @@
           if let str = notification.userInfo?["str"] as? String {
               self.dataLabel.text = str
           }
+      }
+      
+      @objc func  keyboardWillShow() {
+          print("will show")
+      }
+      
+      @objc func  keyboardDidShow() {
+          print("did show")
+      }
+  }
+  
+  class NotiDetailViewController: UIViewController {
+  
+      override func viewDidLoad() {
+          super.viewDidLoad()
+      }
+      
+      @IBAction func  notiAction(_ sender: Any) {
+          
+          let notificationName = Notification.Name("sendSomeString")
+          let strDic = ["str" : "noti string"]
+          
+          //호출부
+          NotificationCenter.default.post(name: notificationName, object: nil, userInfo: strDir)
+          self.dismiss(animated: true, completion: nil)
       }
   }
  
