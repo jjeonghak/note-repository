@@ -1,0 +1,131 @@
+1. instance property
+
+  class ViewController: UIViewController {
+  
+      var someString = ""
+      
+      @IBAction func  moveToDetail(_ sender: Any) {
+          let detailVC = DetailViewController(nibName: "DetailViewController", bundle: nil)
+          
+          detailVC.someString = "passing data"  //화면 전환하기 전에 데이터 전달
+          //detailVC.dataLabel.text = "passing data" -> error
+          
+          self.present(detailVC, animated: true, completion: nil)
+          //detailVC.dataLabel.text = "passing data" -> present 이후 가능
+          //present 이전에 접근하면 오류나므로 보통 인스턴스 변수(someString)를 선언해 데이터전달 
+      }
+      
+      override func viewDidLoad() {
+          super.viewDidLoad()
+      }
+  }
+  
+  
+  class DetailViewController: UIViewController {
+      
+      var someString = ""
+      
+      @IBOutlet weak var  dataLabel: UILabel!
+      //기본적으로 화면과 연결된 변수는 메모리가 잡히기 전(화면에 올라갈 준비)까지 nil
+      //viewDidLoad 이후부터 접근가능
+      
+      override func viewDidLoad() {
+          super.viewDidLoad()
+          
+          dataLabel.text = someString
+      }
+  }
+
+2. segue
+//스토리보드에 여러 뷰컨트롤러가 존재하는 경우
+//스토리보드의 뷰컨트롤러에서 뷰컨트롤러로 드래그 연결(storyboard segue)
+
+  class ViewController: UIViewController {
+  
+      //storyboard segue 연결 호출시 동작
+      override func prepare(for segue: UIStoryboardSegue. sender: Any?) {
+          //내가 원하는 연결인지 확인
+          if segue.identifier == "segueDetail" {
+              if let detailVC = segue.destination as? SegueDetailViewController {
+                  detailVC.someString = "passing data"
+                  //detailVC.dataLabel.text = "passing data" -> error
+              }
+          }
+      }
+      
+      override func viewDidLoad() {
+          super.viewDidLoad()
+      }
+  }
+
+3. instance
+//자신의 인스턴스 전체에 
+
+  class ViewController: UIViewController {
+      @IBAction func moveToInstance(_ sender: Any) {
+          let detailVC = InstanceDetailViewController(nibName: "InstanceDetailViewController", bundle: nil)
+          
+          detailVC.mainVC = self  //자신의 인스턴스를 보냄, 자신에 접근가능하도록
+          
+          self.present(detailVC, animated: true, completion: nil)
+      }
+  }
+
+  class InstanceDetailViewController: UIViewController {
+  
+      var mainVC: ViewController?
+      
+      @IBAction dunc sendDataMainVC(_ sender: Any) {
+          mainVC?.dataLabel.text = "passing data"
+          self.dismiss(animated: true, completion: nil)  //화면내림
+      }
+  
+      overrride func  viewDidLoad() {
+          super.viewDidLoad()
+      }
+  }
+
+4. delegate pattern
+//프로토콜에 만족되는 부분만 접근가능
+
+  //프로토콜 준수를 위한 함수바디 구현
+  extension ViewController: DelegateDetailViewControllerDelegate {
+      func  passString(string: String) {
+          self.dataLabel.text = string
+      }
+  }
+
+  class ViewController: UIViewController {
+      @IBAction func moveToDelegate(_ sender: Any) {
+          let detailVC = DelegateDetailViewController("DelegateDetailViewController", bundle: nil)
+          
+          //self 대입을 위해서는 프로토콜을 준수해야함
+          detailVC.delegate = self
+          
+          self.present(detailVC, animated: true, completion: nil)
+      }
+  }
+
+
+  protocol  DelegateDetailViewControllerDelegate: AnyObject {  //weak 사용을 위해
+      func  passString(string: String)
+  }
+
+  class DelegateDetailViewController: UIViewController {
+  
+      weak var delegate: DelegateDetailViewControllerDelegate?
+      //해당되는 프로토콜 타입 선언, 구현되는 쪽에서 사용되고 없어지기 위해 weak
+  
+      @IBAction func  passDataToMainVC(_ sender: Any) {
+          delegate?.passString(string: "passing data")
+          //사용하는 곳에서 함수 구현하고 사라지도록, 함수 알규먼트 데이터 전달
+          self.dismiss(animated: true, comp;etion: nil)
+      }
+  
+      overrride func  viewDidLoad() {
+          super.viewDidLoad()
+      }
+  }
+
+
+
