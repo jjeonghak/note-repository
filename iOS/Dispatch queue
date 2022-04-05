@@ -1,0 +1,38 @@
+class ViewController: UIViewController {
+    
+    @IBOutlet week var  timerLabel: UILabel!
+    @IBOutlet week var  finishLabel: UILabel!
+    
+    //dispatch queue
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        //0.1초씩 계속 반복해서 사용
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            //1970년도부터 지나온 시간표시
+            self.timerLabel.text = Date().timeInterveSince1970.description
+        }
+    }
+    
+    @IBAction func  action1(_ sender: Any) {
+        //메인 쓰레드에서 작동
+        finishLabel.text = "finish"
+        
+        simpleClosure {
+            
+            self.finishLabel.text = "finish"
+        }
+    }
+    
+    //async를 위한 @escaping
+    func  simpleClosure(completion: @escaping () -> Void) {
+        //메인 쓰레드가 멈춤 -> 어플리케이션이 멈춤
+        Thread.sleep(forTimeInterval: 1)
+        
+        //여러 작업이 있는 경우 다른 쓰레드 생성
+        DispatchQueue.global().async {
+            Thread.sleep(forTimeInterval: 1)
+        }
+        completion()
+    }
+}
