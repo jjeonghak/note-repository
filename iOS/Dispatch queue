@@ -1,3 +1,8 @@
+//sync(동기) : 동작의 종료시까지 대기하며 결과물 가져옴
+//async(비동기) : 동작의 종료여부와 상관없이 어씽크된 모든 동작 실행
+                나중에 종료되면 그때 결과물 가져옴
+                하지만 하나의 쓰레드에 어싱크된 작업들은 순차적으로 진행
+
 class ViewController: UIViewController {
     
     @IBOutlet week var  timerLabel: UILabel!
@@ -19,8 +24,14 @@ class ViewController: UIViewController {
         finishLabel.text = "finish"
         
         simpleClosure {
-            
+            //레이블 작업은 반드시 메인 쓰레드에서만
             self.finishLabel.text = "finish"
+            
+            /* 이 방법도 가능
+            DispatchQueue.main.async {
+                self.finishLabel.text = "finish"
+            } 
+            */
         }
     }
     
@@ -28,11 +39,63 @@ class ViewController: UIViewController {
     func  simpleClosure(completion: @escaping () -> Void) {
         //메인 쓰레드가 멈춤 -> 어플리케이션이 멈춤
         Thread.sleep(forTimeInterval: 1)
+        //completion()
         
         //여러 작업이 있는 경우 다른 쓰레드 생성
         DispatchQueue.global().async {
             Thread.sleep(forTimeInterval: 1)
+            
+            //레이블 작업은 반드시 메인 쓰레드에서만
+            DispatchQueue.main.async {
+                completion()
+            }
         }
-        completion()
     }
+    
+    @IBAction func  action2(_ sender: Any) {
+        let dispatchGroup = DispatichGroup()
+        let queue1 = DispatchQueue(label: "q1")
+        let queue2 = DispatchQueue(label: "q2")
+        let queue3 = DispatchQueue(label: "q3")
+        
+        //여러 쓰레드에 동시 작업 
+        queue1.async(group: dispatchGroup) {
+            for index in 0..<2
+                print(index)
+        }
+        queue2.async(group: dispatchGroup) {
+            for index in 2..<4
+                print(index)
+        }
+        queue3.async(group: dispatchGroup) {
+            for index in 4..<6
+                print(index)
+        }
+        
+        //각각의 작업들이 언제 끝났는지 알아야하므로, 모든 작업이 종료되면 실행
+        dispatchGroup.notify(queue: DispatchQueue.main) {
+            print("finish")
+        }
+        // 결과 : 0 2 4 1 3 5 finish
+        
+        /* 쓰레드안에 
+        queue1.async(group: dispatchGroup) {
+            for index in 0..<2
+                print(index)
+        }
+        queue2.async(group: dispatchGroup) {
+            for index in 2..<4
+                print(index)
+        }
+        queue3.async(group: dispatchGroup) {
+            for index in 4..<6
+                print(index)
+        }
+
+        dispatchGroup.notify(queue: DispatchQueue.main) {
+            print("finish")
+        }
+        */
+    }
+    
 }
