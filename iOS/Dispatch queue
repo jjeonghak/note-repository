@@ -1,7 +1,10 @@
 //sync(동기) : 동작의 종료시까지 대기하며 결과물 가져옴
+              자신의 동작 종료시까지 다른 싱크의 동작을 중지
+              필수적으로 선행되어야하는 작업에 경우(쓰레드 세이프) 
 //async(비동기) : 동작의 종료여부와 상관없이 어씽크된 모든 동작 실행
                 나중에 종료되면 그때 결과물 가져옴
                 하지만 하나의 쓰레드에 어싱크된 작업들은 순차적으로 진행
+//deadlock(교착상태) : 두개 이상의 작업이 서로 상대방의 작업이 끝나기만을 기다리는 
 
 class ViewController: UIViewController {
     
@@ -59,15 +62,16 @@ class ViewController: UIViewController {
         let queue3 = DispatchQueue(label: "q3")
         
         //여러 쓰레드에 동시 작업 
-        queue1.async(group: dispatchGroup) {
+        //qos(quality of service) : 쓰레드의 우선순위, 대체적으로 우선순위에 맞추어 
+        queue1.async(group: dispatchGroup, qos: DispatchQoS.userInteractive) {
             for index in 0..<2
                 print(index)
         }
-        queue2.async(group: dispatchGroup) {
+        queue2.async(group: dispatchGroup, qos: DispatchQoS.utility) {
             for index in 2..<4
                 print(index)
         }
-        queue3.async(group: dispatchGroup) {
+        queue3.async(group: dispatchGroup, qos: DispatchQoS.background) {
             for index in 4..<6
                 print(index)
         }
@@ -78,24 +82,71 @@ class ViewController: UIViewController {
         }
         // 결과 : 0 2 4 1 3 5 finish
         
-        /* 쓰레드안에 
+        /* 쓰레드안에 또 다른 쓰레드
+        //어싱크된 쓰레드는 자신의 작업종료여부와 상관없이 블럭 종료후 다음 블럭 실행
         queue1.async(group: dispatchGroup) {
-            for index in 0..<2
-                print(index)
+            DispatchQueue.global().async {
+              for index in 0..<2
+                  print(index)
+            }
         }
         queue2.async(group: dispatchGroup) {
-            for index in 2..<4
-                print(index)
+            DispatchQueue.global().async {
+              for index in 2..<4
+                  print(index)
+            }
         }
         queue3.async(group: dispatchGroup) {
-            for index in 4..<6
-                print(index)
+            DispatchQueue.global().async {
+              for index in 4..<6
+                  print(index)
+            }
         }
 
         dispatchGroup.notify(queue: DispatchQueue.main) {
             print("finish")
         }
+        //결과 : finish 0 2 4 1 3 5
+        */
+        
+        //dispatchGroup.enter()와 dispatchGroup.leave()
+        /*
+        queue1.async(group: dispatchGroup) {
+            dispatchGroup.enter()  //쓰레드 시작을 그룹에 알림
+            DispatchQueue.global().async {
+              for index in 4..<6
+                  print(index)
+              dispatchGroup.leave()  //쓰레드 종료를 그룹에 알림
+            }
+        }
         */
     }
     
+    @IBAction func  action3(_ sender: Any) {
+    
+       let queue1 = DispatchQueue(label: "q1")
+       let queue2 = DispatchQueue(label: "q2")
+       
+       queue1.sync {
+            for index in 0..<2
+                print(index)
+        }
+        queue2.sync {
+            for index in 2..<4
+                print(index)
+        }
+        /* 데드락
+        queue1.sync {  //어싱크여도 똑같이 데드락
+            for index in 0..<2
+                print(index)
+            queue1.sync {  //안에 있는 싱크로 인해
+                for index in 2..<4
+                    print(index)
+            }
+        }
+        
+        dispatchQueue.main.sync -> 무조건 데드락
+        dispatchQueue.main.async
+        */
+    }
 }
