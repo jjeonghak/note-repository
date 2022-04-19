@@ -7,14 +7,19 @@
 // 정렬하는 수가 크지 않다면 사용, 수가 크다면 경로압축 필수
 
 
-int temp;
-int count[number1] = { 0, };//범위조건 : 크기가 number1 이하(0 초기화)
-int array[number2]; //데이터량
-for (int i = 0; i < number2; i++) { //갯수를 셈
-	count[array[i] - 1]++;
+int index[n];
+int count[n];
+int result[n];
+
+for (int i = 0; i < n; i++)
+    count[index[i]]++;
+    
+for (int i = 0; i < n; i++)
+{
+    if (count[index[i]] != 0)
+    {
+    	result[count[index[i]]] = index[i];
+	count[index[i]]--;
+    }
 }
-for (int i = 0; i < number1; i++) { //갯수만큼 출력
-	if (count[i] != 0) {
-		for (int j = 0; j < count[i]; j++) cout << i + 1;
-	}
-}
+
