@@ -11,15 +11,32 @@ int index[n];
 int count[n];
 int result[n];
 
-for (int i = 0; i < n; i++)
-    count[index[i]]++;
-    
-for (int i = 0; i < n; i++)
+void countSort()
 {
-    if (count[index[i]] != 0)
-    {
-    	result[count[index[i]]] = index[i];
-	count[index[i]]--;
-    }
+	int sum = 0;
+
+	//정렬하려는 수의 중복횟수
+	for (int i = 0; i < n; i++)
+    		count[index[i]]++;
+    	
+	//누적합을 이용한 각 수 별로 시작 인덱스값
+	for (int i = minNum; i <= maxNum; i++)
+	{
+		if (count[i] != 0)
+		{
+			sum += count[i];
+			count[i] = sum;
+		}
+	}
+	
+	//각 수의 시작 인덱스값부터 줄여가며 정렬
+	for (int i = 0; i < n; i++)
+	{
+    		if (count[index[i]] != 0)
+    		{
+    			result[count[index[i]]] = index[i];
+			count[index[i]]--;
+    		}
+	}
 }
 
