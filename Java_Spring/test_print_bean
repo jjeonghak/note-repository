@@ -1,11 +1,3 @@
-//getBeanDefinitionNames() : 스프링에 등록된 모든 빈 이름 조회
-//getBean() : 빈 이름으로 빈 객체(인스턴스) 조회
-
-//getRole() : 스프링 내부에서 사용하는 빈과 직접 등록한 빈 구분
-//Role ROLE_APPLICATION : 직접 등록한 애플리케이션 빈
-//Role ROLE_INFRASTRUCTURE : 스프링 내부에서 사용하는 빈
-
-
 public class ApplicationContextInfoTest {
     
     AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(AppConfig.class);
@@ -14,6 +6,8 @@ public class ApplicationContextInfoTest {
     @DisplayName("print all beans")
     void findAllBean() {
     
+        //getBeanDefinitionNames() : 스프링에 등록된 모든 빈 이름 조회
+        //getBean() : 빈 이름으로 빈 객체(인스턴스) 조회
         String[] beanDefinitionNames = ac.getBeanDefinitionNames();
         
         for (String beanDefinitionName : beanDefinitionNames) {
@@ -31,11 +25,38 @@ public class ApplicationContextInfoTest {
         for (String beanDefinitionName : beanDefinitionNames) {
             BeanDefinition beanDefinition = ac.getBeanDefinition(beanDefinitionName);
 
+            //getRole() : 스프링 내부에서 사용하는 빈과 직접 등록한 빈 구분
+            //Role ROLE_APPLICATION : 직접 등록한 애플리케이션 빈
+            //Role ROLE_INFRASTRUCTURE : 스프링 내부에서 사용하는 빈
             if (beanDefinition.getRole() == BeanDefinition.ROLE_APPLICATION) {
                 Object bean = ac.getBean(beanDefinitionName);
                 System.out.println("name = " + beanDefinitionName + " object = " + bean);
             }
         }
+    }
+    
+    @Test
+    @DisplayName("search by name and type")
+    void findBeanByName() {
+        MemberService memberService = ac.getBean("memberService", MemberService.class);
+        Assertions.assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+    }
+
+    @Test
+    @DisplayName("search by type without name")
+    void findBeanByType() {
+        MemberService memberService = ac.getBean(MemberService.class);
+        Assertions.assertThat(memberService).isInstanceOf(MemberServiceImpl.class);
+    }
+
+    @Test
+    @DisplayName("no such bean definition exception")
+    void findBeanNoResult() {
+        //NoSuchBeanDefinitionException
+        //MemberService x = ac.getBean("x", MemberService.class);
+        //assertThrows Exception 발생시 테스트 성공
+        org.junit.jupiter.api.Assertions.assertThrows(NoSuchBeanDefinitionException.class,
+                () -> ac.getBean("x", MemberService.class));
     }
     
 }
