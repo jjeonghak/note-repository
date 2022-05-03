@@ -61,12 +61,10 @@ public class ApplicationContextInfoTest {
     
 }
 
-
 public class ApplicationContextSameBeanFindTest {
 
     AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(SameBeanConfig.class);
 
-    //중복된 타입을 위해 새로운 config
     @Configuration
     static class SameBeanConfig {
         @Bean
@@ -83,11 +81,13 @@ public class ApplicationContextSameBeanFindTest {
     @Test
     @DisplayName("no unique bean definition exception")
     void findBeanByTypeDuplicate() {
+        //NoUniqueBeanDefinitionException
         Assertions.assertThrows(NoUniqueBeanDefinitionException.class,
                 () -> ac.getBean(MemberRepository.class)
         );
     }
 
+    //getBeansOfType : 같은 타입의 빈을 key value의 map 형식으로 조회
     @Test
     @DisplayName("search by same type")
     void findAllBeanByType() {
