@@ -60,3 +60,42 @@ public class ApplicationContextInfoTest {
     }
     
 }
+
+
+public class ApplicationContextSameBeanFindTest {
+
+    AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(SameBeanConfig.class);
+
+    //중복된 타입을 위해 새로운 config
+    @Configuration
+    static class SameBeanConfig {
+        @Bean
+        public MemberRepository memberRepository1() {
+            return new MemoryMemberRepository();
+        }
+
+        @Bean
+        public MemberRepository memberRepository2() {
+            return new MemoryMemberRepository();
+        }
+    }
+
+    @Test
+    @DisplayName("no unique bean definition exception")
+    void findBeanByTypeDuplicate() {
+        Assertions.assertThrows(NoUniqueBeanDefinitionException.class,
+                () -> ac.getBean(MemberRepository.class)
+        );
+    }
+
+    @Test
+    @DisplayName("search by same type")
+    void findAllBeanByType() {
+        Map<String, MemberRepository> beansOfType = ac.getBeansOfType(MemberRepository.class);
+        for (String key : beansOfType.keySet()) {
+            System.out.println("key = " + key + " value = " + beansOfType.get(key));
+        }
+        System.out.println("beansOfType = " + beansOfType);
+        org.assertj.core.api.Assertions.assertThat(beansOfType.size()).isEqualTo(2);
+    }
+}
