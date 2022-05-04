@@ -1,0 +1,52 @@
+//AppConfig
+  DI 컨테이너, IoC 컨테이너, 어셈블러, 오브젝트 팩토리
+
+
+//AppConfig.class
+//팩토리 메서드 방식, 외부에서 메소드를 호출하여 객체를 생성하는 방식
+@Configuration
+public class AppConfig {
+
+    @Bean
+    public MemoryMemberRepository memberRepository() {
+        return new MemoryMemberRepository();
+    }
+
+    @Bean
+    public DiscountPolicy discountPolicy() {
+        return new RateDiscountPolicy();
+    }
+
+    @Bean
+    public MemberService memberService() {
+        return new MemberServiceImpl(memberRepository());
+    }
+
+    @Bean
+    public OrderService orderService() {
+        return new OrderServiceImpl(memberRepository(), discountPolicy());
+    }
+}
+
+
+//appConfig.xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd" >
+       
+    <bean id="memberService" class="com.example.core.member.MemberServiceImpl">
+        <constructor-arg name="memberRepository" ref="memberRepository" />
+    </bean>
+
+    <bean id="memberRepository" class="com.example.core.member.MemoryMemberRepository"/>
+
+    <bean id="orderService" class="com.example.core.order.OrderServiceImpl" >
+        <constructor-arg name="memberRepository" ref="memberRepository" />
+        <constructor-arg name="discountPolicy" ref="discountPolicy" />
+    </bean>
+
+    <bean id="discountPolicy" class="com.example.core.discount.RateDiscountPolicy"/>
+    
+</beans>
+
