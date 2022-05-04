@@ -2,6 +2,30 @@
   DI 컨테이너, IoC 컨테이너, 어셈블러, 오브젝트 팩토리
 
 
+//@Configuration
+  바이트 코드를 조작하는 CGLIB 기술 사용
+  컨테이너는 일반적인 class AppConfig 파일이 아닌 AppConfig@CGLIB 파일을 빈으로 등록
+  인스턴스 객체는 AppConfig@CGLIB, 클래스는 AppConfig 상속
+  AppConfig@CGLIB 빈이 싱글톤 보장
+  @Bean 어노테이션만 사용해도 빈 등록은 되지만 @Configuration 어노테이션이 있어야 싱글톤 보장
+  
+public class AppConfig@CGLIB implements AppConfig {
+
+    @Bean
+    public ClassType beanClass() {
+
+        if (스프링 컨테이너에 beanClass 등록여부) {
+            //스프링 컨테이너에서 찾은 후 반환;
+            return beanClass 
+        } else {
+            //기본 생성자 호출
+            //스프링 컨테이너에 등록
+            return beanClass
+        }
+    }
+}
+
+
 //AppConfig.class
 //팩토리 메서드 방식, 외부에서 메소드를 호출하여 객체를 생성하는 방식
 @Configuration
