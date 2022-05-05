@@ -45,7 +45,17 @@
   }
   
   
-        
+//조회 대상 빈이 2개 이상
+  1. @Autowired 필드명, 파라미터명
+      먼저 타입 매칭, 매칭 결과가 2개 이상일 경우 필드명과 파라미터명으로 빈 이름 매칭
+      
+  2. @Qualifier 추가 구분자
+      @Qualifier("qualifierName") 어노테이션끼리 같으면 매칭
+      qualifierName 구분자도 못찾은 경우 qualifierName 이름의 빈 탐색
+      
+  3. @Primary
+      우선순위 지정, 여러 빈이 매칭된 경우에 우선권 획득
+      @Qualifier 추가 구분자보단 우선수위 낮음(디테일이 높은 것부터)
   
   
   
