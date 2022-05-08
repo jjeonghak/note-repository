@@ -49,10 +49,10 @@ public class Singletontest {
     @DisplayName("spring container and singleton")
     void springContainer() {
         ApplicationContext ac = new AnnotationConfigApplicationContext(AppConfig.class);
-        //호출할 때마다 객체 생성
+        
         MemberService memberService1 = ac.getBean("memberService", MemberService.class);
         MemberService memberService2 = ac.getBean("memberService", MemberService.class);
-        //참조값이 다름
+        
         Assertions.assertThat(memberService1).isSameAs(memberService2);
     }
 }
