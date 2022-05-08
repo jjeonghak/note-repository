@@ -21,5 +21,17 @@
   4. 이후에 스프링 컨테이너에 같은 요청이 오면 항상 새로운 프로토타입 빈을 생성해서 반환
 
 
+//싱글톤 빈에 프로토타입 스코프 
+  기본적으로 컨테이너에 의해서 싱글톤 빈이 생성될 때 프로토타입 스코프 빈도 의존관계 주입을 받아생성
+  한번 의존관계 주입을 받은 프로토타입 빈은 싱글톤 빈이 사라지기 전까지 계속 존재하므로 싱글톤 빈과 같이 동작
+  
+  ObjectFactory, ObjectProvider 사용으로 프로토타입 원래 목적에 맞게 사용가능
+  ObjectFactory는 ObjectProvider보다 상위 인터페이스
+      //컨테이너에게 호출될 때마다 마땅한 빈 요청
+      private ObjectProvider<PrototypeBean> prototypeBeanProvider;
+      private ObjectFactory<PrototypeBean> prototypeBeanFactory;
 
+      //컨테이너에게 프로토타입 빈을 필요할 때마다 탐색 요청
+      PrototypeBean prototypeBean = prototypeBeanProvider.getObject();
+      PrototypeBean prototypeBean = prototypeBeanFactory.getObject();
 
