@@ -1,4 +1,28 @@
 //의존성 탐색
   저장소에 저장되어있는 빈에 접근하기위해 특정 컨테이너가 제공하는 API 이용
   컨테이너 의존성이 높음
-  
+ 
+
+//JSR303 Provider javax.inject
+  간단한 DL 기능만을 제공
+  별도의 라이브러리 필요
+  	implementation 'javax.inject:javax.inject:1'
+
+  get() 메서드만을 지원
+    private Provider<PrototypeBean> prototypeBeanProvider;
+    PrototypeBean prototypeBean = prototypeBeanProvider.get();
+
+
+  public interface Provider<T> {
+      /**
+       * Provides a fully-constructed and injected instance of {@code T}.
+       *
+       * @throws RuntimeException if the injector encounters an error while
+       *  providing an instance. For example, if an injectable member on
+       *  {@code T} throws an exception, the injector may wrap the exception
+       *  and throw it to the caller of {@code get()}. Callers should not try
+       *  to handle such exceptions as the behavior may vary across injector
+       *  implementations and even different configurations of the same injector.
+       */
+      T get();
+  }
