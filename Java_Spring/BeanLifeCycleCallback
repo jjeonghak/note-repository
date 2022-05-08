@@ -28,10 +28,17 @@
   코드가 아니라 설정정보이므로 수정 불가한 외부라이브러리에 적용가능
   빈 등록시에 어노테이션 옵션 추가
       @Bean(initMethod = "init", destroyMethod = "close")
-      init : 초기화 메서드 이름, close : 소멸 메서드 이름
-      destroyMethod 속성은 
+          init : 초기화 메서드 이름, close : 소멸 메서드 이름
+          destroyMethod default value : "(inferred)"
+            (inferred) 추론을 통해 라이브러리의 종료메서드(close, shutdown) 자동호출
 
 
+//어노테이션
+  최신 스프링에서 가장 권장하는 방법
+  스프링에 종속된 기술이 아닌 JSR-250이라는 자바표준(javax.annotation)
+  외부 라이브러리에 적용불가
+      @PostConstruct : 초기화 메서드에 추가하는 어노테이션
+      @PreDestroy : 소멸 메서드에 추가하는 어노테이션
 
 
 
