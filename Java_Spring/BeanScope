@@ -6,7 +6,7 @@
       @Bean("prototype")
       
   웹 스코프
-      request : 웹 요펑이 들어오고 나갈때까지 유지
+      request : 웹 요청이 들어오고 나갈때까지 유지
       session : 웹 세션이 생성되고 종료될때까지 유지
       application : 웹의 서블릿 컨텍스와 같은 범위로 유지
 
@@ -34,4 +34,31 @@
       //컨테이너에게 프로토타입 빈을 필요할 때마다 탐색 요청
       PrototypeBean prototypeBean = prototypeBeanProvider.getObject();
       PrototypeBean prototypeBean = prototypeBeanFactory.getObject();
+
+
+//웹 라이브러리 추가
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+  스프링 부트는 내장 톰켓 서버를 활용해서 웹 서버와 스프링을 함께 실행
+  웹 라이브러리 없는 경우 AnnotationConfigApplicationContext 기반 애플리케이션 구동
+  있는 경우 AnnotationConfigServletWebServerApplicationContext 기반 애플리케이션 구동
+  만약 기본 포트인 8080 포트 사용중이라면 포트 설정(main/resources/application.properties)
+      server.port=9090
+
+
+//웹 스코프
+  웹 환경에서만 동작
+  스프링 컨테이너가 종료시점까지 관리
+  종료 메서드 자동호출
+      request : HTTP 요청 하나가 들어오고 나갈때까지 유지
+        각각의 요펑마다 별도의 인스턴스 생성 및 관리
+        UUID 사용해서 HTTP 요청 구분
+        공통 포멧 : [UUID][requestURL]{message}
+        
+      session : HTTP session과 동일한 생명주기
+      
+      application : 서블릿 컨텍스트(ServletContext)와 동일한 생명주기
+      
+      websocket : 웹 소켓과 동일한 생명주기
+
+
 
