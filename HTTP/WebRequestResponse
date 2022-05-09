@@ -1,0 +1,43 @@
+//URI(Uniform Resource Identifier)
+  통합 자원 식별자
+  URI는 로케이터(locator), 이름(name) 또는 둘 다 추가로 분류될 수 있다
+  URL(Uniform Resource Locator) : 리소스가 있는 위치 지정
+  URN(Uniform Resource Name) : 리소스에 이름 부여
+
+
+//URI 구조
+  scheme:[//[user[:password]@]host[:port]][/path][?query][#fragement]
+    1. scheme : 사용할 프로토콜, 웹에서는 http, https, ftp 등
+    2. user & password : 서버에 있는 데이터에 접근하기 위한 사용자의 이름과 비밀번호
+    3. host : 접근할 대상의 호스트명 또는 도메인명
+    4. port : 포트 번호, http는 80, https는 443을 주로 사용(생략가능) 
+    5. path : 접근할 대상의 경로 상세 정보
+    6. query : 접근할 대상에게 전달하는 추가적인 파라미터, ?로 시작 후 &로 추가
+    7. frame : 메인 리소스 내에 존재하는 서브 리소스에 접근할 때 이름 식별하기 위한 정보
+  
+
+//웹 브라우저 요청 흐름
+  URI : https://www.google.com:433/search?q=Uniform+Resource+Identifier&hl=ko
+    1. 웹 브라우저에 URI 요청
+    2. URI의 host(도메인명) 정보를 이용해서 DNS 서버에 IP 주소 요청
+    3. DNS 서버를 통해 얻은 IP와 URI port 정보를 이용해서 HTTP 요청 메시지 생성
+        GET /search?q=Uniform+Resource+Identifierhl=ko HTTP/1.1
+        Host : www.google.com
+    4. ARP를 통해 IP 주소를 MAC 주소로 변환
+    5. TCP 3 way handshake 방식으로 host 논리적인 연결(TCP 소켓 연결)
+    6. 응용계층의 웹 브라우저가 생성한 HTTP 메시지를 소켓 라이브러리를 통해 전송계층에 전달
+    7. 계층을 내려가며 HTTP 메시지에 TCP/IP 패킷 추가
+    8. 인터넷 망을 통해 요청 패킷 host에게 전송
+    9. 요청 패킷을 받은 host는 패킷을 까서 HTTP 메시지에 맞게 탐색
+    10. HTTP 응답 메시지를 생성
+        HTTP/1.1 200 OK
+        Content-Type: text/html;charset=UTF-8
+        Content-Length: 3423
+        <html>
+          <body>...</body>
+        </html>
+    11. host도 똑같은 방식으로 응답 패킷을 생성 후 전달
+    12. 응답 패킷을 받은 웹 브라우저는 패킷을 까서 HTTP 응답 메시지에 맞게 HTML 렌더링
+  
+
+
