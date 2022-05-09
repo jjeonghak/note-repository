@@ -23,6 +23,7 @@
     3. DNS 서버를 통해 얻은 IP와 URI port 정보를 이용해서 HTTP 요청 메시지 생성
         GET /search?q=Uniform+Resource+Identifierhl=ko HTTP/1.1
         Host : www.google.com
+        
     4. ARP를 통해 IP 주소를 MAC 주소로 변환
     5. TCP 3 way handshake 방식으로 host 논리적인 연결(TCP 소켓 연결)
     6. 응용계층의 웹 브라우저가 생성한 HTTP 메시지를 소켓 라이브러리를 통해 전송계층에 전달
@@ -33,6 +34,7 @@
         HTTP/1.1 200 OK
         Content-Type: text/html;charset=UTF-8
         Content-Length: 3423
+        
         <html>
           <body>...</body>
         </html>
