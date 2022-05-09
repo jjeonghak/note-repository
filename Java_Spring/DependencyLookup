@@ -5,6 +5,7 @@
 
 //JSR303 Provider javax.inject
   간단한 DL 기능만을 제공
+  순환 참조 시에도 사용(A가 B 의존 && B가 A 의존)
   별도의 라이브러리 필요
   	implementation 'javax.inject:javax.inject:1'
 
@@ -26,3 +27,12 @@
        */
       T get();
   }
+
+
+//ObjectProvider과 JSR-303 Provider
+  ObjectProvider는 DL을 위한 편의 기능을 많이 제공해주고 별도의 의존관계 추가 필요없음
+  하지만 스프링에 의존적이며 다른 컨테이너에서는 사용불가
+  다른 컨테이너를 사용할 때에는 JSR-303 Provider 사용
+
+
+
