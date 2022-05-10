@@ -1,0 +1,31 @@
+//개요
+  header-field = field-name ":" OWS field-value OWS
+  HTTP 전송에 필요한 모든 부가정보
+
+
+//RFC2616 분류
+  1999년 HTTP 표준
+  1. General header : 메시지 전체에 적용되는 정보
+      Connection: close
+      
+  2. Request header : 요청 정보
+      User-Agent: Mozilla/5.0 (Macintosh; ..)
+      
+  3. Responce header : 응답 정보
+      Server: Apache
+      
+  4. Entity header : 엔티티 정보, 메시지 본문(entity body)의 데이터 해석을 위한 정보
+      Content-Type: text:html
+      Content-Length: 3423
+  
+
+//RFC7230 ~ 7235
+  엔티티(Entity) -> 표현(Representation)
+  표현(representation) = 메타데이터(representationMetadata) + 데이터(representationData)
+  메시지 본문(message body, payload)을 통해 표현 데이터 전달
+  요청이나 응답에서 전달한 실제 데이터는 표현
+  표현 헤더는 표현 데이터를 해석을 위한 정보(표현 메타데이터와 페이로드 메시지 구분해야하지만 생략)
+
+
+
+
