@@ -1,0 +1,118 @@
+//HTTP 메서드
+  최근 표현적으로 리소스는 representation으로 변경
+    GET : 리소스 조회
+        서버에 전달하고 싶은 데이터는 쿼리 파라미터를 통해 전달
+        메시지 바디를 사용해서 데이터를 전달 가능하지만 지원하지 않는 곳이 많아서 권장하지 않음
+            request
+                GET /resources/100 HTTP/1.1
+                Host: localhost:8080
+            response
+                HTTP/1.1 200 OK         
+                Content-Type: application/json
+                Content-Length: 34
+
+                {
+                    "username":"jeonghak",
+                    "age":26
+                }
+             
+    POST : 요청 데이터 처리(주로 등록)
+        대상 리소스가 리소스의 고유한 의미 체계에 따라 요청에 포함된 표현을 처리하도록 요청
+        요청 데이터를 어떤 방식으로 처리할지는 리소스마다 따로 결정, 정해진 방법 없음
+        메시지 바디를 통해 서버로 요청 데이터 전달, 서버는 요청 데이터를 처리
+            request
+                POST /resources HTTP/1.1
+                Host: localhost:8080
+                Content-Type: application/json
+                
+                {
+                    "username":"jeonghak",
+                    "age":26
+                }
+            response
+                HTTP/1.1 201 Created  //신규 생성된 경우 statusCode 201 Created 사용
+                Content-Type: application/json
+                Location: /members/100  //201 code는 Location이라는 경로 정보 추가
+
+                {
+                    "username":"jeonghak",
+                    "age":26
+                }
+    
+    PUT : 리소스 대체(해당 리소스 없으면 생성, 덮어쓰기)
+        클라이언트가 구체적인 리소스 경로를 알고 있어야 사용가능(POST와 차이점)
+            request
+                PUT /resources/100 HTTP/1.1
+                Host: localhost:8080
+                Content-Type: application/json
+                
+                {
+                    "age":10
+                }
+            response
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {
+                    "age":10
+                }
+        
+    PATCH : 리소스 부분 변경
+        리소스를 완전히 대체하는 것이 아닌 일정 부분만 변경가능(PUT과 차이점)
+            request
+                PATCH /resources/100 HTTP/1.1
+                Host: localhost:8080
+                Content-Type: application/json
+                
+                {
+                    "age":10
+                }
+            response
+                HTTP/1.1 200 OK
+                Content-Type: application/json
+
+                {
+                    "username":"jeonghak"
+                    "age":10
+                }
+                
+    DELETE : 리소스 삭제
+          request
+              DELETE /members/100 HTTP/1.1
+              Host: localhost:8080
+          response
+                HTTP/1.1 200 OK
+                Content-Type: text/html;charset=UTF-8
+
+                <html>
+                  <body>
+                    <h1>member deleted.</h1>
+                  </body>
+                </html>
+          
+    
+    HEAD : GET과 동일하지만 응답 메시지의 메시지 바디를 제외하고 상태 줄과 해더만 포함해서 반환
+    
+    OPTIONS : 대상 리소스에 대한 통신 가능옵션을 설명(주로 CORS)
+    
+    TRACE : 대상 리소스에 대한 경로를 따라 메시지 루프백 테스트 수행
+
+
+//HTTP 메서드 속성
+  일반적으로 동일한 클라이언트가 요청한 메서드에 대한 속성
+  외부적인 요인과 요청중 다른 클라이언트에 의해 리소스가 변경되는 것까지 고려하지 않음
+  
+  1. 안전(safe methods) : 호출해도 리소스 변경 없음
+      GET, HEAD, OPTIONS, TRACE
+      
+  2. 멱등(idempotent methods) : 몇번을 호출해도 결과값이 동일
+      f(f(x)) = f(x)
+      자동 복구 메커니즘 사용가능
+      서버가 타임아웃 등으로 정상 응답 없을시 클라이언트가 같은 요청을 다시해도 리소스변화 없음
+      GET, HEAD, PUT, DELETE, OPTIONS, TRACE
+  
+  3. 캐시가능(cacheable methods) : 웹 브라우저가 응답으로 받은 데이터를 저장가능한지 여부
+      GET, HEAD
+      POST, PATCH는 본문 내용까지 캐시키로 고려해야 하지만 구현이 쉽지않음
+      
+
