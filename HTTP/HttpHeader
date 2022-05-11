@@ -27,5 +27,87 @@
   표현 헤더는 표현 데이터를 해석을 위한 정보(표현 메타데이터와 페이로드 메시지 구분해야하지만 생략)
 
 
+//표현 헤더(Representation)
+  표현 헤더는 전송, 응답 둘다 사용
+      Content-Type : 표현 데이터의 형식
+          text/html; charset=UTF-8, application/json, image/png
+          
+      Content-Encoding : 표현 데이터의 압축 방식, 압축전송인 경우 사용
+          gzip, deflate, identity
+          
+      Content-Language : 표현 데이터의 자연어
+          ko, en, en-US, de
+          
+      Range/Content-Range : 표현 데이터의 범위 지정, 범위전송인 경우 사용
+          request
+            Range: bytes=1001-2000  
+          response
+            Content-Range: bytes 1001-2000 / 2000
+            
+      Content-Length : 표현 데이터의 길이, 바이트 단위
+          Transfer-Encoding(분할전송)인 경우 Content-Langth 사용불가
+          
+      Transfer-Encoding: 바디를 분할해서 각각의 길이와 메시지를 전송, 분할전송인 경우 사용
+          Content-Length 사용불가
+          Transfer-Encoding: chunked
+          마지막 덩어리(0 CRLF \r\n)로 메시지 바디 끝을 인지
+
+
+//협상 헤더(Content Negotiation)
+  협상 헤더는 요청시에만 사용
+  클라이언트가 선호하는 표현 요청
+    Accept : 클라이언트가 선호하는 미디어 타입 전달
+    Accept-Charset : 클라이언트가 선호하는 문자 인코딩
+    Accept-Encoding : 클라이언트가 선호하는 압축 인코딩
+    Accept-Language : 클라이언트가 선호하는 자연어
+    
+  1. q(quality value, 0 <= q <= 1) 값을 사용해서 우선순위 결정, 생략하면 1
+      Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7
+      
+  2. 구체적으로 기입된 정보가 우선순위 높음
+      Accept: text/*, text/plain, text/plain;format=flowed, */*
+
+  3. 구체적인 것을 기준으로 미디어 타입 결정
+      text/html;level=1 -> q = 1
+      text/html;level=2 -> q = 0.4
+      text/html;level=3 -> q = 0.7
+      text/html -> q = 0.7
+      text/plain -> q = 0.3
+      image/jpeg -> q = 0.5
+      
+        
+//일반 정보
+  From : 유저 에이전트 이메일 정보
+  Referer : 이전 웹 페이지, 유입 경로 분석가능, referrer 오타표기 그대로 사용
+  User-Agent : 유저 에이전트 애플리케이션 정보(웹 브라우저 정보 등)
+  Server : 요청을 처리하는 origin 서버(최종적인 서버)의 소프트웨어 정보, 응답에서 
+  Data : 메시지가 발생한 날짜와 시간
+
+
+//특별한 정보
+  Host : 요청한 호스트 정보(도메인명), 요청에서 사용하는 필수값
+    하나의 서버가 여러 도메인을 처리해야하는 경우 사용(정확한 도메인명을 통해 식별)
+    
+  Location : 페이지 리다이렉션, 정확한 리소스 경로
+    201, 3xx 상태 응답 메시지에 사용
+    
+  Allow : 허용 가능한 HTTP 메서드
+    405 상태 응답 메시지에 사용
+
+  Retry-After : 유저 에이전트가 다음 요청을 하기까지 기다려야 하는 시간(날짜, 초단위)
+    503 상태 응답 메시지에 사용
+
+
+//인증 헤더(Authorization)
+  Authorization : 클라이언트 인증 정보를 서버에 전달
+  WWW-Authenticate : 리소스 접근시 필요한 인증 방법
+    401 상태 응답 메시지에 사용
+
+
+
+
+
+
+
 
 
