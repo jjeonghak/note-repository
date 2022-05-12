@@ -1,0 +1,27 @@
+//구동 방식
+  1. Persistence 클래스가 META-INF/persistence.xml 설정 정보 조회
+      기본적으로 Persistence.class 존재
+      
+  2. 설정 정보를 통해 EntityManagerFactory 생성
+      EntityManagerFactory emf = Persistence.createEntityManagerFactory("persistenceUnitName");
+      //persistenceUnitName은 persistence.xml 설정 정보에 포함
+      
+  3. EntityManagerFactory는 필요에 따라 EntityManager 생성
+      EntityManager em = emf.createEntityManager();
+      
+  4. 모두 사용후 연결 종료
+      em.close();
+      emf.close();
+
+
+//테이블 매핑
+  JDBC URL과 persistence.xml의 설정 정보를 동일하게 처리해야함
+  사용하는 엔티티 클래스에 @Entity 어노테이션 추가
+  primary key 멤버 인스턴스는 @와 primary key 이름 어노테이션 추가
+      @Id private Long id
+  데이터베이스의 데이터를 변경하는 작업은 무조건 트랜잭션 단위로 작업해야함
+      EntityTransaction tx = em.getTransaction();  //EntityManager에게 트랜잭션 받기
+      tx.begin();  //트랜잭션 시작, 이후 데이터베이스 데이터 변경
+      tx.commit();  //트랜잭션 커밋
+      tx.rollback();  //문제 발생시 트랜잭션 롤백, 실제 변경점이 데이터베이스에 적용되지 않음
+
