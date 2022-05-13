@@ -1,0 +1,26 @@
+//JPQL(Java Persistence Query Language)
+  SQL을 추상화한 객체지향 쿼리언어
+  테이블 중심이 아닌 엔티티 객체 중심으로 개발
+  테이블 쿼리가 아닌 객체 쿼리 작성
+
+
+//단순조회
+  EntityManager.find()
+  객체 그래프 탐색(C typeC = member.getA().getB().getC())
+
+
+//조건조회
+  모든 회원 조회
+  List<Member> result = em.createQuery("select m from Member as m",Member.class)
+      .getResultList();
+  
+  모든 회원 결과의 0번째 인덱스부터(limit) 10개(offset)의 인덱스 
+  List<Member> result = em.createQuery("select m from Member as m",Member.class)
+      .setFirstResult(0).setMaxResults(10).getResultList();
+
+
+
+
+
+
+
