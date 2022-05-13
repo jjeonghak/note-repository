@@ -1,0 +1,33 @@
+//영속성 컨텍스트
+  엔티티를 영구 저장하는 환경
+  엔티티를 데이터베이스에 저장하는 것이 아닌 영속성 컨텍스트를 통해 영속화
+      EntityManager.persist(entity);
+
+  영속성 컨텍스트는 논리적인 개념
+    J2SE 환경 : 엔티티 매니저와 영속성 컨텍스트 1:1 대응
+    J2EE 환경 : 엔티티 매니저와 영속성 컨텍스트 n:1 대응(스프링 프레임워크 컨테이너 환경)
+  
+
+//엔티티 생명주기
+  비영속(new/transient) : 영속성 컨텍스트와 관계없는 새로운 상태
+      Member member = new Member();
+      member.setId();
+      member.setName();
+  
+  영속(managed) : 영속성 컨텍스트에 관리되는 상태
+      em.persist(member);
+      
+  준영속(detached) : 영속성 컨텍스트에 저장되었다가 분리된 상태
+      em.detach(member);
+      
+  삭제(removed) : 삭제된 상태, 데이터 베이스에서 삭제
+      em.remove(member);
+
+
+
+
+
+
+
+
+
