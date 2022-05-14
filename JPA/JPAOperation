@@ -26,7 +26,7 @@
 
       사용하는 엔티티 클래스에 @Entity 어노테이션 추가
       테이블을 지정해서 매핑하려면 @Table(name = "TableName") 어노테이션 추가
-      primary key 멤버 인스턴스는 @와 primary key 이름 어노테이션 추가
+      primary key 멤버 인스턴스는 @Id 어노테이션 추가
           @Id private Long id
       테이블 내의 속성 지정 매핑하려면 @Column(name = "attributeName") 어노테이션
           @Column(name = "name") private String name
