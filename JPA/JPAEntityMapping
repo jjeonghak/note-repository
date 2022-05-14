@@ -1,0 +1,64 @@
+//엔티티 매핑
+  1. 객체와 테이블(@Entity, @Table)
+      @Entity 
+        어노테이션이 붙은 클래스는 JPA가 관리
+        파라미터가 없는 기본 생성자 필수
+        final, enum, interface, inner 클래스 사용불가
+      
+      @Table
+        name : 매핑할 테이블 이름, default = entityName
+        catalog : 데이터베이스 카탈로그 매핑
+        schema : 데이터베이스 스키마 매핑
+        uniqueConstraints(DDL) : DDL 생성 시 유니크 제약 조건 생성
+      
+      
+  2. 필드와 컬럼(@Column)
+      @Column
+        칼럼 매핑
+        
+      @Enumerated(EnumType.STRING)
+        enum 타입 매핑
+        
+      @Temporal(TemporalType.TIMESTAMP)
+        날짜 타입 매핑(DATE, TIME, TIMESTAMP)
+      
+      @Lob
+        BLOB, CLOB 매핑
+        
+      @Transient
+        특정 필드를 칼럼과 매핑을 원치않는 경우, 메모리에서만 사용
+      
+  3. 기본 키(@Id)
+      
+      
+      
+  4. 연관관계(@ManyToOne, @JoinColumn)
+      
+      
+//데이터베이스 스키마 자동 생성
+    persistence.xml
+      <property name="hibernate.hbm2ddl.auto" value="create"/>
+      create : 운영DB에 사용금지, 기존 테이블 삭제 후 다시 생성, DROP + CREATE
+      create-drop : 운영DB에 사용금지, create + DROP
+      update : 운영DB에 사용금지, 변경부분(추가)만 반영, ALTER
+      validate : 엔티티와 테이블이 정상 매핑되었는지만 확인
+      none : 사용하지 않음
+
+
+//DDL 생성 기능
+  제약조건 추가
+      @Column(unique = true, nullable = false, length = 10)
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
