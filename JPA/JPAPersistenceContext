@@ -49,4 +49,30 @@
   트랜잭션 커밋과 함께 sql 쿼리문이 데이터베이스에 플러시(flush), 이후 데이터베이스 커밋
 
 
+//플러쉬(flush) 발생
+  변경 감지
+  수정된 엔티티 쓰기 지연 sql 저장소에 등록
+  쓰기 지연 sql 저장소 쿼리를 데이터베이스에 전송
+      em.flush()  //직접호출
+      tx.commit()  //자동호출
+      JPQL 쿼리 실행  //자동호출
+
+
+//플러시 모드 옵션
+  커밋이나 쿼리를 실행할 때 플러시, default
+      em.setFlushMode(FlushModeType.AUTO);
+  커밋할 때만 플러시
+      em.setFlushMode(FlushModeType.COMMIT);
+
+
+//준영속
+  특정 엔티티만 준영속 상태로 전환
+      em.detach(entity);
+  영속성 컨텍스트를 완전히 초기화
+      em.clear();
+  영속성 컨텍스트 종료
+      em.close();
+
+
+
 
