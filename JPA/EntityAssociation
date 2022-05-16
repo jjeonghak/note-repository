@@ -1,6 +1,7 @@
-방향(direction) : 단방향과 양방향
-다중성(multiplicity) : 다대일(n:1), 일대다(1:n), 일대일(1:1), 다대다(n:m)
-연관관계 주인(owner) : 객체 양방향 연관관계에서 관리주인 필요
+//연관관계 매핑시 고려사항
+  방향(direction) : 단방향과 양방향
+  다중성(multiplicity) : 다대일(n:1), 일대다(1:n), 일대일(1:1), 다대다(n:m)
+  연관관계 주인(owner) : 객체 양방향 연관관계에서 관리주인 필요
 
 
 //객체를 테이블에 맞추어 모델링
@@ -73,6 +74,53 @@
     양방향 매핑시 무한루프 주의
         toString(), lombok, JSON 생성 라이브러리
 
+
+//일대다 연관관계 주인
+  표준 스펙으로 지원하는 방식이지만 추천하지 않음
+  DB 특성상 일대다여도 다쪽에 fk가 존재해야함
+  객체와 테이블 차이로 인해 반대편 테이블의 외래키를 관리하는 구조
+  일쪽 테이블의 변경사항에 다쪽 테이블까지 추가변경발생
+  insert 쿼리문뿐만 아니라 다쪽 테이블 update 쿼리문이 추가로 발생
+    일대다 단방향
+        @OneToMany
+        @JoinColumn(name = "TEAM_ID")  //어노테이션 없는 경우 조인테이블 방식 사용(@JoinTable)
+        private List<Member> members = new ArrayKist<>(); 
+
+    일대다 양방향(표준 스펙은 아니지만 가능)
+        @ManyToOne
+        @JoinColumn(name = "TEAM_ID", insertable = false, updatable = false)
+        private Team team;
+
+
+//일대일
+  주테이블이나 대상테이블 중 외래키 선택가능
+  외래키에 데이터베이스 유니크(UNI) 제약조건 추가
+  대상테이블에 외래키가 있는 단방향 관계는 지원하지 않음
+    주테이블 외해키
+      주객체가 대상 객체의 참조를 가지는 것처럼 주테이블에 외래키를 두고 대상테이블 탐색
+      상대적으로 객체지향적, JPA 매핑 편리
+      값이 없으면 외래키에 null 값 허용
+
+    대상 테이블 외래키
+      상대적으로 데이터베이스적 
+      주테이블과 대상테이블의 관계가 일대다로 변경할 경우 테이블 구조 유지
+      프록시 기능의 한계로 지연로딩 불가(항상 즉시로딩)
+
+
+//다대다
+  추천하지 않음
+  객체는 컬렉션을 통해서 객체 2개로 다대다 관계가능
+  관계형 데이터베이스는 정규화된 테이블 2개로 다대다 관꼐를 표현할 수 없음
+  조인 테이블에는 연결에 필요한 정보만 존재, 부가적인 정보를 추가할 수 없음(실무 사용불가)
+  다대다 관계를 사용하지 않고 연결 테이블을 추가해서 일대다, 다대일 관계로 표현
+    단방향
+        @ManyToMany
+        @JoinTable(name = "MEMBER_PRODUCT")  //조인테이블 이름설정
+        private List<Product> products = new ArrayList<>();
+
+    양방향
+        @ManyToMany(mappedBy = "products")
+        private List<Member> members = new ArrayList<>();
 
 
 
