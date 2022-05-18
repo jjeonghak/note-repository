@@ -62,8 +62,39 @@
   자바가 제공하는 대표적인 불변 객체 : Integer, String
   
 
+//값 타입 비교
+  동일성(identity) : 인스턴스 참조값 비교(==)
+  동등성(equivalence) : 인스턴스 값을 비교(equals())
+  객체의 동등성 비교는 Object 클래스의 equals()와 hashCode() 오버라이드하여 재정의
+    equals()는 기본적으로 == 비교로 구현되어 있지만 값 타입 클래스에서 오버라이드하여 사용
+    equals() 구현시 get 메서드 필수(프록시 객체인 경우 고려)
+    hashCode()는 public native 키워드를 이용하는 JNI(Java Native Interface)
+    hashCode는 HashTable, HashSet, HashMap 같은 자료구조의 저장위치 선택에 사용
+  동일한 객체는 동일한 메모리 주소와 해시코드를 가지고 있어야함
+      obj1.equals(obj2) == true이면 hashCode(obj1) == hashCode(obj2)
+ 
 
-
+//값 타입 컬렉션
+  일반적인 일대다 관계가 아닌 객체 내에서 값 타입을 하나 이상 저장할 때 사용 
+  데이터 베이스는 컬렉션을 테이블에 표시하는 기능 지원안하므로 따로 테이블 생성
+  영속성 전이, 지연로딩, 고아 객체 제거와 유사한 기능 보유
+      @ElementCollection(fetch = FetchType.LAZY)
+      @OrderColumn  //컬렉션 테이블에 pk 생성, 연속되지 않은 pk값인 경우 null 생성
+      @CollectionTable(name = "COLLECTION_TABLE_NAME", 
+          joinColumns = @JoinColumn(name = "MEMBER_ID"))
+  수정 : 기존값 삭제 후 추가
+    List<>
+        findMember.getList().remove(removeTarget);
+        findMember.getList().add(addTarget);
+    
+    Set<>  //hashCode와 equals를 이용해서 기존 데이터와 똑같은 데이터를 생성해서 삭제
+        findMember.getHashSet().remove(new Target(target.p1, target.p2));
+        findMember.getHashSet().add(new Target(newTarget.p1, newTarget.p2));
+  
+  제약사항
+    값 타입이므로 식별자 개념이 없고 변경시 추적 불가
+    값 타입 컬렉션 변경시 주인 엔티티와 연관된 컬렉션 데이터 삭제후 컬렉션 내의 모든 값을 다시 저장
+    값 타입 컬렉션을 매핑하는 테이블은 모든 컬럼을 묶어서 pk 구성(null, 중복 방지)
 
 
 
