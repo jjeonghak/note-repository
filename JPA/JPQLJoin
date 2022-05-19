@@ -1,0 +1,30 @@
+//조인 종류
+  1. 내부조인
+      select m from Member m [inner] join m.team t
+      //m.team 없는 경우 조인안됨
+  
+  2. 외부조인
+      select m from Member m left [outer] join m.team t
+      //m.team 없는 경우 null로 조인
+      
+  3. 세타조인
+      select count(m) from Member m, Team t where m.name = t.name
+      //연관관계가 없는 두 테이블을 비교절에 맞게 조인(cross join)
+
+
+//on절
+  1. 조인 대상 필터링
+    JPQL
+        select m, t from Member m left join m.team t on t.name = ?
+    SQL(pk와 fk 비교절 포함)
+        SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.TEAM_ID = t.id and t.name = ?
+        
+  2. 연관관계 없는 엔티티 외부 조인
+    JPQL
+        select m, t from Member m left join team t on m.name = t.name
+    SQL
+        SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.name = t.name
+
+
+
+
