@@ -1,0 +1,45 @@
+//프로젝션
+  select 절에 조회할 대상을 지정하는 것
+  반환된 프로젝션들은 영속성 컨텍스트에 의해 관리
+  대상 : 엔티티, 임베디드 타입, 스칼라 타입
+      select m from Member m  //엔티티 프로젝션
+      select m.team from Member m  //엔티티 프로젝션
+      select m.address from Member m  //임베디드 타입 프로젝션
+      select distinct m.name, m.age from Member m  //스칼라 타입 프로젝션
+
+
+//프로젝션 여러값 조회
+    
+    select distinct m.name, m.age from Member m
+
+  1. Query 타입 조회
+      List result = em.createQuery("select distinct m.name, m.age from Member m")
+              .getResultList();
+      Object o = result.get(0);
+      Object[] r = (Object[]) o;  //r[0] : name, r[1] : age
+      
+  2. Object[] 타입 조회
+      List<Object[]> result = em.createQuery("select distinct m.name, m.age from Member m")
+              .getResultList();
+  
+  3. new 명령어 조회
+    단순값을 DTO로 바로 조회(쿼리문에서 DTO 생성자에 값 대입하는 것처럼 사용)
+    패키지 명을 포함한 전체 클래스 명 입력
+    순서와 타입이 일치하는 생성자 필요
+        public class MemberDTO {
+            private String name;
+            private int age;
+            
+            public MemberDTO(String name, int age) {
+                this.name = name;
+                this.age = age;
+            }
+        }
+    
+        List<MemberDTO> result = em.createQuery(
+                "select new jpql.MemberDTO(m.name, m.age) from Member m", MemberDTO.class)
+                .getResultList();
+
+
+
+
