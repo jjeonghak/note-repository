@@ -12,6 +12,14 @@
       //연관관계가 없는 두 테이블을 비교절에 맞게 조인(cross join)
 
 
+//JPQL 조인 방식
+  1. 명시적 조인 : 일반적인 sql 쿼리처럼 join 키워드 직접 사용해서 명시적으로 조인 여부 표현한 쿼리
+      select t.members from Team t join t.members m
+  
+  2. 묵시적 조인 : 조인 여부를 직접 표현하지 않지만 다른 엔티티 객체를 내부조인해야하는 쿼리
+      selet t.members from Team t
+
+
 //on절
   1. 조인 대상 필터링
     JPQL
