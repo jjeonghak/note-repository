@@ -1,0 +1,30 @@
+//application.yml
+  설정 정보가 많다면 application.property 파일보다 추천
+  스프링 데이터베이스 설정 및 로그 설정
+
+
+spring:
+  datasource:
+    url: jdbc:h2:tcp://localhost/~/jpashop;
+    username: sa
+    password:
+      driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+#        show_sql: true  
+        format_sql: true
+  
+  output:
+    ansi:
+      enabled: ALWAYS
+      
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+
+
