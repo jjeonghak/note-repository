@@ -4,7 +4,8 @@
       @OneToMany, @ManyToMany default == LAZY
   만약 즉시로딩과 같이 생성과 함꼐 여러 참조를 조회해야하는 경우 fetch join 이용
       em.createQuery("select m from Member m join fetch m.team", Member.class)
-
+  초기값은 프록시 객체인 ByteBuddyInterceptor
+  
 
 //프록시 기초
   가짜 엔티티 객체($HibernateProxy$)를 이용해서 실제 값이 필요할 때마다 쿼리문 생성
