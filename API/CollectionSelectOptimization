@@ -1,0 +1,110 @@
+/**
+* collection
+* Order -> OrderItem
+*/
+
+//엔티티 직접 노출
+  컬렉션에서 원하는 각각의 엔티티마다 강제 초기화 필수
+
+    @GetMapping("/api/v1/orders")
+    public List<Order> orderV1() {
+        List<Order> result = orderRepository.findAll(new OrderSearch());
+        for (Order order : result) {
+            order.getMember().getName();
+            order.getDelivery().getAddress();
+            List<OrderItem> orderItems = order.getOrderItems();
+            orderItems.stream().forEach(o -> o.getItem().getName());
+        }
+        return result;
+    }
+
+
+
+//DTO 사용
+  컬렉션의 엔티티도 DTO로 변환해서 API 생성
+    @GetMapping("/api/v2/orders")
+    public List<OrderDto> orderV2() {
+        List<Order> orders = orderRepository.findAll(new OrderSearch());
+        List<OrderDto> collect = orders.stream()
+                .map(o -> new OrderDto(o))
+                .collect(Collectors.toList());
+        return collect;
+    }
+
+    @Data
+    static class OrderDto {
+        private Long orderId;
+        private String name;
+        private LocalDateTime orderDate;
+        private OrderStatus orderStatus;
+        private Address address;
+        private List<OrderItemDto> orderItems;
+
+        public OrderDto(Order order) {
+            orderId = order.getId();
+            name = order.getMember().getName();
+            orderDate = order.getOrderDate();
+            orderStatus = order.getStatus();
+            address = order.getDelivery().getAddress();
+            orderItems = order.getOrderItems().stream()
+                    .map(o -> new OrderItemDto(o))
+                    .collect(Collectors.toList());
+        }
+    }
+
+    @Getter
+    static class OrderItemDto {
+
+        private String itemName;
+        private int orderPrice;
+        private int count;
+
+        public OrderItemDto(OrderItem orderItem) {
+            itemName = orderItem.getItem().getName();
+            orderPrice = orderItem.getOrderPrice();
+            count = orderItem.getCount();
+        }
+    }
+
+
+//페치 조인 사용
+  일반적인 사용
+     public List<Order> findAllWithItem() {
+        return em.createQuery(
+                "select distinct o from Order o " +
+                        "join fetch o.member m " +
+                        "join fetch o.delivery d " +
+                        "join fetch o.orderItems oi " +
+                        "join fetch oi.item i", Order.class)
+                .getResultList();
+    }
+
+  일대일 또는 다대일은 페치조인 사용
+  페이징을 위해서 일대다 매핑은 따로 지연로딩
+  default_batch_fetch_size, @BatchSize 이용해서 지연로딩시 불러오는 데이터값 설정
+  
+   public List<Order> findAllWithMemberDelivery(int offset, int limit) {
+        return em.createQuery(
+                        "select o from Order o " +
+                                "join fetch o.member m " +
+                                "join fetch o.delivery d", Order.class)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+    
+    @GetMapping("/api/v3/orders")
+    public List<OrderDto> orderV3_page(
+            @RequestParam(value = "offset", defaultValue = "0") int offset,
+            @RequestParam(value = "limit", defaultValue = "100") int limit) {
+        List<Order> orders = orderRepository.findAllWithMemberDelivery(offset, limit);
+        List<OrderDto> result = orders.stream()
+                .map(o -> new OrderDto(o))
+                .collect(Collectors.toList());
+        return result;
+    }
+
+
+
+
+
