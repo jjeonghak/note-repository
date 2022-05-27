@@ -1,6 +1,8 @@
 /**
 * collection
 * Order -> OrderItem
+* ToOne 관계부터 조회한 후 ToMany 관계 별도로 처리
+* ToOne 관계는 조인 시에 데이터 row 수 변화 없지만 ToMany 관계는 
 */
 
 //엔티티 직접 노출
@@ -67,7 +69,7 @@
     }
 
 
-//페치 조인 사용
+//페치조인 사용
   일반적인 사용
      public List<Order> findAllWithItem() {
         return em.createQuery(
@@ -105,6 +107,43 @@
     }
 
 
+//컬렉션 DTO 
+  컬렉션은 한번의 DTO 생성 쿼리로 불가능
+  
+    @GetMapping("/api/v4/orders")
+    public List<OrderQueryDto> orderV4() {
+        return orderQueryRepository.findOrderQueryDtos();
+    }
+  
+    public List<OrderQueryDto> findOrderQueryDtos() {
+        List<OrderQueryDto> result = findOrders();
+        result.forEach(o -> {
+            List<OrderItemQueryDto> orderItems = findOrderItems(o.getOrderId());
+            o.setOrderItems(orderItems);
+        });
+        return result;
+    }
+
+    //컬렉션 DTO
+    private List<OrderItemQueryDto> findOrderItems(Long orderId) {
+        return em.createQuery("select new jpabook.jpashop.repository.order.query" +
+                ".OrderItemQueryDto(oi.order.id, i.name, oi.orderPrice, oi.count)" +
+                "from OrderItem oi " +
+                "join oi.item i " +
+                "where oi.order.id = :orderId", OrderItemQueryDto.class)
+                .setParameter("orderId", orderId)
+                .getResultList();
+    }
+
+    //컬렉션을 제외한 DTO
+    private List<OrderQueryDto> findOrders() {
+        return em.createQuery("select new jpabook.jpashop.repository.order.query" +
+                        ".OrderQueryDto(o.id, m.name, o.orderDate, o.status, d.address) " +
+                        "from Order o " +
+                        "join o.member m " +
+                        "join o.delivery d", OrderQueryDto.class)
+                .getResultList();
+    }
 
 
 
