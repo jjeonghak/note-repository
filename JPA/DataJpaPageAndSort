@@ -1,0 +1,34 @@
+//페이징과 정렬 파라미터
+  org.springframework.data.domain.Sort : 정렬 기능
+  org.springframework.data.domain.Pageable : 페이징 기능
+
+
+//반환타입
+  org.springframework.data.domain.Page : 추가 count 쿼리 결과 포함하는 페이징
+  org.springframework.data.domain.Slice : 추가 count 쿼리 없이 다음 페이지만 확인 가능(limit + 1)
+  List : 추가 count 쿼리 없이 결과만 반환
+  
+
+//페이징
+  만약 left join 같이 카운트 쿼리에 영향을 미치지 않는 경우 카운트 쿼리 따로 분리
+     @Query(value = "select m from Member m left join m.team t", 
+        countQuery = "select count(m) from Member m")
+     
+    [JpaRepository]
+    Page<Member> findPageByAge(int age, Pageable pageable);
+    Slice<Member> findSliceByAge(int age, Pageable pageable);
+
+    PageRequest pageRequest = PageRequest.of(page: 0, size: 3,
+            Sort.by(Sort.Direction.DESC, ...properties: "username"));
+    Page<Member> page = memberRepository.findPageByAge(age, pageRequest);
+    Slice<Member> slice = memberRepository.findSliceByAge(age, pageRequest);
+
+    page.getNumber()  //현재 페이지 반환
+    page.getTotalElements()  //데이터 갯수 반환
+    page.getTotalPages()  //총 페이지 반환
+    page.isFirst()  //현재 페이지가 시작페이지인지
+    page.hasNext()  //다음 페이지가 존재하는지
+    page.map(member -> new MemberDto())  //map을 통해 Dto 변환가능
+
+
+
