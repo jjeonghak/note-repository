@@ -25,4 +25,19 @@
     }
 
 
+//isNew()
+  save 메서드는 isNew 메서드를 통해서 새로운 객체인지 기존 객체인지 판별
+  @GenerateValue 적용이 아닌 사용자 지정 pk인 경우 기본적으로 merge 메서드 호출됨
+    식별자가 객체일 경우 null 판단
+    식별자가 자바 기본타입인 경우 0 판단
+    Persistable 인터페이스 상속 후 isNew 메서드 오버라이딩(사용자 지정 pk인 경우, 타입 T)
+    
+    public class Class implements Persistable<T> {
+        @Override
+        public boolean isNew() {
+            return createDate == null;
+        }
+    }
+
+
 
