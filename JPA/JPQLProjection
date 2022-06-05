@@ -51,4 +51,49 @@
         SELECT COUNT(M.ID) FROM MEMBER M 
 
 
+//엔티티 속성 조회
+  엔티티 전체가 아닌 일부 속성(프로젝트)만 조회하는 경우
+  인터페이스인 경우 프록시 객체, 구현체인 경우 실제 객체사용
+  
+  인터페이스 사용
+    //close projections : 원하는 프로젝션만 가져와서 반환
+    public interface UsernameOnly {
+        String getUsername();
+    }
+    
+    //open projections : 엔티티 전체를 가져와서 연산후 반환
+    public interface UsernameOnly {
+        @Value("#{target.id + ' ' + target.username}")
+        String getUsername();
+    }
+    
+  구현체 사용
+    public class UsernameOnlyDto {
+        private final String username;
+        public UsernameOnlyDto(String usernmae) {
+            this.username = username;
+        }
+        public String getUsername() {
+            return username;
+        }
+    }
+    
+  동적 프로젝션
+    [JpaRepository]
+    <T> List<T> findProjectionsByUsername(@Param("username") String username, Class<T> type);
+    
+    List<UsernameOnlyDto> result = memberRepository
+            .findProjectionsByUsername('member1', UsernameOnlyDto.class)
+    
+  중첩 프로젝션 : 기본적으로 두번째 엔티티 필드부터는 엔티티 전체를 조회
+    public interface NestedClosedProjections {
+        String getUsername();
+        TeamInfo getTeam();
+        
+        interface TeamInfo {
+            String getName();
+        }
+    }
+
+
 
