@@ -100,7 +100,7 @@
             "from member m left join team t",
             countQuery = "select count(*) from member",
             nativeQuery = true)
-    Page<MemberProjection> findByNativeProjection(Pageable pageable);
+    Page<MemberProjections> findByNativeProjection(Pageable pageable);
   
   
 
