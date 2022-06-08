@@ -35,4 +35,31 @@
     fetchCount()                      //count 쿼리로 변경해서 count 수 조회
 
 
+//정렬
+    List<Member> result = queryFactory
+                  .selectFrom(m)
+                  .where(m.age.goe(30))
+                  .orderBy(m.age.desc(), m.username.asc().nullsLast())
+                  .fetch();
+
+
+//페이징
+    List<Member> result = queryFactory
+                  .selectFrom(m)
+                  .orderBy(m.username.desc())
+                  .offset(1)
+                  .limit(2)
+                  .fetch();
+
+
+//집합
+    List<Tuple> result = queryFactory
+                .select(t.name, m.age.avg())
+                .from(m)
+                .join(m.team, t)
+                .groupBy(t.name)
+                .having(t.name.in("teamA", "teamB"))
+                .fetch();
+
+
 
