@@ -1,0 +1,21 @@
+//프로젝션 대상
+  단일 대상인 경우 타입을 명확하게 지정가능
+  둘 이상인 경우 튜플이나 DTO 사용
+
+
+//튜플 조회
+  'com.querydsl.core' tuple 사용
+  레포지토리 계층까지만 사용(하위 패키지를 상위 계층에서 의존하는 경우 발생)
+    List<Tuple> result = queryFactory
+                .select(m.username, m.age)
+                .from(m)
+                .fetch();
+    result.get(index: 0).get(expression: m.username);
+    result.get(index: 0).get(expression: m.age);
+
+
+//DTO 조회
+  
+
+
+
