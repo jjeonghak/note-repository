@@ -42,4 +42,31 @@
     서블릿 컨테이너 종료시 서블릿 객체 소멸
 
 
+//서블릿 사용
+  어플리케이션 메인 메서드에 @ServletComponentScan 어노테이션 추가
+  응답을 주고 받을 서블릿 클래스에 @WebServlet 어노테이션 추가
+  
+    [application.properties]
+    logging.level.org.apache.coyote.http11=debug //http 요청메시지 로그 확인
+  
+    @ServletComponentScan
+    @SpringBootApplication
+    public class ServletApplication {
+        public static void main(String[] args) {
+          SpringApplication.run(ServletApplication.class, args);
+        }
+    }
+    
+    @WebServlet(name = "basicServlet", urlPatterns = "/basic")
+    public class BasicServlet extends HttpServlet {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+            String username = request.getParameter("username");
 
+            response.setContentType("text/plain");
+            response.setCharacterEncoding("utf-8");
+            response.getWriter().write("basicServlet " + username);
+        }
+    }
+
+  
