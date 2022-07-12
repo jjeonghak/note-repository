@@ -39,6 +39,34 @@
         }
     }
     
+    public class ControllerV4HandlerAdapter implements MyHandlerAdapter {
+        @Override
+        public boolean supports(Object handler) {
+            return handler instanceof ControllerV4;
+        }
+
+        @Override
+        public ModelView handle(Object handler, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+            ControllerV4 controller = (ControllerV4) handler;
+
+            Map<String, String> paramMap = createParamMap(request);
+            HashMap<String, Object> model = new HashMap<>();
+
+            String viewName = controller.process(paramMap, model);
+
+            ModelView mv = new ModelView(viewName);
+            mv.setModel(model);
+            return mv;
+        }
+
+        private Map<String, String> createParamMap(HttpServletRequest request) {
+            Map<String, String> paramMap = new HashMap<>();
+            request.getParameterNames().asIterator()
+                    .forEachRemaining(paramName -> paramMap.put(paramName, request.getParameter(paramName)));
+            return paramMap;
+        }
+    }
+    
   프론트 컨트롤러
     @WebServlet(name = "frontControllerServletV5", urlPatterns = "/front-controller/v5/*")
     public class FrontControllerServletV5 extends HttpServlet {
@@ -51,13 +79,19 @@
         }
 
         private void initHandlerMappingMap() {
+            //V3
             handlerMappingMap.put("/front-controller/v5/v3/members/new-form", new MemberFormControllerV3());
             handlerMappingMap.put("/front-controller/v5/v3/members/save", new MemberSaveControllerV3());
             handlerMappingMap.put("/front-controller/v5/v3/members", new MemberListControllerV3());
+            //V4
+            handlerMappingMap.put("/front-controller/v5/v4/members/new-form", new MemberFormControllerV4());
+            handlerMappingMap.put("/front-controller/v5/v4/members/save", new MemberSaveControllerV4());
+            handlerMappingMap.put("/front-controller/v5/v4/members", new MemberListControllerV4());
         }
 
-        private boolean initHandlerAdapters() {
-            return handlerAdapters.add(new ControllerV3HandlerAdapter());
+        private void initHandlerAdapters() {
+            handlerAdapters.add(new ControllerV3HandlerAdapter());
+            handlerAdapters.add(new ControllerV4HandlerAdapter());
         }
 
         @Override
@@ -95,6 +129,5 @@
             return new MyView("/WEB-INF/views/" + viewName + ".jsp");
         }
     }
-  
 
 
