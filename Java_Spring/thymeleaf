@@ -1,0 +1,54 @@
+//타임리프 특징
+  1. 서버 사이드 HTML 렌더링(SSR)
+    백엔드 서버에서 동적으로 렌더링하는 용도로 사용
+  
+  2. 네추럴 템플릿
+    순수 HTML 형식을 유지하면서 뷰 템플릿 사용 가능
+  
+  3. 스프링 통합 지원
+    스프링과의 통합으로 다양한 기능 제공
+
+
+//타임리프 선언
+  <html xmlns:th="http://www.thymeleaf.org">
+
+
+//기본 표현식
+  1. 간단한 표현
+    변수 표현식 : ${...}
+    선택 변수 표현식 : *{...}
+    메시지 표현식 : #{...}
+    링크 URL 표현식 : @{...}
+    조각 표현식 : ~{...}
+  
+  2. 리터럴
+    텍스트 : 'one text', 'Another one', ...
+    숫자 : 0, 3.0, ...
+    불린 : true, false
+    널 : null
+    리터럴 토큰 : one, sometext, main, ...
+    
+  3. 문자 연산
+    문자 합치기 : +
+    리터럴 대체 : |The name is ${name}|
+    
+  4. 산술 연산
+    binary operators : +, -, *, /, %
+    minus sign(unary operator) : -
+
+  5. 불린 연산
+    binary operator : and, or
+    boolean negation(unary operator) : !, not
+
+  6. 비교와 동등
+    비교 : >, <, >=, <= (gt, lt, ge, le)
+    동등 연산 : ==, != (eq, ne)
+
+  7. 조건 연산
+    if-then : (if) ? (then)
+    if-then-else : (if) ? (then) : (else)
+    default : (value) ?: (defaultvalue)
+
+  8. 특별한 토큰
+    no-operation : _
+
