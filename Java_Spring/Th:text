@@ -1,0 +1,24 @@
+//text
+  타임리프의 기본 기능인 텍스트 출력
+    th:text : <span th:text="${data}"></span>
+    [[...]] : <li>[[${data}]]</li>
+
+
+//escape
+  특수 문자를 HTML 엔티티로 변경하는 것
+  HTML 문서는 '<', '>' 같은 특수 문자를 기반으로 정의
+  웹 브라우저는 '<' 기호를 HTML 태그의 시작으로 인식
+  뷰 템플릿으로 화면생성시 모델 데이터에 이러한 특수 문자가 있는 경우 주의
+  기본적으로 th:text, [[...]]에 이스케이프 적용
+
+  model.addAttribute(attibutueName:"data", attributueValue:"<b>text-basic</b>");
+  웹 브라우저 : '<b>text-basic</b>'
+  소스보기 : '&lt;b&gt;text-basic&lt;/b&gt;'
+
+  
+//unescape
+  이스케이프 기능을 사용하지 않는 경우
+  
+    th:text -> th:utext
+    [[...]] -> [(...)]
+
