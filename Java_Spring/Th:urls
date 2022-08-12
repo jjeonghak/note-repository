@@ -1,0 +1,23 @@
+//url
+  1. 단순 url : /url
+    @{/url}
+  
+  2. 쿼리 파라미터 : /url?param1=data1&param2=data2
+    () 내부는 쿼리 파라미터로 처리
+      @{/url(param1=${param1}, param2=${param2})}
+  
+  3. 경로 변수 : /url/data1/data2
+    url 경로상의 () 내부는 경로 변수로 처리
+      @{/url/{param1}/{param2}(param1=${param1}, param2=${param2})}
+  
+  4. 경로 변수 및 쿼리 파라미터 : /url/data1?param2=data2
+    두 가지 형태 같이 사용 가능
+      @{/url/{param1}(param1=${param1}, param2=${param2})}
+  
+
+//경로
+  /url : 절대 경로
+  url : 상대 경로
+
+
+
