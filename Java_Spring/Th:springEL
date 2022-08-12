@@ -1,0 +1,34 @@
+//spring expression language
+  타임리프에서 변수 사용시 변수 표현식 이용
+    ${...}
+
+
+//Object(user)
+    ${user.username} : 프로퍼티 접근
+    ${user['username']} : 위와 동일
+    ${user.getUsername()} : 함수 직접 호출
+
+
+//List(users)
+  기본적으로 리스트의 인덱스에 접근 후 object와 동일
+    ${users[0].username} : 프로퍼티 접근
+    ${users[0]['username']} : 위와 동일
+    ${users[0].getUsername()} : 함수 직접 호출
+
+
+//Map(userMap)
+  기본적으로 맵의 키-값 형식으로 접근 후 object와 동일
+    ${userMap['userA'].username} : 프로퍼티 접근
+    ${userMap['userA']['username']} : 위와 동일
+    ${userMap['userA'].getUsername()} : 함수 직접 호출
+
+
+//local varialbe
+  구간 내(태그)에서 th:with 지역 변수 선언
+    <div th:with="localVariable=${users[0]}">
+        ...
+    </div>
+
+
+
+
