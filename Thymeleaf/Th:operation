@@ -1,0 +1,29 @@
+//연산
+  자바와 크게 다르지 않음
+  HTML 엔티티를 사용할 때 주의
+
+
+//산술 연산
+  기본적인 산술 연산, 자바의 산술 연산과 동일
+    <span th:text="1 + 2"></span>
+    
+
+//비교 연산
+  기본적인 비교 연산, HTML 엔티티 사용에 주의
+  gt, lt, ge, le, not, eq, neq, ne
+    <span th:text="1 &gt; 10"></span>
+    <span th:text="1 gt 10"></span>
+    <span th:text="1 >= 10"></span>
+    
+
+//Elvis 연산자
+  데이터의 값이 널이 아니면 데이터 값, 널인 경우 우항깂 출력
+    ${data}?:'data is null'
+  
+
+//no-operation
+  타임리프가 실행되지 않는 것처럼 동작, HTML default 내용 그대로 
+  _ : 아무 연산도 하지않음, 태그 효과 무효화
+    <span th:text="${data}?: _">data is null</span>
+
+
