@@ -1,0 +1,18 @@
+//블록
+  HTML 태그가 아닌 타임리프의 유일한 자체 태그
+  타임리프는 보통 태그가 아닌 속성으로 작동
+  종종 타임리프 태그를 이용하는 경우 발생
+  여러 태그(div)를 하나의 블록으로 처리하는 경우 사용
+
+    <th:block th:each="user : ${users}">
+      <div>
+          user's username <span th:text="${user.username}"></span>
+          user's age <span th:text="${user.age}"></span>
+      </div>
+      
+      <div>
+          total <span th:text="${user.username} + ' / ' + ${user.age}"></span>
+      </div>
+    </th:block>
+
+
