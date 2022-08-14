@@ -1,0 +1,45 @@
+//템플릿 조각
+  웹 페이지 개발시 공통 영역을 효율적으로 관리하는 기능
+  템플릿 조각과 레이아웃 기능 지원
+  ~{...} 사용하는 것이 원칙이지만 코드가 단순하면 생략가능
+  
+  [template/fragment/footer]
+    <body>
+    <footer th:fragment="copy">
+        footer place
+    </footer>
+
+    <footer th:fragment="copyParam (param1, param2)">
+        <p>param place</p>
+        <p th:text="${param1}"></p>
+        <p th:text="${param2}"></p>
+    </footer>
+    </body>
+  
+
+//부분포함 insert
+  현재 insert 속성이 존재하는 태그내에 템플릿 조각 삽입
+    <div th:insert="~{template/fragment/footer :: copy}"></div>
+    
+  소스보기
+    <div><footer th:fragment="copy">
+        footer place
+    </footer></div>
+
+
+//부분포함 replace
+  현재 replace 속성이 존재하는 태그 교체
+    <div th:replace="~{template/fragment/footer :: copy}"></div>
+
+  소스보기
+    <footer th:fragment="copy">
+        footer place
+    </footer>
+
+
+//파라미터 사용
+  파라미터 사용시 ~{...} 생략 불가능
+    <div th:replace="~{template/fragment/footer :: copyParam('1', '2')}"></div>
+
+
+
