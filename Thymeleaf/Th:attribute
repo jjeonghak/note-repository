@@ -1,0 +1,30 @@
+//속성
+  HTML 태그에 th:* 속성을 지정하는 방식
+  th:* 속성을 적용하면 기존 속성 대체
+  단 절대경로를 이용해서 브라우저로 파일에 접근하는 경우 th:* 속성은 무시
+    기존 파일 : <input type="text" name="mock" th:name="thymeleaf" />
+    렌더링 후 : <input type="text" name="thymeleaf" />
+
+
+//속성 추가
+  th:attrprepend : 속성에 접미사 추가
+    기존 파일 : <input type="checkbox" class="text" th:attrprepend="large " />
+    렌더링 후 : <input type="checkbox" class="large text" />
+    
+  th:attrappend : 속성에 접두사 추가
+    기존 파일 : <input type="checkbox" class="text" th:attrappend=" large" />
+    렌더링 후 : <input type="checkbox" class="text large" />
+
+  th:classappend : 
+    기존 파일 : <input type="checkbox" class="text" th:classappend="large" />
+    렌더링 후 : <input type="checkbox" class="text large" />   
+
+
+//checked 처리
+  HTML 파일의 경우 checked 속성이 있으면 그 값과는 상관없이 checked 처리
+    <input type="checkbox" name="active" checked="false" />
+  
+  th:checked="false" 속성 사용시 checked 속성 자체를 제거
+    <input type="checkbox" name="active" th:checked="false" />
+
+
