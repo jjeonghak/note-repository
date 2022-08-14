@@ -1,0 +1,25 @@
+//리터럴
+  소스 코드상에 고전된 값을 표현하는 용어
+    문자 : 'string' (작은 따옴표)
+    숫자 : 1
+    불린 : true, false
+    널 : null
+
+
+//문자열 리터럴
+  항상 작은 따옴표로 감싸서 사용
+    <span th:text="'string'"></span>
+    
+  단 공백없이 쭉 이어진 하나의 의미있는 토큰이라면 작은 따옴표 생략가능
+  룰 : 'A-Z', 'a-z', '0-9', '[]', '.', '-', '_'
+    생략 : <span th:text="string"></span>
+    오류 : <span th:text="string data"></span>  //TemplateProcessingException
+
+
+//문자열 리터럴 대체
+  파이프라인(|) 사용으로 문자열 리터럴 대체
+    기존 : <span th=text="'string' + ${data}"></span>
+    대체 : <span th:text="|string ${data}|"></span>
+
+
+
