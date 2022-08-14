@@ -1,0 +1,50 @@
+//자바스크립트 인라인
+  타임리프는 자바스크립트에서 타임리프를 사용할 수 있는 기능 제공
+    <script th:inline="javascript">  
+
+    <!-- 자바스크립트 인라인 사용 전 -->
+    <script>
+        var username = [[${user.username}]];
+        var age = [[${user.age}]];
+
+        //자바스크립트 내추럴 템플릿
+        var username2 = /*[[${user.username}]]*/ "test username";
+
+        //객체
+        var user = [[${user}]];
+    </script>
+
+    <!-- 자바스크립트 인라인 사용 후 --> 
+    <script th:inline="javascript">
+        var username = [[${user.username}]];
+        var age = [[${user.age}]];
+
+        //자바스크립트 내추럴 템플릿
+        var username2 = /*[[${user.username}]]*/ "test username";
+
+        //객체
+        var user = [[${user}]];
+    </script>
+
+    
+  인라인 사용 후 렌더링 결과를 보면 문자 타입인 경우 "(쌍따옴표) 자동 포함
+  자바스크립트에서 문제가 될 수 있는 문자 포함시 이스케이프 처리
+
+  내추럴 템플릿
+    인라인 사용 전 : var username2 = /*userA*/ "test username";
+    인라인 사용 후 : var username2 = "userA";
+    
+  객체
+    인라인 기능을 사용하면 객체를 Json 형식으로 자동 변환
+    인라인 사용 전 : var user = BasicController.User(username=userA, age=10);
+    인라인 사용 후 : var user = {"username":"userA", "age":10};
+
+
+//인라인 each
+    <!-- 자바스크립트 인라인 each -->
+    <script th:inline="javascript">
+        [# th:each="user, stat : ${users}"]
+        var user[[${stat.count}]] = [[${user}]];
+        [/]
+    </script>
+
