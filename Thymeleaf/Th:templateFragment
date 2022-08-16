@@ -42,4 +42,41 @@
     <div th:replace="~{template/fragment/footer :: copyParam('1', '2')}"></div>
 
 
+//레이아웃
+  HTML 자체를 replace
+  
+  [layoutExtendMain]
+    <!DOCTYPE html>
+    <html th:replace="~{template/layoutExtend/layoutFile :: layout(~{::title}, ~{::section})}"
+            xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>main page title</title>
+    </head>
+    <body>
+    <section>
+        <p>main page content</p>
+        <div>main page content</div>
+    </section>
+    </body>
+    </html>
+    
+  [layoutFile]
+    <!DOCTYPE html>
+    <html th:fragment="layout(title, content)"
+          xmlns:th="http://www.thymeleaf.org">
+    <head>
+      <title th:replace="${title}">layout title</title>
+    </head>
+    <body>
+
+    <h1>layout h1</h1>
+    <div th:replace="${content}">
+      <p>layout content</p>
+    </div>
+    <footer>
+      layout footer
+    </footer>
+
+
+
 
