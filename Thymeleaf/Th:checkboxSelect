@@ -1,0 +1,27 @@
+//셀렉트 박스
+  여러 선택지 중에 하나를 선택할 때 사용
+
+  [Controller]
+    @ModelAttribute("deliveryCodes")
+    public List<DeliveryCode> deliveryCodes() {
+        List<DeliveryCode> deliveryCodes = new ArrayList<>();
+        deliveryCodes.add(new DeliveryCode("FAST", "빠른 배송"));
+        deliveryCodes.add(new DeliveryCode("NORMAL", "일반 배송"));
+        deliveryCodes.add(new DeliveryCode("SLOW", "느린 배송"));
+        return deliveryCodes;
+    }
+
+  [HTML]
+    <div>select</div>
+    <select th:field="${item.deliveryCode}" class="form-select">
+        <option value="">==== 배송 방식 선택 ====</option>
+        <option th:each="deliveryCode : ${deliveryCodes}" th:value="${deliveryCode.code}"
+                th:text="${deliveryCode.displayName}">FAST</option>
+    </select>
+
+
+//return value
+  선택 : selected="selected"
+
+
+
