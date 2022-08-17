@@ -1,0 +1,39 @@
+//checkbox list
+  등록폼, 상세화면, 수정폼 등에서 모두 체크박스 리스트를 반복해서 사용
+  각각의 컨트롤러에서 model에 반복적으로 체크박스 리스트를 추가
+  컨트롤러 내에 @ModelAttribute 어노테이션을 이용해서 반복적인 체크박스 리스트를 한번에 추가
+  
+    [Controller]
+    @ModelAttribute("regions")
+    public Map<String, String> regions() {
+        Map<String, String> regions = new LinkedHashMap<>();
+        regions.put("SEOUL", "서울");
+        regions.put("PUSAN", "부산");
+        regions.put("JEJU", "제주");
+        return regions;
+    }
+    
+    [HTML]
+    <div>multi checkbox</div>
+    <div th:each="region : ${regions}" class="form-check form-check-inline">
+        <input type="checkbox" th:field="${item.regions}" 
+               th:value="${region.key}" class="form-check-input">
+        <label th:for="${#ids.prev('regions')}"
+               th:text="${region.value}" class="form-check-label">서울</label>
+    </div>
+
+
+//라벨 맵핑
+  멀티 체크박스의 경우 같은 이름의 여러 체크박스 생성가능
+  생성된 HTML 태그 속성에서 name은 같아도 되지만 id는 달라야함
+  타임리프를 이용해서 동적으로 HTML 태그 id 생성(루프 사용시 동적으로 숫자삽입)
+    th:for="${ids.prev('...')}"
+    th:for="${ids.next('...')}"
+    
+
+//return value
+  체크된 속성만 배열에 삽입
+  체크 박스 체크 : regions=SEOUL&_regions=on&_regions=on&_regions=on(regions=["SEOUL"])
+  체크 박스 미체크 : _regions=on&_regions=on&_regions=on(regions=[], regions!=null)
+
+
