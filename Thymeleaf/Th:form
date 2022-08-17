@@ -1,0 +1,26 @@
+//입력 폼 처리
+  th:object : form 태그 내에서 컨맨드 객체 지정
+  *{...} : 선택 변수식, th:object에서 선택한 객체에 접근
+  th:field : HTML 태그의 id, name, value 속성 자동 생성
+  
+  렌더링 전 : <input type="text" th:field="*{itemName}" />
+  렌더링 후 : <input type="text" id="itemName" name="itemName" th:value="*{itemName}" />
+
+
+//등록 폼
+  th:object 적용하려면 먼저 해당 오브젝트 정보를 넘겨주어야함
+  데이터가 비어있는 빈 오브젝트 생성 후 뷰에 전달
+  
+  [Controller]
+    model.addAttribute("item", new Item());
+    return "form/addForm";
+
+  [form/addForm.html]
+    <form action="item.html" th:action th:object="${item}" method="post">
+      <div>
+         <input type="text" th:field="*{itemName}" class="form-control">
+         ...
+    </form>
+   
+
+
