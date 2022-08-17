@@ -1,0 +1,38 @@
+//라디오 버튼
+  여러 선택지 중에 하나만 선택할 때 사용
+  히든 필드를 사용하지않고 체크하지 않으면 null 반환
+  한번 체크하면 체크 취소 불가능(null 반환 불가능)
+  
+  [Enum]
+    public enum ItemType {
+
+        BOOK("도서"), FOOD("음식"), ETC("기타");
+
+        private final String description;
+
+        ItemType(String description) {
+            this.description = description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+  
+  [Controller]
+    @ModelAttribute("itemTypes")
+    public ItemType[] itemTypes() {
+        ItemType[] values = ItemType.values();
+        return values;
+    }
+  
+  [HTML]
+    <div>상품 종류</div>
+    <div th:each="type : ${itemTypes}" class="form-check form-check-inline">
+        <input type="radio" th:field="${item.itemType}" th:value="${type.name()}" class="form-check-input">
+        <label th:for="${#ids.prev('itemType')}"
+               th:text="${type.description}" class="form-check-label">BOOK</label>
+    </div>
+
+
+
