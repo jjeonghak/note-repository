@@ -24,7 +24,7 @@
 
 //return value
   체크 박스 체크 : open=on&_open=on(item.open==true)
-  체크 박스 미테크 : _open=on(item.open==false, item.open!=null)
+  체크 박스 미크 : _open=on(item.open==false, item.open!=null)
 
 
 //thymeleaf checkbox
