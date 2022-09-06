@@ -1,0 +1,35 @@
+//메시지 기능
+  여러 화면에 보이는 하드코딩된 메시지를 관리
+  HTML 파일에서 각 메시지를 메시지 관리 파일에 설정된 값을 불러 사용
+  
+    [messages.properties]
+      item=상품
+      item.id=상품 ID
+      item.itemName=상품명
+      item.price=가격
+      item.quantity=수량  
+
+    [HTML]
+      <label for="itemName" th:text="#{item.itemName}"></label>
+      
+
+//국제화
+  메시지 파일을 각 나라별로 별도로 관리하는 서비스
+  HTTP accept-language 헤더값을 사용하거나 사용자가 직접 언어를 선택하도록 유도, 쿠키 등으로 처리
+  
+    [mesages_en.properties]
+      item=Item
+      item.id=Item ID
+      item.itemName=Item Name
+      item.price=price
+      item.quantity=quantity
+
+    [mesages_ko.properties]
+      item=상품
+      item.id=상품 ID
+      item.itemName=상품명
+      item.price=가격
+      item.quantity=수량  
+
+
+
