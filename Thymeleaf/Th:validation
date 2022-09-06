@@ -1,0 +1,35 @@
+//검증 요구사항
+  컨트롤러의 중요한 역할 중 하나는 HTTP 요청이 정상인지 검증하는 것
+  클라이언트 검증은 조작할 수 있으며 보안에 취약
+  서버만으로 검증하면 즉각적인 고객 사용성이 부족
+  두 검증을 적절히 사용하되 최종적으로 서버 검증은 필수
+  API 방식을 사용하면 API 스펙을 잘 정의해서 검증 오류를 API 응답결과에 첨부
+
+
+//검증 오류 보관
+  오류명과 사용자에게 보여줄 오류 정보를 key-value 값으로 저장
+  오류 메시지가 존재하면 오류 메시지 출력을 위해 model에 errors를 담고 다시 입력폼으로   
+  
+    [.class]
+      Map<String, String> errors = new HashMap<>();
+    
+    [HTML]
+      <div th:if="${errors?.containsKey('globalError')}">
+        <p class="field-error" th:text="${errors[globalError]}">전체 오류 메시지</p>
+      </div>
+
+      <div>
+          <label for="itemName" th:text="#{label.item.itemName}">상품명</label>
+          <input type="text" id="itemName" th:field="*{itemName}"
+                 th:class="${errors?.containsKey('itemName')} ? 'form-control field-error' : 'form-control'"
+                 class="form-control" placeholder="이름을 입력하세요">
+          <div class="field-error" th:if="${errors?.containsKey('itemName')}" 
+                 th:text="${errors[itemName]}">상품명 오류</div>
+      </div>
+    
+    * Safe Navigation Operator
+      만약 errors 자체가 null 이라면 NullPointerException 발생
+      eorrors?. 문법을 사용해서 errors가 null인 경우 null 반환
+      th:if 조건문이 null인 경우 실패 처리
+
+
