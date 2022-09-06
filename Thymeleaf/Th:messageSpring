@@ -1,0 +1,67 @@
+//직접 빈등록
+  메시지 관리 기능을 사요ㅕㅇ하려면 스프링이 제공하는 MessageSource 인터페이스를 스프링 빈으로 등록
+  
+    @Bean
+    public MessageSource messageSource() {
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+        messageSource.setBasenames("messages", "erroes");
+        messageSource.setDefaultEncoding("utf-8");
+        return messageSource;
+    }
+
+  basenames : 설정 파일의 이름을 지정(messages 지정시 messages.properties 파일 읽음)
+  defaultEncoding : 인코딩 정보를 지정
+  파일위치 : /resources/messages.properties
+
+
+//스프링 부트
+  자동으로 빈 설정(default = spring.messages.basename=messages)
+  
+    [application.properties]
+      spring.messages.basename=messages,config.i18n.messages
+      
+      
+    @SpringBootTest
+    public class MessageSourceTest {
+
+        @Autowired
+        MessageSource ms;
+
+        @Test
+        void helloMessage() {
+            String result = ms.getMessage("hello", null, null);
+            Assertions.assertThat(result).isEqualTo("안녕");
+        }
+
+        @Test
+        void notFoundMessageCode() {
+            Assertions.assertThatThrownBy(() -> ms.getMessage("no_code", null, null))
+                    .isInstanceOf(NoSuchMessageException.class);
+        }
+
+        @Test
+        void notFoundMessageCodeDefaultMessage() {
+            String result = ms.getMessage("no_code", null,
+                    "default message", null);
+            Assertions.assertThat(result).isEqualTo("default message");
+        }
+
+        @Test
+        void argumentMassage() {
+            String result = ms.getMessage("hello.name", new Object[]{"Spring"}, null);
+            Assertions.assertThat(result).isEqualTo("안녕 Spring");
+        }
+
+        @Test
+        void defaultLang() {
+            Assertions.assertThat(ms.getMessage("hello", null, null)).isEqualTo("안녕");
+            Assertions.assertThat(ms.getMessage("hello", null, Locale.KOREA)).isEqualTo("안녕");
+        }
+
+        @Test
+        void enLang() {
+            Assertions.assertThat(ms.getMessage("hello", null, Locale.ENGLISH)).isEqualTo("hello");
+        }
+    }
+
+
