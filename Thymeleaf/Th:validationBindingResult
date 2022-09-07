@@ -33,3 +33,37 @@
       th:if 조건문이 null인 경우 실패 처리
 
 
+//BindingResult
+  기존의 Map<String, String> errors 대신 BindingResult 객체 사용
+  BindingResult 객체는 모델에 추가해주지 않아도 자동으로 뷰로 넘어감
+  @ModelAttribute 바인딩 시 타입 오류발생한 경우 BindingResult FieldError에 오류정보 담김(400 오류 발생안함)
+  BindingResult 파라미터 위치는 @ModelAttribute 파라미터 바로 다음에 위치해야함
+    public String method(@ModelAttribute Item item, BindingResult bindingResult)
+  
+  필드오류는 FieldError 객체 생성
+    [.class]
+      bindingResult.addError(new FieldError(objectName, field, defaultMessage));
+      
+    [HTML]
+      <input th:field="*{field}" th:errorclass="field-error" class="form-control">
+      <div th:errors="*{field}">필드 오류 메시지<div>
+      
+  글로벌오류는 ObjectError 객체 생성
+    [.class]
+      bindingResult.addError(new ObjectError(objectNaem, defaultMessage));
+    
+    [HTML]
+      <div th:if="${#fields.hasGlobalErrors()}">
+          <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">글로벌 오류 메시지</p>
+      </div>
+      
+  [.class]
+    objectName : @ModelAttribue 모델이름
+    field : 오류가 발생한 필드 이름
+    defaultMessage : 오류기본 메시지
+    
+  [HTML]
+    #fields : BindingResult가 제공하는 검증 오류에 접근가능 
+    th:errors : 해당 필드의 오류가 존재하는 경우 태그 출력(th:if 편의기능)
+    th:errorclass : th:field에 지정된 필드에 오류가 존재하는 경우 class 정보 추가
+
