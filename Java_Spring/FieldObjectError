@@ -1,0 +1,24 @@
+//FieldError 생성자
+  ObjectError 생성자도 이와 유사
+  objectName : 오류가 발생한 객체 이름
+  field : 오류필드
+  rejectedValue : 사용자가 입력한 값(거절된 값)
+  bindingFailure : 타입 오류 같은 바인딩 실패와 검증 실패 구분값
+  codes : 메시지 코드
+  arguments : 메시지에서 사용하는 인자
+  defaultMessage : 기본 오류 메시지
+
+    public FieldError(String objectName, String field, String defaultMessage);
+    
+    public FieldError(String objectName, String field, 
+        @Nullable Object rejectedValue, boolean bindingFailure, @Nullable String[] codes,
+        @Nullable Object[] arguments, @Nullable String defaultMessage);
+
+
+//사용자 입력값 유지
+  @ModelAttribute 바인딩되는 시점에 오류발생시 모델 객체에 사용자 입력값을 유지하기 어려움
+  FieldError 객체의 rejectedValue 변수를 통해 사용자 입력값 저장
+  타임리프의 th:field는 정상 상황인 경우 모델 객체의 값을, 오류 상황인 경우 FieldError 객체의 값을 사용 
+  타입 오류로 인한 바인딩 실패시 FieldError 생성후 값을 저장하고 BindingResult에 담아 컨트롤러 호출
+
+
