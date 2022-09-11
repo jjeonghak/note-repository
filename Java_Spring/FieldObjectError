@@ -22,3 +22,22 @@
   타입 오류로 인한 바인딩 실패시 FieldError 생성후 값을 저장하고 BindingResult에 담아 컨트롤러 호출
 
 
+//codes, arguments
+  codes는 String 배열, arguments는 Object 배열(순서대로 매칭해서 처음 매칭되는 메시지 사용)
+  기본적으로 messages 파일 이외의 추가적인 파일사용시 설정필요
+    [application.properties]
+      spring.messages.baasename=messages,errors
+
+    [errors.properties]
+      required.item.itemName=상춤이름은 필수입니다.
+      range.item.price=가격은 {0} ~ {1} 까지 허용합니다.
+      
+    [.class]
+      bindingResult.addError(
+          new FieldError(objectName:"item", field:"price",
+              item.getPrice(), bindingFailure:false,
+              codes:new String[]{"range.item.price"},
+              arguments:new Object[]{1000, 100000},
+              defualtMessage:null));
+
+
