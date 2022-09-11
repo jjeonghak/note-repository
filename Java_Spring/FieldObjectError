@@ -41,3 +41,31 @@
               defualtMessage:null));
 
 
+//reject
+  컨트롤러에서 BindingResult 위치는 검증해야하는 객체인 target 바로 다음
+  BindingResult는 본인이 검증해야할 객체인 target을 알고 있음
+      void rejectValue(@Nullable String field, String errorCode, 
+          @Nullable Object[] errorArgs, @Nullable String defaultMessage);
+
+  FieldError 객체 대신 rejectValue(), reject() 사용으로 검증 오류처리
+  메시지 파일에서 errorCode + objectName + fieldName 순으로 메시지 매칭
+      bindingResult.rejectValue(field:"price", errorCode:"range",
+          arguments:new Object[]{1000, 1000000}, 
+          defaultMessage:null);
+      bindingResult.reject(field:"totalPriceMin",
+          arguments:new Object[]{10000, resultPrice},
+          defaultMessage:null);
+
+
+//오류 메시지
+  오류 메시지는 MessageCodesResolver를 통해 범용성 있게 만들거나 디테일하게 만들수 있다
+  범용적으로 사용하다가 세밀하게 작성해야하는 경우 디테일한 메시지 사용(단계적 오류 메시지)
+  객체명과 필드명을 조합한 세밀한 오류 메시지 존재시 errorCode만 있는 오류메시지보다 우선순위 높음
+    [errors.properties]
+      required=필수값입니다.
+      required.item.itemName=상품 이름은 필수입니다.
+      range=허용범위에 속하지 않습니다.
+      range.item.price=상품 가격이 허용범위에 속하지 않습니다.
+
+  
+
