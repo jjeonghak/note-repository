@@ -1,0 +1,29 @@
+//Bean Validation
+  특정 필드에 대한 검증 로직은 대부분 빈 값, 범위 내의 값 검증로직이 일반적인 로직
+  검증 로직을 모든 프로젝트에 적용할 수 있게 공통화 및 표준화
+  특정한 구현체가 아닌 Bean Validation 2.0(JSR-380) 기술 표준(여러 어노테이션과 인터페이스 모음)
+  
+  [build.gradle]
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+
+//검증 어노테이션
+  javax.validation.constraints.xxx : 특정 구현에 관계없이 제공되는 표준 인터페이스
+  org.hibernate.validator.constraints.xxx : 하이버네이트 validator 구현체를 사용할 때만 제공
+  
+    @NotBlank : 빈값 + 공백만 있는 경우를 허용하지 않음
+    @NotNull : null 값을 허용하지 않음
+    @Range(min, max) : 범위 안의 값만 허용
+    @Max, @Min : 최대, 최소
+
+
+//검증기 생성 및 실행
+  스프링과 통합하기 전 검증기 필수 생성
+  검증 대상을 직접 검증기에 넣고 그 결과를 반환, 결과가 비어있지 않다면 검증 오류 존재
+    ValidatorFactory factory = validation.buildDefaultValidatorFactory();
+    Validator validator = factory.getValidator();
+    Set<ConstraintViolation<TargetClass>> violations = validator.validate(target);
+    
+
+
+
