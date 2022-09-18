@@ -69,4 +69,12 @@
   @Valid 어노테이션에는 적용불가
   
 
+//form 전송 객체 분리
+  보통 클라이언트 요청 폼에서 전달하는 데이터가 도메인 객체와 딱 맞지않아 사용
+  폼 데이터 전달에 Item 도메인 사용루트
+    HTML form -> Item -> Controller -> Item -> Repository
+  폼 데이터 전달을 위한 별도의 객체 사용루트
+    HTML form -> ItemSaveForm -> Controller -> Item 생성 -> Repository
+  
+
 
