@@ -6,7 +6,7 @@
   세션 key 값을 쿠키로 전달
 
 
-//세션 직접 생성
+//세션 직접 구현
   세션 생성, 조회, 만료 기능 구현
 
     @Component
@@ -54,6 +54,42 @@
     }
 
 
+//HttpSession
+  서블릿을 통해 생성한 세션도 SessionManager와 같은 방식으로 동작
+    Cookie: JSESSIONID=5B78E23B513F50164D6FDD8C97B0AD05
+ 
+  1.세션 생성과 조회
+    public HttpSession getSession(boolean create);
+    request.getSession(true) : 세션 존재시 기존 세션 반환, 없으면 새로운 세션 생성
+    request.getSession(false) : 세션 존재시 기존 세션 반환, 없으면 생성하지 않고 null 반환
+    
+  2. 세션에 로그인 회원 정보 보관
+    public static final String LOGIN_MEMBER = "loginMemer";
+    session.setAttribute(SessionConst.LOGIN_MEMBER, loginMember());
 
+  3. 세션 만료
+    HttpSession session = request.getSession(false);
+    if (session != null) {
+        session.invalidate();
+    }
+
+
+//SessionAttribute
+  request에서 세션을 꺼내고 세션에서 member 객체 꺼내는 과정
+  세션을 생성하지 않고 찾아오는 경우 사용
+  @SessionAttribute(name = SessionConst.LOGIN_MEMBER, required = false) Member member
+
+
+//TrackingModes
+  로그인을 처음 시도하면 URL이 jessionid를 포함
+    http://localhost:8080/;jsessionid=2090372B25BDF8567D5E116EEB96D82B
+  만약 웹브라우저가 쿠키를 지원하지 않는 경우 쿠키 대신 URL을 통해서 세션 유지
+  세션이 유지되는 동안 모든 뷰와 링크에서 jessionid를 쿼리로 유지해야 사용가능(권장하지 않음)
+    [application.properties]
+      server.servlet.session.tracking-modes=cookie
+
+
+//세션 타임 아웃
+  
 
 
