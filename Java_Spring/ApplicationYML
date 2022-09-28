@@ -32,5 +32,7 @@ logging:
     #외부 라이브러리 사용(p6spy)으로 좀더 깔끔하게 조회가능
    
 
-
+spring.messages.basename=messages,errors
+server.servlet.session.tracking-modes=cookie
+server.servlet.session.timeout=1800
 
