@@ -90,6 +90,21 @@
 
 
 //세션 타임 아웃
+  세션은 사용자가 로그아웃을 직접 호출해서 session.invalidate() 호출되는 경우에 삭제
+  로그아웃 없이 브라우저 종료시 HTTP가 비연결성이므로 서버에서는 사용자가 브라우저를 종료한 것인지 판단 불가
+  세션은 기본적으로 서버 메모리에 생성되므로 필요없는 경우 제거 필수
+  사용자가 서버에 최근 요청한 시간을 기준으로 30(1800)분 정도 유지하는 대안 사용
   
+  글로벌 설정[application.properties]
+    server.servlet.session.timeout=1800
+      
+  개별 세션 설정[.class]
+    session.setMaxInactiveInterval(1800);
+  
+  log.info("sessionId={}", session.getId());
+  log.info("maxInactiveInterval={}", session.getMaxInactiveInterval());
+  log.info("creationTime={}", new Date(session.getCreationTime()));
+  log.info("lastAccessedTime={}", new Date(session.getLastAccessedTime()));
+  log.info("isNew={}", session.isNew());
 
 
