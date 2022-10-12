@@ -28,6 +28,7 @@
 //컨버전 서비스
   개별 컨버터를 모아두고 그것들을 묶어서 사용할 수 있는 기능 제공
   컨버전 서비스는 컨버팅 가능여부와 컨버팅 기능 제공
+  메시지 컨버터(HttpMessageConverter)에는 적용되지 않음(json 객체의 경우 해당 라이브터리 참고)
 
     public interface ConversionService {
         boolean canConvert(@Nullable Class<?> sourceType, Class<?> targetType);
