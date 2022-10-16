@@ -110,11 +110,29 @@
             redirectAttributes.addAttribute("itemId", item.getId());
             return "redirect:/items/{itemId}";
         }
+        
+        @ResponseBody
+        @GetMapping("/images/{filename}")
+        public Resource downloadImage(@PathVariable String filename) throws MalformedURLException {
+            return new UrlResource("file:" + fileStore.getFullPath(filename));
+        }
+        
+        @GetMapping("/attach/{itemId}")
+        public ResponseEntity<Resource> downloadAttach(@PathVariable Long itemId) throws MalformedURLException {
+            Item item = itemRepository.findById(itemId);
+            String storeFileName = item.getAttachFile().getStoreFileName();
+            String uploadFileName = item.getAttachFile().getUploadFileName();
+            UrlResource resource = new UrlResource("file:" + fileStore.getFullPath(storeFileName));
+            log.info("uploadFileName={}", uploadFileName);
+            //인코딩 및 첨부파일 다운을 위한 헤더 처리
+            String encodedUploadFileName = UriUtils.encode(uploadFileName, StandardCharsets.UTF_8);
+            String contentDisposition = "attachment; filename=\"" + encodedUploadFileName +"\"";
+            return ResponseEntity.ok()
+                    //헤더가 없는 경우 다운로드가 아닌 화면출력만 가능
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                    .body(resource);
+        }
     }
-
-
-
-
 
 
 
