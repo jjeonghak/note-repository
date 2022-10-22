@@ -1,0 +1,20 @@
+//커넥션 풀
+  커넥션을 관리하는 풀
+  커넥션을 미리 생성해두고 사용하는 방식
+  커넥션 갯수 default 10
+  어플리케이션 로직은 DB 드라이버가 아닌 커넥션 풀에 커넥션 요청
+  사용후 재사용을 위해 커넥션 풀에 반환
+  commons-dbcp2, tomcat-jdbc pool, HikariCP 등
+
+
+//데이터소스
+  커넥션을 획득하는 방법을 추상화하는 인터페이스
+  DriverManager는 Datasource 인터페이스를 사용하지 않으므로 직접 구현
+  대신 DriverManagerDataSource 클래스 제공
+
+    public interface DataSource {
+        Connection getConnection() throws SQLException;
+    }
+
+
+
