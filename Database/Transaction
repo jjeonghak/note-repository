@@ -1,0 +1,15 @@
+//트랜잭션 ACID
+  원자성(Atomicity) : 트랜잭션 내에서 실행한 작업들은 모두 성공하거나 모두 실패
+  일관성(Consistency) : 모든 트랜잭션은 일관성 있는 데이터베이스 상태를 유지(무결성 제약조건 만족)
+  격리성(Isolation) : 동시에 실행되는 트랜잭션은 서로 영향을 미치지 않음
+  지속성(Durability) : 트랜잭션을 성공적으로 완료하면 그 결과흫 항상 기록
+  
+  
+//트랜잭션 격리 수준
+  READ UNCOMMITED : 커밋되지 않은 읽기
+  READ COMMITTED : 커밋된 읽기
+  REPEATABLE READ : 반복 가능한 읽기
+  SERIALIZABLE : 직렬화 가능
+
+
+
