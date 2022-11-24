@@ -32,6 +32,45 @@
 //트랜잭션 적용
   1. 커넥션 유지를 위해 커넥션을 파라미터로 사용(getConnection() 호출금지)
   2. 커넥션 유지를 위해 커넥션 사용후 닫지않고 그대로 사용(close() 호출금지)
+  
+    public void accountTransfer(String fromId, String toId, int money) throws SQLException {
+    Connection con = dataSource.getConnection();
+    try {
+      con.setAutoCommit(false); //트랜잭션 시작
+      bizLogic(fromId, toId, money, con);
+      con.commit();
+    } catch (Exception e) {
+      con.rollback();
+      throw new IllegalStateException(e);
+    } finally {
+      release(con);
+    }
+  }
 
+  private void bizLogic(String fromId, String toId, int money, Connection con) throws SQLException {
+    Member fromMember = memberRepository.findById(con, fromId);
+    Member toMember = memberRepository.findById(con, toId);
+
+    memberRepository.update(con, fromId, fromMember.getMoney() - money);
+    validation(toMember);
+    memberRepository.update(con, toId, toMember.getMoney() + money);
+  }
+
+  private void validation(Member toMember) {
+    if (toMember.getMemberId().equals("ex")) {
+      throw new IllegalStateException("이체 중 예외 발생");
+    }
+  }
+
+  private void release(Connection con) {
+    if (con != null) {
+      try {
+        con.setAutoCommit(true);
+        con.close();
+      } catch (Exception e) {
+        log.info("error", e);
+      }
+    }
+  }
 
 
