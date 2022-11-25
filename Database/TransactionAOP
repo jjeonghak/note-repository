@@ -1,0 +1,33 @@
+//트랜잭션 AOP
+  트랜잭션 템플릿을 사용하더라도 서비스 계층에 트랜잭션 처리 코드 필요
+  스프링은 @Transactional 어노테이션을 이용해서 트랜잭션 처리
+
+
+//프록시 사용
+  프록시 사용시 트랜잭션을 처리하는 객체와 비즈니스 로직을 처리하는 서비스 객체를 분리 가능
+  
+    public class TransactionProxy {
+    
+        private MemberService target;
+    
+        public void logic() {
+            TransactionStatus status = transactionManager.getTransaction(..);
+            try {
+                target.logic();
+                transactionManager.commit(status);
+            } catch (Exception e) {
+                transactionManager.rollback(status);
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+    
+    public class Service {
+        public void logic() {
+            //트랜잭션 관련 코드 제거, 순수 비즈니스 로직만 존재
+            bizLogic(..);
+        }
+    }
+
+
+
