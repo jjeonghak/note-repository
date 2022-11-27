@@ -23,3 +23,20 @@
       };
     }
 
+
+//자동 식별키 사용
+  식별자 아이디로 데이터베이스가 생성한 자동키 사용하는 경우 KeyHolder 사용
+  
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+		template.update(connection -> {
+			//자동 증가 키
+			PreparedStatement ps = connection.prepareStatement(sql, new String[] {"id"});
+			ps.setString(1, member.getMemberName());
+			return ps;
+		}, keyHolder);
+    long key = keyHolder.getKey().longValue();
+    member.setMemberId(key);
+
+
+
+
