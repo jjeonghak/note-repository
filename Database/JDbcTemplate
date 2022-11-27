@@ -1,0 +1,25 @@
+//JDBC 반복문제
+  커넥션 조회, 커넥션 동기화
+  PreparedStatement 생성 및 파라미터 바인딩 
+  쿼리 실행
+  결과 바인딩
+  예외 발생시 스프링 예외 변환기 실행
+  리소스 종료
+
+
+//JdbcTemplate
+  템플릿 콜백 패턴으로 JDBC 기술로 개발할 때 발생하는 반복을 해결
+  트랜잭션을 위한 커넥션, 스프링 예외 변환 등 다양한 기능 제공
+
+    JdbcTemplate template = new JdbcTemplate(dataSource);
+    template.update(sql, sqlParam1, sqlParam2, ...);
+    template.queryForObject(sql, rowMapper(), sqlParam1, ...);
+    
+    private RowMapper<Member> rowMapper() {
+      return (rs, rowNum) -> {
+        Member member = new Member();
+        member.setMemberId(rs.getString("member_id"));
+        return member;
+      };
+    }
+
