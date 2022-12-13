@@ -28,15 +28,22 @@
   식별자 아이디로 데이터베이스가 생성한 자동키 사용하는 경우 KeyHolder 사용
   
     KeyHolder keyHolder = new GeneratedKeyHolder();
-		template.update(connection -> {
-			//자동 증가 키
-			PreparedStatement ps = connection.prepareStatement(sql, new String[] {"id"});
-			ps.setString(1, member.getMemberName());
-			return ps;
-		}, keyHolder);
+    template.update(connection -> {
+      //자동 증가 키
+      PreparedStatement ps = connection.prepareStatement(sql, new String[] {"id"});
+      ps.setString(1, member.getMemberName());
+      return ps;
+    }, keyHolder);
     long key = keyHolder.getKey().longValue();
     member.setMemberId(key);
 
 
-
+//rowMapper
+  데이터베이스의 조회 결과를 객체로 변환할때 사용
+  JdbcTemplate 자동 루프 생성, 개발자는 변환 코드만 작성
+    
+    while (resultSet 끝날때까지) {
+      rowMapper(rs, rowNum);
+    }
+  
 
