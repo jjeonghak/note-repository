@@ -81,5 +81,62 @@
       </mapper>
 
 
+//매퍼 구현체
+  MybatisAutoConfiguration 클래스에서 자동으로 등록
+  매퍼 구현체는 MyBatis에서 발생한 예외를 스프링 예외 추상화 DataAccessException 변환
+  
+    1. 어플리케이션 로딩 시점에 MyBatis 스프링 연동 모듈은 @Mapper 어노테이션 인터페이스 탐색
+    2. 해당 인터페이스에 대한 동적 프록시 구현체 생성
+    3. 생성된 구현체를 스프링 빈으로 등록
+
+
+//동적 쿼리
+  1. if : 해당 조건에 따라 값을 추가할지 판단, 내부 문법은 OGNL 문법 사용
+    <if test="title != null">
+      and title like #{title}
+    </if>
+    
+  2. choose(when, otherwise) : switch 구문과 유사
+    <choos>
+      <when test="title != null">
+        and title loke #{title}
+      </when>
+      <otherwise>
+        and featured = 1
+      </otherwise>
+    </choose>
+
+  3. trim(where, set) : where와 and 치환
+    <trim prefix="where" prefixOverrides="and | or">
+      ...
+    </trim>
+  
+    <where>
+      <if test="state != null">
+        state = #{state}
+      </if>
+      <if test="title != null">
+        and title like #{title}
+      </if>
+    </where>
+
+  4. foreach : 컬렉션 반복 처리
+    <where>
+      <foreach item="item" index="index" collection="list"
+          open="id in (" separator="," close=")" nullable="true">
+            #{item}
+      </foreach>
+    </where>
+
+  5. resultMap : 별칭을 사용하지않고 객체와 테이블 매핑
+    <resultMap id="userResultMap" type="User">
+      <id property="id" column="user_id"/>
+      <reuslt property="name" column="user_name"/>
+    </resultMap>
+    
+    <select id="selectUsers" resultMap="userResultMap">
+      ...
+    </select>
+
 
 
