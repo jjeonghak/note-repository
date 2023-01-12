@@ -1,0 +1,28 @@
+//타입 안전 이종 컨테이너 패턴
+  컨테이너 대신 키를 매개변수화
+  컨테이너에 값을 넣거나 뺄 때 매개변수화한 키를 함께 제공
+  제네릭 타입 시스템이 값의 타입이 키와 같음을 보장
+    
+    //타입 안전 이종 컨테이너 패턴 - API
+    public class Favorites [
+        public <T> void putFavorite(Class<T> type, T instance);
+        public <T> T getFavorite(Class<T> type);
+    }
+    
+    //타입 안전 이종 컨테이너 패턴 - 클라이언트
+    public static void main(String[] args) {
+        Favorites f = new Favorites;
+        
+        f.putFavorite(String.class, "string");
+        f.putFavortie(Integer.class, 0xcafebabe);
+        f.putFavorite(Class.class, Favorites.class);
+        
+        String favoriteString = f.getFavorite(String.class);
+        int favoriteInteger = f.getFavorite(Integer.class);
+        Class<?> favoriteClass = f.getFavorite(Class.class);
+    }
+
+
+
+
+
