@@ -62,4 +62,24 @@
   소비 : 제네릭 파라미터 E에 대해 E를 통해 파라미터로 업캐스팅하는 경우 <? super E>
 
 
+//타입 매개변수와 비교
+  메서드 선언에 타입 매개변수가 한번만 나오면 와일드카드로 대체
+  
+    public static <E> void swap(List<E> list, int i, int j);    //복잡함으로 인해 public API 부적합
+    public static void swap(List<?> list, int i, int j);        //public API 적합
+
+    public static void swap(List<?> list, int i, int j) {       //List<?>에는 null만 삽입가능
+        list.set(i, list.set(j, list.get(i));                   //컴파일오류, incompatibal type
+    }
+
+    public static void swap(List<?> list, int i, int j) {
+        swapHelper(list, i, j);                                 //도우미 메서드 호출로 컴파일오류 
+    }
+    
+    //와일드카드 타입을 실제 타입으로 바꿔주는 private 도우미 메서드
+    private static <E> void swapHelper(List<E> list, int i, int j) {
+        list.set(i, list.set(j, list.set(i));
+    }
+
+
 
