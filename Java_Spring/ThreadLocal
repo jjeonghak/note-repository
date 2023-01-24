@@ -1,0 +1,18 @@
+//쓰레드 로컬
+  해당 쓰레드만 접근할 수 있는 특별한 저장소
+  싱글톤 인스턴스 필드에 대한 동시성 이슈 해결을 위한 방식
+  같은 인스턴스의 쓰레드 로컬 필드에 접근해도 문제 없음
+  자바 언어차원에서 java.lang.ThreadLocal 클래스 제공
+  쓰레드 로컬을 다 사용한 후 저장된 값 제거 필수(remove)
+
+    //기존 싱글톤 동시성 이슈 필드
+    private String nameStore;
+    
+    //쓰레드 로컬
+    private ThreadLocal<String> nameStore = new ThreadLocal<>();
+    nameStore.set("string");
+    nameStore.get();
+    nameStore.remove();
+
+
+
