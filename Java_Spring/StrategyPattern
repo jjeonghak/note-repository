@@ -26,6 +26,16 @@
             log.info("logic1 run time: {}", endTime - startTime);
         }
     }
+    
+    //파라미터 주입 방식
+    public class ContextV2 {
+	public void execute(Strategy strategy) {
+	    long startTime = System.currentTimeMillis();
+	    strategy.call(); //위임
+	    long endTime = System.currentTimeMillis();
+	    log.info("logic run time: {}", endTime - startTime);
+	}
+    }
 
 
 //익명 내부 클래스
