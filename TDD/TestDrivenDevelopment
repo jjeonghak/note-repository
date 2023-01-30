@@ -1,0 +1,66 @@
+//TDD
+  테스트를 먼저하고 그 다음 구현
+  기능이 올바르게 동작하는지 검증하는 테스트 코드부터 작성
+  기본적으로 완성되지 않은 코드 또는 테스트 중인 코드는 src/test/java 폴더에 작성
+  
+    @Test
+    void pulus() {
+        int result = Calculator.plus(1, 2);   //아직 작성되지 않아 컴파일 오류 발생
+        assertEquals(3, result);              //기대값, 실제값
+    }
+    
+    //테스트를 먼저 구현하므로 생기는 고민
+    1. 메서드 이름
+    2. 파라미터의 갯수와 타입
+    3. 정적 메서드와 인스턴스 메서드
+    4. 메서드를 제공할 클래스 이름
+
+
+//암호 검사기 예제
+  요구사항
+    1. 검사할 규칙은 세가지
+      1) 길이가 8글자 이상
+      2) 0 ~ 9 숫자 포함
+      3) 대문자 포함
+    2. 3개 규칙을 모두 충족하면 강함
+    3. 2개 규칙을 충족하면 보통
+    4. 1개 이하의 규칙을 충족하면 약함
+
+    public class PasswordStrengthMeterTest {
+        @Test
+        void name() {
+        }
+    }
+  
+
+//첫 번째 테스트
+  가장 쉽거나 가장 예외적인 상황을 첫 번째 테스트로 선정
+    
+    1. 모든 규칙을 충족하는 경우
+      '강함'에 해당하는 값을 리턴하는 메서드로 테스트 통과 가능
+    2. 모든 규칙을 총족하지 않는 경우
+      각 조건을 검사하는 코드를 모두 구현해야 테스트 통과 가능
+  
+    public class PasswordStrengthMeterTest {
+        @Test
+        void meestAllCriteria_Then_String() {
+            PasswordStrengthMeter meter = new PasswordStrengthMeter();
+            PasswordStrength result = meter.meter("ab12!@AB");
+            asserEquals(PasswordStrength.STRONG, result);
+        }
+    }
+    
+    public enum PasswordStrength {
+        STRONG  //WEAK, NORMAL 추가 가능하나 테스트를 통과시킬 정도의 코드만 작성
+    }
+    
+    public class PasswordStrengthMeter {
+        public PasswordStrength meter(String s) {
+            return null;
+        }
+    }
+
+
+
+
+
