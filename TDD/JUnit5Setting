@@ -1,0 +1,40 @@
+//인텔리제이 JUnit5 설정
+  1. [File] -> [Project Structure...]
+  2. Module 선택 후 Dependencie
+  3. [+] 버튼 클릭 후 [Library...] -> [From Maven]
+  4. 검색창에 "org.junit.jupiter:junit-jupiter:5.5.0" 입력 후 [OK]
+  5. Configure Library 대화창에서 [OK] 
+  6. Project Structure 대화창에서 [OK]
+
+
+//메이븐 프로젝트
+  [pom.xml]
+  <dependencies>
+    <dependencies>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.5.0</version>
+      <scope>test</scope>
+    </dependencies>
+  </dependencies>
+  
+  <plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>2.22.1</version>
+  </plugin>
+
+
+//그레들 프로젝트
+  [build.gradle]
+  dependencies {
+      testImplementation('org.junit.jupiter:junit-jupiter:5.5.0')
+  }
+  
+  test {
+      useJUnitPlatform()
+      testLogging {
+          evnets "passed", "skipped", "failed"
+      }
+  }
+
+
