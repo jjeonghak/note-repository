@@ -43,7 +43,7 @@
   
     public class PasswordStrengthMeterTest {
         @Test
-        void meestAllCriteria_Then_String() {
+        void meestAllCriteria_Then_Strong() {
             PasswordStrengthMeter meter = new PasswordStrengthMeter();
             PasswordStrength result = meter.meter("ab12!@AB");
             asserEquals(PasswordStrength.STRONG, result);
@@ -56,9 +56,115 @@
     
     public class PasswordStrengthMeter {
         public PasswordStrength meter(String s) {
-            return null;
+            return PasswordStrength.STRONG;
         }
     }
+
+
+//두 번째 테스트
+  길이만 8글자 미만이고 나머지 규칙을 충족하는 경우
+  
+    @Test
+    void meestOtherCriteria_except_for_Length_Then_Normal() {
+        PasswordStrengthMeter meter = new PasswordStrengthMeter();
+        PasswordStrength result = meter.meter("ab12!@A");
+        asserEquals(PasswordStrength.NORMAL, result);
+    }
+    
+    public enum PasswordStrength {
+        NORMAL, STRONG
+    }
+
+    public PasswordStrength meter(String s) {
+        if (s.length() < 8) {
+            return PasswordStrength.NORMAL;
+        }
+        return PasswordStrength.STRONG;
+    }
+  
+  
+//세 번째 테스트
+  숫자를 포함하지 않고 나머지 규칙은 충족하는 경우
+  
+    @Test
+    void meestOtherCriteria_except_for_Length_Then_Normal() {
+        PasswordStrengthMeter meter = new PasswordStrengthMeter();
+        PasswordStrength result = meter.meter("ab!@ABqwer");
+        asserEquals(PasswordStrength.NORMAL, result);
+    }
+    
+    public PasswordStrength meter(String s) {
+        if (s.length() < 8) {
+            return PasswordStrength.NORMAL;
+        }
+        boolean containNum = false;
+        for (char ch : s.toCharArray()) {
+            if (ch >= '0' && ch <= '9') {
+                containNum = true;
+                break;
+            }
+        }
+        if (!containNum) return PasswordStrength.NORMAL;
+        return PasswordStrength.STRONG;
+    }
+
+
+//코드 리팩토링
+  
+    public class PasswordStrengthMeter {
+        public PasswordStrength meter(String s) {
+            if (s.length() < 8) {
+                return PasswordStrength.NORMAL;
+            }
+            boolean containNum = meetsContainingNumberCriteria(s);
+            if (!containNum) return PasswordStrength.NORMAL;
+            return PasswordStrength.STRONG;
+        }
+        
+        private boolean meetsContainingNumberCriteria(String s) {
+            for (char ch : s.toCharArray()) {
+                if (ch >= '0' && ch <= '9') {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+    
+    public class PasswordStrengthMeterTest {
+        private PasswordStrengthMeter meter = new PasswordStrengthMeter();
+        
+        private void assertStrength(String password, PasswordStrength expStr) {
+            PasswordStrength result = meter.meter(password);
+            asserEquals(expStr, result);
+        }
+        
+        @Test
+        void meetsAllCriteria_Then_Strong() {
+            assertStrength("ab12!@AB", passwordStrength.STRONG);
+        }
+        ...
+    }
+
+
+//네 번째 테스트
+  값이 없는 경우
+  
+    @Test
+    void nullAndEmptyInput_Then_Invalid() {
+        assertStrength(null, PasswordStrength.INVALID);
+        assertStrength("", PasswordStrength.INVALID);
+    }
+
+    public enum PasswordStrength {
+        INVALID, NORMAL, STRONG
+    }
+    
+    public PasswordStrength meter(String s) {
+        if (s == null || s.isEmpty()) return PasswordStrength.INVALID;
+        ...
+    }
+
 
 
 
