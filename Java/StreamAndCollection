@@ -1,0 +1,31 @@
+//원소 시퀀스 반환
+  자바 7 이전에는 이런 메서드의 반환 타입을 Collection, Set, List, Iterable, 배열 사용
+  자바 8 이후에는 스트림을 사용
+  Stream 인터페이스는 Iterable 인터페이스가 정의한 추상 메서드를 점부 포함
+  하지만 Stream이 Iterable을 확장하지는 않음
+  Collection 엔터페이스는 Iterable의 하위 타입이고 stream 메서드도 제공
+  원소 시퀀스 반환 공개 API는 Collection 또는 그 하위 타입을 쓰는 게 일반적
+  
+    //자바 타입 추론의 한계
+    for (ProcessHandle ph : ProcessHandle.allProcesses()::iterator) {
+        ...
+    }
+    
+    //스트림을 반복하기 위한 끔찍한 우회방식
+    for (ProcessHandle ph : (Iterable<ProcessHandle>) ProcessHandle.allProcesses()::iterator) {
+        ...
+    }
+    
+    //어댑터 사용 방식
+    public static <E> Iterable<E> iterableOf(Stream<E> stream) {
+        return stream::iterator;
+    }
+    
+    public static <E> Stream<E> streamOf(Iterable<E> iterable) {
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+
+
+
+
