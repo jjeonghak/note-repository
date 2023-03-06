@@ -7,16 +7,33 @@
 
 //계층 구조
   Object
-   ㄴThrowable
-     ㄴError
-     ㄴException
+   ㄴThrowable                     //Checked
+     ㄴError                       //Unchecked
+       ㄴThreadDeath
+       ㄴIOError
+       ㄴVirtualMachineError
+         ㄴOutOfMemoryError
+         ㄴStackOverflowError
+     ㄴException                   //Checked
        ㄴIOException
        ㄴFileNotFoundException
-       ㄴRuntimeException
+       ㄴRuntimeException          //Unchecked
          ㄴNullPointerException
          ㄴNoSuchElementException
          ㄴBufferOverflowException
        ㄴ...
+
+
+//검사 예외(checked exception)
+  컴파일 단계에서 컴파일러가 체크
+  Exception 하위 클래스 중 RuntimeException 제외한 예외
+  처리하지 않는 경우 컴파일 오류 발생
+  예외 발생시 트랜잭션 롤백하지 않음
+  
+
+//비검사 예외(unchecked exception)
+  컴파일 단계가 아닌 실행 단계에서 발생
+  예외 발생시 트랜잭션 롤백
 
 
 //표준 예외
