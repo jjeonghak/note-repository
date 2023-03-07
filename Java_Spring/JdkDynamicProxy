@@ -4,4 +4,18 @@
   자바 리플렉션을 이용한 프록시 생성 기술
 
 
+//JDK 동적 프록시 사용 방식
+  JDK 동적 프록시에 적용할 로직을 InvocationHandler 인터페이스로 구현
+  proxy : 프록시 자신
+  method : 호출할 메서드
+  args : 메서드 호출에 필요한 인수
+
+    public interface InvocationHandler {
+        public Object invoke(Object proxy, Method method, Object[] args)
+            throws Throwable;
+    }
+
+
+
+
 
