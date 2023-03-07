@@ -32,6 +32,7 @@
     
   2. 메서드 접근
     Method method = memberClass.getDeclaredMethod("methodName");
+    method.invoke(target);  //선택한 객체를 통해 메서드 실행
 
 
 
