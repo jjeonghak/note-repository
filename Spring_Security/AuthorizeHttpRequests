@@ -1,0 +1,66 @@
+//Spring Security
+  기본적으로 /login, /logout 요청은 스프링 시큐리티에서 요청을 처리
+  SecurityConfig 파일 생성하면 모든 요청을 개발자가 관리
+  권한이 없는 페이지는 403 에러 발생
+  로그인 완료시 시큐리티 세션 생성(Security ContextHolder)
+  오브젝트 타입은 Authentication 타입 객체
+  Authentication 내부에 유저 정보 보유
+  유저 정보 타입은 UserDetails 타입 객체
+  
+
+//AuthorizeRequests
+  AuthorizeHttpRequests 이전에 사용되는 방식(5.6 버전 이전)
+  인증에 너무 많은 과정 필요
+  권한이 필요없는 경로에서도 authentication 관련 정보를 조회
+  동작방식
+    1. SecurityContextHoler에게 Authentication 객체 받음
+    2. HttpServletRequest, HttpServletResponse, FilterChain 이용해서 FilterInvoation 생성
+    3. SecurityMetadataSource에게 FilterInvocation 전달해서 ConfigAttributes 받음
+    4. AccessDecisioinManager에게 Authentication, FilterInvocation, ConfigAttribute 전달
+    5. 접근 불가인 경우 예외 발생(ExceptionTranslationFilter에서 예외 처리)
+    6. 접근 가능인 경우 FilterChain의 다음 filter로 전달
+  
+
+//AuthorizeHttpRequests
+  기존과 다르게 FilterSecurityInterceptor 대신 AuthorizationFilter 추가
+  Supplier 래핑을 통해서 모든 요청에 대해서가 아닌 권한이 요구되는 곳에서만 권한 확인
+  동작방식
+    1. SecurityContextHoler에게 Authentication 객체 받음(Supplier 래핑)
+    2. AuthoriztionManager에게 Supplier-Authentication, HttpServletRequest 전달
+    3. 접근 불가인 경우 예외 발생
+    4. 접근 가능인 경우 FilterChain의 다음 filter로 전달
+
+  //기존의 AuthorizeRequests 문법차이
+    .authorizeRequests() -> .authorizeHttpReqeusts()
+    .access("hasAnyRole('ROLE_A', 'ROLE_B')") -> .hasAnyRole("A", "B")
+    
+        @Configuration
+        @EnableWebSecurity // 스프링 시큐리티 필터가 스프링 필터체인에 등록이 됨
+        public class SecurityConfig {
+            	@Bean
+              public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                  http.csrf().disable()
+                      .authorizeHttpRequests()
+                          .antMatchers("/user/**").authenticated()
+                          .antMatchers("/manager/**").hasAnyRole("MANAGER", "ADMIN")
+                          .antMatchers("/admin/**").hasRole("ADMIN")
+                          .anyRequest().permitAll().and()
+                      .formLogin()
+                          .loginPage("/loginForm")	//로그인 페이지 설정
+                          .loginProcessingUrl("/login")	//시큐리티가 자동 로그인 처리
+                          .defaultSuccessUrl("/");		//로그인 완료시 이동페이지
+                  return http.build();
+              }
+            
+            @Bean
+            public BCryptPasswordEncoder encodePwd() {
+                return new BCryptPasswordEncoder();  //비밀번호 인코딩을 위한 객체
+            }
+
+            @Bean
+            public WebSecurityCustomizer webSecurityCustomizer () {
+                return (web) -> web.ignoring().antMatchers("/h2-console/**", "/favicon.ico");
+            }
+        }
+
+
