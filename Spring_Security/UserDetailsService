@@ -1,0 +1,79 @@
+//UserDetailsService
+  Authentication 내부에 필요한 UserDetails 객체를 반환하는 서비스
+  시큐리티 설정에서 loginProcessingUrl 요청이 오는 경우 서비스 시작
+  form 데이터의 이름이 username 아닌 경우 자동매핑 불가
+  SecurityConfig 파일에서 formLogin().usernameParameter() 메서드를 통해 이름변경가능
+  
+    @Service
+    public class PrincipalDetailsService implements UserDetailsService {
+        	@Autowired
+          private UserRepository userRepository;
+
+          @Override
+          public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+              User userEntity = userRepository.findByUsername(username);
+              if (userEntity != null) {
+                  return new PrincipalDetails(userEntity);
+              }
+              return null;
+          }
+    }
+
+
+//UserDetails
+  Authentication 객체에 담기는 유저 정보
+  시큐리티를 이용한 로그인 처리 후 세션을 만들기 위한 객체
+  
+    public class PrincipalDetails implements UserDetails {
+
+        private User user;
+
+        public PrincipalDetails(User user) {
+            this.user = user;
+        }
+
+        //해당 유저의 권한을 리턴
+        @Override
+        public Collection<? extends GrantedAuthority> getAuthorities() {
+            Collection<GrantedAuthority> collect = new ArrayList<>();
+            collect.add(() -> user.getRole());
+            return collect;
+        }
+
+        @Override
+        public String getPassword() {
+            return user.getPassword();
+        }
+
+        @Override
+        public String getUsername() {
+            return user.getUsername();
+        }
+
+        //계정 만료 여부
+        @Override
+        public boolean isAccountNonExpired() {
+          return true;
+        }
+
+        //계정 잠금 여부
+        @Override
+        public boolean isAccountNonLocked() {
+            return true;
+        }
+
+        //계정 비밀번호 기간
+        @Override
+        public boolean isCredentialsNonExpired() {
+            return true;
+        }
+
+        //계정 활성화
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+    }
+
+
+
