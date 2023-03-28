@@ -1,0 +1,31 @@
+//oauth
+  다른 웹사이트 상의 자신의 정보에 대해 어플리케이션 접근 권한을 부여할 수 있는 공통적인 수단
+    
+    1. resource server : client가 제어하고자 하는 자원을 보유하는 서버
+    2. resource owner : 자원의 소유자
+    3. client : resource server에 접속해서 정보를 가져오고자 하는 어플리케이션
+
+
+//oauth flow
+  1. client 등록
+    client가 resource server를 이용하기 위해서는 자신의 서비스를 해당 서버에 등록
+    클라이언트 아이디는 노출에 무방, 보안 비밀번호는 노출 금지
+    authorized redirect URL은 authorization code를 전달 받을 리다이렉트 주소
+    query string으로 code가 클라이언트로 전달될때 클라이언트는 아이디, 비밀번호, code를 resource server에 전달
+    resource server 자원을 사용할 수 있는 access token 발급
+
+  2. resource owner 승인
+    owner는 resource server 로그인을 완료하면 명시한 scope에 해당하는 권한을 client에게 부여할 것인지 승인
+
+  3. resource server 승인
+    owner 승인 완료시 redirect URL로 클라이언트 리다이렉트 시킴
+    자신의 자원을 사용할 수 있는 access token과 임시 암호인 authorization code를 함께 발급
+  
+  4. API 호출
+    이후 access token을 헤더에 담아 resource server API를 호출하면 해당 계정과 연동된 자원 및 기능을 client가 사용
+    
+  5. refresh token
+    발급 여부와 방법 및 갱신 주기 등은 resource server마다 상이
+
+
+
