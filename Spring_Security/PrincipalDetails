@@ -1,0 +1,78 @@
+//PrincipalDetails
+  기본적인 로그인과 OAuth 로그인의 유저 정보 객체가 상이
+  Authentication 객체로 만들기 전에 두 객체를 모두 수용하는 객체를 이용해서 추상화
+    
+    @Data
+    public class PrincipalDetails implements UserDetails, OAuth2User {
+
+        private User user;
+        private Map<String, Object> attributes;
+
+        //일반 로그인
+        public PrincipalDetails(User user) {
+            this.user = user;
+        }
+
+        //OAuth 로그인
+        public PrincipalDetails(User user, Map<String, Object> attributes) {
+            this.user = user;
+            this.attributes = attributes;
+        }
+
+        //해당 유저의 권한을 리턴
+        @Override
+        public Collection<? extends GrantedAuthority> getAuthorities() {
+            Collection<GrantedAuthority> collect = new ArrayList<>();
+            collect.add(() -> user.getRole());
+            return collect;
+        }
+
+        @Override
+        public String getPassword() {
+            return user.getPassword();
+        }
+
+        @Override
+        public String getUsername() {
+            return user.getUsername();
+        }
+
+        //계정 만료 여부
+        @Override
+        public boolean isAccountNonExpired() {
+            return true;
+        }
+
+        //계정 잠금 여부
+        @Override
+        public boolean isAccountNonLocked() {
+            return true;
+        }
+
+        //계정 비밀번호 기간
+        @Override
+        public boolean isCredentialsNonExpired() {
+            return true;
+        }
+
+        //계정 활성화
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+
+        //OAuth2User 상속을 위한 오버라이드
+        @Override
+        public Map<String, Object> getAttributes() {
+            return attributes;
+        }
+        
+        @Override
+        public String getName() {
+            return null;
+        }
+    }
+    
+    
+    
+    
