@@ -14,7 +14,7 @@
               registration:
                 google:
                   client-id: 67086665707-kn548vv6clahqi28v3f67opih0206ns9.apps.googleusercontent.com
-                  client-secret: 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
+                  client-secret: client 보안 비밀번호
                   scope: email, profile
 
         profiles:
