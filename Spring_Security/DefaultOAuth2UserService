@@ -1,0 +1,70 @@
+//DefaultOAuth2UserService
+  UserDetailsService와 마찬가지로 OAuth 로그인 후 Authentication 내부에 필요한 OAuth2User 객체를 반환하는 서비스
+    
+    @Slf4j
+    @Service
+    public class PrincipalOauth2UserService extends DefaultOAuth2UserService {
+
+        @Autowired
+        private CustomBCryptPasswordEncoder bCryptPasswordEncoder;
+
+        @Autowired
+        private UserRepository userRepository;
+
+        //oauth 로그인 후처리
+        //구글로 부터 받은 userRequest 데이터 사용
+        //구글 로그인 완료후 code를 리턴받고(OAuth-Client) Access Token 요청한 정보
+        //loadUser 메서드를 통해서 사용자 프로필 정보를 받음
+        //함수 종료시 @AuthenticationPrincipal 어노테이션 생성
+        @Override
+        public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+            log.info("userRequest:{}", userRequest);
+            log.info("AccessToken:{}", userRequest.getAccessToken().getTokenValue());
+            
+            //resource server에 등록된 client 정보
+            log.info("ClientRegistration:{}", userRequest.getClientRegistration());
+            log.info("ClientId:{}", userRequest.getClientRegistration().getClientId());
+            log.info("ClientSecret:{}", userRequest.getClientRegistration().getClientSecret());
+           
+            /**
+             * OAuth2User.getAttributes
+             * sub : 구글 회원 아이디 외래키
+             * name : 이름
+             * given_name: 닉네임
+             * family_name : 성
+             * picture : 프로필 사진
+             * email : 이메일
+             * email_verified : 이메일 유효성
+             * locale : 지역
+             */
+            OAuth2User oAuth2User = super.loadUser(userRequest);
+            log.info("Attributes:{}", oAuth2User.getAttributes());
+
+            //강제 회원가입
+            //로그인 후처리, PrincipalDetails 객체 생성을 위한 처리
+            String provider = userRequest.getClientRegistration().getClientId(); //google
+            String provider_id = oAuth2User.getAttribute("sub");
+            String username = provider + "_" + provider_id;
+            String email = oAuth2User.getAttribute("email");
+            String password = bCryptPasswordEncoder.encode(username);
+            String role = "ROLE_USER";
+
+            User userEntity = userRepository.findByUsername(username);
+            if (userEntity == null) {
+                log.info("null");
+                userEntity = User.builder()
+                    .username(username)
+                    .password(password)
+                    .provider(provider)
+                    .provider_id(provider_id)
+                    .role(role)
+                    .email(email)
+                    .build();
+                userRepository.save(userEntity);
+            }
+            return new PrincipalDetails(userEntity, oAuth2User.getAttributes());
+        }
+    }
+
+
+
