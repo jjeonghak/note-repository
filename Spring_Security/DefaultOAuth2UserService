@@ -42,7 +42,7 @@
 
             //강제 회원가입
             //로그인 후처리, PrincipalDetails 객체 생성을 위한 처리
-            String provider = userRequest.getClientRegistration().getClientId(); //google
+            String provider = userRequest.getClientRegistration().getRegistrationId(); //google
             String provider_id = oAuth2User.getAttribute("sub");
             String username = provider + "_" + provider_id;
             String email = oAuth2User.getAttribute("email");
