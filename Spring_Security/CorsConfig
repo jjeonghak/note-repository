@@ -1,0 +1,45 @@
+//SecurityFilterChain
+  스프링 시큐리티 사용시 기본 필터 체인보다 앞서 실행되는 시큐리티 필터 체인
+  스프링 시큐리티 필터 체인에 필터 체인을 연결하려면 CorsFilter 객체 등록 필수
+  
+
+//CorsFilter
+  스프링 시큐리티 필터 체인에 등록될 수 있는 클래스
+  
+    @Configuration
+    public class CorsConfig {
+        @Bean
+        public CorsFilter corsFilter() {
+        
+            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+            CorsConfiguration corsConfiguration = new CorsConfiguration();
+            
+            //서버 응답시 json을 자바스크립트에서 처리할 권한 설정
+            corsConfiguration.setAllowCredentials(true);
+            //모든 ip 응답 허용
+            corsConfiguration.addAllowedOrigin("*");
+            //모든 header 응답 허용
+            corsConfiguration.addAllowedHeader("*");
+            //모든 method 응답 허용
+            corsConfiguration.addAllowedMethod("*");
+            source.registerCorsConfiguration("/api/**", corsConfiguration);
+            return new CorsFilter(source);
+        }
+    }
+
+
+//SecurityConfig
+  기본 Filter 클래스는 SecurityFilterChain 연결 불가
+  시큐리티 필터 체인 시작 전과 후에 기본 Filter 등록가능
+  또는 시큐리티 필터 체인 연결이 아닌 기본 FilterChain 연결 방식으로 해결가능
+    
+    
+    http
+        .addFilterBefore(new CustomFilter(), SecurityContextHolderFilter.class)
+        .addFilterAfter(new CustomFilter(), SecurityContextHolderFilter.class)
+        .addFilter(corsConfig.corsFilter());
+  
+  
+  
+
+
