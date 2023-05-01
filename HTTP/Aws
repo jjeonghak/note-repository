@@ -1,0 +1,220 @@
+//어플리케이션 구성
+	어플리케이션
+	OS: Window/Linux
+	Computing: CPU + RAM
+	Storage: HDD/SSD
+	Network: 랜카드/랜선
+
+
+//IaaS(Infrastructure as a Service)
+	인프라(Computing, Storage, Network)만 제공
+	OS를 직접 설치하고 필요한 소프트웨어 개발
+	ex) AWS EC2
+
+
+//PaaS(Platform as a Service)
+	인프라 + OS + 기타 프로그램 실행에 필요한 부분(런타임)
+	코드만 올리면 어플리케이션 동작 가능
+	ex) Firebase, Google App Engine
+
+
+//SaaS(Software as a Service)
+	인프라 + OS + 필요한 소프트웨어 제공
+	서비스 자체를 제공
+	다른 세팅 없이 서비스만 이용
+	ex) Gmail, DropBox, Slack, Google Docs
+
+
+//클라우드 컴퓨팅 배포 모델
+	공개형(클라우드): 모든 부분이 클라우드에서 실행, 낮은 비용과 높은 확장성
+	혼합형: 공개형과 폐쇄형의 혼합, 전환하는 과도기에 사용
+	폐쇄형: 높은 수준의 커스터마이징, 높은 초기 비용 및 유지보수, 높은 보안
+
+
+//AWS 구조
+	글로벌 서비스: 데이터 및 서비스를 전 세계의 모든 인프라가 공유
+		IAM
+		Amazon CloudFront(CDN): 엣지 로케이션을 통해 캐싱 및 트래픽 분산
+		CloudFront
+		WAF
+		Route53 
+	지역 서비스: 특정 리전을 기반으로 데이터 및 서비스 제공
+		Regions: AWS의 서비스가 제공되는 서버의 물리적 위치
+		VPC
+		S3
+		Availability Zone(2개 이상)
+			RDS
+			EC2
+
+
+//ARN(Amazon Resource Name): AWS의 모든 리소스의 고유 아이디
+	arn:[partition]:[service]:[region]:[account_id]:[resource_type]/resource_name/(qualifier)
+
+
+//AWS account
+	생성시 본인 명의의 카드 필요
+	루트 유저와 기본 리소스등이 생성
+	숫자 아이디 부여(추후 문자 별칭 지정 가능)
+
+
+//루트 유저
+	생성한 계정의 모든 권한
+	생성시 만든 이메일 주소로 로그인
+	탈취당했을시 복구가 힘들기 때문에 MFA 설정 필요
+	관리용으로만 이용
+	AWS API 호출 불가
+
+
+//IAM 유저
+	Identity and Access Management를 통해 생성한 유저
+	기본 권한 없음
+	AWS API 호출 가능
+
+
+//가상화(virtualization)
+	단일 컴퓨터의 하드웨어 요소를 일반적으로 가상 머신이라고 하는 다수의 가상 컴퓨터로 분할하는 기술
+	1세대 완전 가상화(fully emulated): 모든 시스템 요소가 에뮬레이터 안에서 동작
+	2세대 Paravirtualization: GuestOS는 하이퍼바이저와 통신
+	3세대 Hardware Virtual Machine(HVM): 하드웨어에서 직접 가상화 지원, GuestOS가 하드웨어와 통신
+
+
+//EC2
+	안전하고 크기 조정이 가능한 컴퓨팅 파워를 클라우드에서 제공하는 웹 서비스
+	초 단위 온디맨드 가격 모델
+	인스턴스 유형과 사이즈를 직접 사용 목적에 따라 최적화 가능
+
+
+//EBS
+	EC2 인스턴스에 사용할 영구 블록 스토리지 볼륨 제공
+	가상의 하드드라이브, EC2 인스턴스가 종료되어도 존재(네트워크로 연결)
+	하나의 EBS를 여러 EC2에 장착 가능(EBS Multi Attach)
+
+
+//Snapshot
+	특정 시간에 EBS 상태의 저장본
+	S3에 보관(증분식 저장, 변화된 값만 저장)
+
+
+//AMI
+	EC2 인스턴스를 실행하기 위해 필요한 정보를 모은 단위
+	기존 EC2 인스턴스의 스냅샷을 이용해서 복제가능
+
+
+//오토스케일링(autoscaling)
+	vertical scale(scale up)
+		물리적으로 인스턴스 성능을 높임, 성능이 높아질수록 효율이 낮아짐(비용이 기하급수적으로 늘어남)
+	horizontal scale(scale out)
+		인스턴스 성능이 아닌 규모를 높임, 비용과 성능이 같은 비율로 높아짐
+	auto scaling: horizontal scale 모니터링 지원
+
+
+//Elastic Load Balancer
+	들어오는 애플리케이션 트래픽을 여러 대상에 자동으로 분산
+	직접 트래픽을 발생시켜(Health Check) 인스턴스가 살아있는지 체크
+	오토스케일링과 연동가능, 여러 가용영역에 분산가능
+	application load balancer
+	network load balancer
+	classic load balancer
+	gateway load balancer
+
+
+//EFS
+	NFS(Network File System) 기반 공유 스토리지 서비스(NFSv4)
+	EBS와는 다르게 용량 지정할 필요 없음
+	AWS 외부에서 접속 불가
+	리눅스만 사용가능
+	다수의 ec2 인스턴스 연결 가능
+	보안 그룹을 통해 인스턴스에 연결
+	수명주기 관리 정책 또는 지능형 계층화를 통해 클래스 자동 전환가능
+	스토리지 클래스
+		표준 스토리지: 3개의 가용영역에 데이터 저장, 자주 엑세스하는 데이터 저장용
+		표준 IA: 3개의 가용영역에 데이터 저장, 자주 엑세스하지 않는 데이터 저장용
+		One zone: 1개의 가용영역에 데이터 저장, 자주 엑세스하는 데이터 저장용
+		One zone IA: 1개의 가용영역에 데이터 저장, 자주 엑세스하지 않는 데이터 저장용
+	성능 모드: I/O, 읽기 쓰기 속도
+		기본 범용 성능 모드
+		최대 I/O 성능 모드
+	처리량 모드: 파일 시스템 처리량
+		기본 버스팅 처리량 모드: 파일 용량에 따라 자동 확장
+		프로비저닝 모드: 고정으로 처리량 지정
+
+
+
+//Simple Storage Service(S3)
+	객체 스토리지 서비스, 파일 보관만 가능
+	글로벌 서비스지만 데이터는 리전에 저장
+	버킷
+		S3의 저장공간을 구분하는 단위(디렉토리와 같은 개념)
+		버킷 이름은 전 세계에서 고유한 값
+
+
+//S3 객체 구성
+	owner: 소유자
+	key: 파일 이름
+	value: 파일 데이터
+	verion id: 파일 버전 아이디
+	metadata: 파일 정보를 담은 데이터
+	ACL: 파일 권한을 담은 데이터
+	torrents: 토렌트 공유를 위한 데이터
+
+
+//S3 스토리지 클래스
+	S3 스탠다드
+		최소 3개 이상의 가용영역 분산 보관
+		최소 보관 기간 및 용량 없음
+		파일 요청 비용 없음(전송 요금은 발생)
+	S3 스탠다드 IA(Infrequently Accessed)
+		자주 사용되지 않는 데이터를 저렴한 가격에 보관
+		최소 3개 이상의 가용영역 분산 보관
+		최소 저장 용량 존재(128kb)
+		최소 저장 기간(30일)
+		데이터 요청 비용 발생
+	S3 One Zone-IA
+		자주 사용되지 않고 중요하지 않은 데이터를 저렴한 가격에 보관
+		단 한개의 가용영역에만 보관
+		최소 저장 용량 존재(128kb)
+		최소 저장 기간(30일)
+		데이터 요청 비용 발생
+	S3 Glacier Instant Retrieval
+		아카이브용 저장소
+		최소 저장 용량 존재(128kb)
+		최소 저장 기간(90일)
+		바로 엑세스 가능
+	S3 Glacier Flexible Retrieval
+		아카이브 저장소
+		최소 저장 용량 존재(40kb)
+		최소 저장 기간(90일)
+		분 ~ 시간 단위 이후 엑세스 가능
+	S3 Glacier Deep Archive
+		아카이브 저장소
+		최소 저장 용량 존재(40kb)
+		최소 저장 기간(90일)
+		12 ~ 48시간 이후 엑세스 가능
+	S3 Intelligent-Tiering
+		머신 러닝을 사용해  자동으로 적절한 클래스 변경
+		퍼포먼스 손해/오버헤드 없이 요금 최적화
+
+
+//Instance Store
+	ec2 인스턴스에 붙는 임시 저장소
+	ec2 인스턴스 종료시 초기화되는 휘발성 저장소
+
+
+//스토리지 비교
+	Instance Store: 특정 인스턴스에 붙는 물리적 고성능 스토리지
+		임시 용도의 휘발성 저장소
+	EBS: 인스턴스 생성시 AMI가 설치되는 EBS 루트 볼륨 생성
+		여러 EBS 볼륨으로 하나의 인스턴스 연결 가능
+		동일한 가용영역에 있는 인스턴스만 연결 가능
+		스냅샷을 이용한 복사 가능
+		여러 인스턴스에 연결 가능하지만 제한사항 존재(같은 가용영역)
+	EFS: NFS 프로토콜을 이용한 리눅스 네트워크 파일 스토리지
+		여러 가용영역에 있는 여러 인스턴스를 하나의 EFS에 연결 가능
+		온-프레미스 리눅스 서버에서도 연결 가능
+		클래스, 성능, 처리량 모드 설정 가능
+
+
+
+
+
+
