@@ -1,0 +1,77 @@
+//기본 직렬화
+  객체의 물리적 표현과 논리적 내용이 같은 경우 적합
+  기본 직렬화의 경우 객체를 루트로 하는 객체 그래프의 물리적 모습을 효율적으로 인코딩
+  객체가 포함한 데이터들과 그 객체에서부터 시작해 접근할 수 있는 모든 객체의 위상까지 기술
+  기본 직렬화가 적합하더라도 불변식 보장과 보안을 위해 readObject 메서드 제공해야 할 때가 많음
+    
+    //기본 직렬화 형태에 적합
+    public class Name implements Serializable {
+        /**
+         * 성. null이 아니어야 함.
+         * @serial
+         */
+         private final String lastName;
+         
+         /**
+         * 이름. null이 아니어야 함.
+         * @serial
+         */
+         private final String firstName;
+         
+         /**
+         * 중간이름. 중간이름이 없다면 null.
+         * @serial
+         */
+         private final String middleName;
+         
+         ...
+         
+         //논리적으로 이름, 성, 중간이름 
+         //물리적으로 3개의 문자열
+    }
+    
+    //기본 직렬화 형태에 적합하지 않음
+    public final class StringList implements Serializable {
+        private int size = 0;
+        private Entry head = null;
+        
+        private static class Entry implements Serializable {
+            String data;
+            Entry next;
+            Entry previous;
+        }
+        
+        ...
+        
+        //논리적으로 이 클래스는 일련의 문자열을 표현
+        //물리적으로 문자열들을 이중 연결 리스트로 연결
+        //기본 직렬화 형태 사용시 각 노드의 양방향 연결 정보를 포함한 모든 엔트리를 기록
+    }
+    
+
+//논리적, 물리적 차이가 큰 기본 직렬화 문제
+  1. 공개 API가 현재 내부 표현 방식에 영구히 종속
+    private 필드가 공개 API로 변경
+    더는 사용하지 않더라도 관련 코드를 절대 제거할 수 없음
+    
+  2. 많은 공간 차지
+    앞 예에서 엔트리 연결 정보는 내부 구현에 해당
+    직렬화 형태에 포함할 가치가 없지만 포함되어 많은 메모리 차지
+    
+  3. 많은 시간 소요
+    직렬화 로직은 객체 그래프의 위상에 관한 정보가 없음
+    그래프의 모든 객체를 직접 순회함으로 많은 시간 소요
+  
+  4. 스택 오버플로 발생 가능성
+    기본 직렬화 과전은 객체 그래프를 재귀 순회
+    플랫폼에 따라 스택 오버플로 최소 크기가 상이하기 때문에 발생 가능성 존재
+
+
+
+
+
+
+
+
+
+
