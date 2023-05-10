@@ -56,6 +56,7 @@
   
 //방어적 복사
   직렬화 이후 생성된 불변 객체 인스턴스를 악의적으로 가변 객체 변경 가능
+  역직렬화할 때 클라이언트가 소유해서는 안 되는 객체 참조 필드는 반드시 방어적 복사 
   
     //가변 공격
     public class MutablePeriod {
@@ -90,8 +91,29 @@
             }
         }
     }
-  
-
+    
+    //공격 코드
+    public static void main(String[] args) {
+        MutablePeriod mp = new MutablePeriod();
+        Period d = mp.period;
+        Date pEnd = mp.end;
+        
+        pEnd.setYear(78);
+        System.out.println(p);  //Wed Nov 22 00:21:29 PST 2023 - Wed Nov 22 00:21:29 PST 1978
+    }
+    
+    //방어적 복사 및 유효성 검사
+    public void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
+        s.defaultReadObject();
+        
+        //가변 요소 방어적 복사
+        start = new Date(start.getTime());
+        end = new Date(end.getTime());
+        
+        //불변식 유효성 검사
+        if (start.compareTo(end) > 0)
+            throw new InvalidObjectException(start + ", " + end + " 기간 오류");
+    }
 
 
 
