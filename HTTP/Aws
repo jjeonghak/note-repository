@@ -672,5 +672,185 @@
 		머신 러닝, 빅데이터 처리 등에 사용
 
 
+//Simple Queue Service(SQS)
+	메시지 대기 서비스
+	어플리케이션 간의 느슨한 결합 제공
+	Poll 방식으로 메시지 전송
+	Consumer가 메시지를 소비하면 SQS Queue에서 메시지 삭제
+	표준대기열
+		순서와 상관없이 메시지 전달
+		처리 순서와 상관없는 어플리케이션에 사용
+		가끔 중복 메시지 복사본 전달
+	FIFO 대기열
+		메시지가 들어온 순서로 처리
+		중복 메시지 복사본 없음
+		처리 순서가 중요한 어플리케이션에 사용
+	배달 못한 편지 대기열(DLQ, Dead Letter Queue)
+		일반적으로 메시지는 처리될 때까지 계속 보냄
+		이 경우 다른 메시지처리까지 영향
+		일정 횟수 이상 시도 후 처리되지 못한 경우 DLQ로 이동 보관
+	제한 시간 초과/표시 제한 시간(Visibility Timeout)
+		메시지 소비자가 대기열에 메시지 수신 후 처리하면 메시지는 계속 대기열에 존재
+		소비자가 메시지 처리 후 대기열에 응답을 해야 메시지 삭제
+		소비자가 메시지 수신 후 응답 대기하는 동안 다른 메시지 소비자에게 숨김
+		default 30초, 최소 0초, 최대 12시간
+	short polling
+		default
+		메시지 대기열이 비어있어도 소비자는 메시지 요청
+		메시지 수신 대기시간 0초
+	long polling
+		메시지가 대기열에 도착할 때까지 소비자가 메시지 요청 대기
+		메시지 수신 대기시간은 1초부터 20초까지 설정 가능
+
+
+//Amazon Simple Notification Service(SNS)
+	메시지 전송 서비스
+	게시자(Publishers)에서 구독자(Subscriber)로 메시지 전송
+	어플리케이션 간(A2A) 및 어플리케이션과 사용자 간(A2P) 통신
+	push 방식의 메시지 전송(게시자의 일방적 전송)
+	전송순서
+		1. SNS 주제(Topic) 생성
+		2. 구독(메시지 수신자) 생성
+		3. 메시지 생성
+		4. 메시지 전송
+	SNS + SQS Fan Out
+		어플리케이션 정기적 업데이트 또는 폴링 없이 푸시 메커니즘으로 다수의 구독자에게 메시지 전송
+		SQS 분산 어플리케이션에서 송신 구성과 수신 구성 요소를 분리
+	SNS FIFO Topic
+		메시지가 주제에 게시된 정확한 순서로 구독된 대기열에 메시지 전달
+
+
+//Kinesis
+	실시간 스트리밍 데이터를 수집, 처리 및 분석하는 서비스
+	데이터 수집 후 처리가 아닌 데이터 수신되는 대로 처리 및 분석
+	서비스 유형
+		Kinesis Data Streams
+			데이터 스트림 수집, 저장 및 처리
+			실시간 서비스
+		Kinesis Data Firehose
+			스트리밍 ETL(Extract, Transform, and Load) 솔루션
+			데이터 스트림 AWS 데이터 스토어에 로드
+			데이터를 저장하진 않음
+		Kinesis Data Analytics
+			SQL 또는 Apache Flink로 데이터 스트림 분석
+			Apache Flink는 데이터 스트림 처리를 위한 오픈 소스 프레임워크 및 엔진
+		Kinesis Video Streams
+			비디오 스트림 수집, 저장 및 처리
+
+
+//Amazon MQ
+	Apache ActiveMQ 및 RabbitMQ 관리형 메시지 브로커 서비스
+	JMS, NMS 같은 API와 AMQP, STOMP, MQTT, WebSocket 등 메시징 프로토콜 지원
+	활성(Active)/대기(Standby) 브로커 배포모드 지원
+	클라우드 기반 어플리케이션은 SNS, SQS 메시지 서비스 사용 추천
+	기존 Apache ActiveMQ 및 RabbitMQ 등의 어플리케이션 온프레미스인 경우 마이그레이션을 위해 사용
+
+
+//API Gateway
+	개발자가 API 생성, 게시, 유지 관리, 모니터링 및 보안 유지를 위한 서비스
+
+
+//AWS Step Functions
+	시각적 워크플로 구축 서비스
+	어플리케이션의 구성 요소를 단계별로 배열하여 다단계 어플리케이션 구축 및 실행
+	사용 예
+		데이터 처리: 데이터를 통일된 보고서로 통합, 분석 및 기계 학습 워크플로 조정
+		DevOps 및 IT 자동화: 지속적 통합 및 지속적 배포를 위한 도구 구축
+		전자 상거래: 주문 처리, 재고 추적 등 프로세스 자동화
+		웹 어플리케이션: 강력한 사용자 등록 프로세스와 로그인 인증 구현
+
+
+//Amazon AppFlow
+	SaaS(Software-as-a-Service) 어플리케이션과 AWS 간 데이터 전송 서비스
+	통신을 위한 API 커넥터 구축 및 관리할 필요없음
+	소스: Slack 같은 서비스형 소프트웨어(SaaS) 어플리케이션
+	대상: Amazon S3 및 Amazon Redshift 같은 AWS 서비스
+
+
+//AWS Cognito
+	어플리케이션에 대한 로그인 및 인증 제공하는 기능
+	웹과 모바일 앱에 가입 및 로그인 엑세스 제어 기능
+	애플, 구글, 페이스북 등 계정과 통합 가능
+	사용자풀(User Pool): 사용자 계정정보가 있는 장소
+	자격증명풀(Identity Pool): 엑세스 권한 정보가 있는 장소
+
+
+//AWS Single Sign On(SSO)
+	중앙에서 관리하는 하나의 계정으로 여러 어플리케이션에 로그인하는 기능
+	AWS Organization, Active Directory, SAML 2.0과 통합 가능
+	SAML은 인증을 지원하기 위한 표준 데이터 포멧
+
+
+//Key Management Service(KMS)
+	암호화 키 생성 및 관리하는 서비스
+	AWS 서비스 데이터 암호화에 KMS 사용
+	키 자동교체하는 기능 지원
+	감사를 위한 AWS CloudTrail과 통합하여 모든 키 사용 로그 제공
+	키 종류
+		고객 관리형 키(Customer managed keys)
+			사용자가 생성 및 소유 관리하는 AWS 계정의 KMS 키
+			키 정책, IAM 정책 및 권한 부여, 암호화 구성 요소 등의 제어 권한 가짐
+		AWS 관리형 키(AWS managed keys)
+			사용자 대신 AWS 서비스가 생성 및 소유 관리하는 KMS 키
+			키 정책, 키 삭제 등의 제어 권한이 없거나 제한 존재
+		AWS 키(AWS owned keys)
+			AWS 서비스가 여러 AWS 계정에 사용하기 위해 소유 관리하는 KMS 키 모음
+
+
+//CloudHSM
+	KMS는 AWS에서 관리하는 소프트웨어 방식의 암호화
+	CloudHSM은 AWS에서 제공하는 하드웨어 암호화 장비를 통한 하드웨어 방식의 암호화
+	사용자가 직접 키 관리
+	고객 제공 키(SSH-C, Customer Provided Keys)에 적합한 방식
+
+
+//KMS Multi-Region Keys
+	여러 리전에 동일한 키를 가지고 관리
+	동일한 키를 사용하므로 다른 리전의 데이터를 서로 다른 키로 다시 암호화할 필요없음
+	Amazon DynamoDB 글로벌 테이블 및 DynamoDB 암호화, 멀티 리전 복제된 S3 버킷 암호화에 사용
+
+
+//Secrets Manager
+	보안정보(자격증명)를 중앙 집중식으로 저장, 검색, 엑세스 제어, 교체, 감사 및 모니터링하는 서비스
+	보안정보 유지 방법
+		사용자가 소유하고 KMS 저장된 암호화 키를 사용하여 암호화
+		사용자는 IAM 정책을 사용하여 보안 정보에 대한 엑세스 제어
+		사용자가 보안정보 검색시 Secrets Manager가 해당 정보 복호화 및 TLS 통신으로 로컬에 전송
+	보안정보를 자동으로 교체 및 관리 가능
+		데이터베이스와 기본적으로 통합
+		Lambda 코드와 통합하여 30, 60, 90일 등의 자동 교체 날짜 지정 가능
+
+
+//AWS Certificate Manager(ACM)
+	SSL/TLS 인증서를 중앙에서 관리하는 서비스
+	공인 및 사설 SSL/TLS 인증서를 관리 및 배포하는 기능
+	SSL/TLS 인증서는 ACM에서 자동으로 갱신
+
+
+//Shield
+	AWS 웹 어플리케이션을 DDoS 공격으로부터 보호
+	Shield 유형
+		Shield Standard: 기본적으로 적용되는 무료 서비스
+		Shield Adbvanced: 더 많은 보호를 제공하는 유료 서비스
+
+
+//Web Application Firewall(WAF)
+	웹 어플리케이션을 보호하는 방화벽
+	HTTP OSI 7계층에서 동작
+	Load Balancer, API Gateway, CloudFront 적용 가능
+	Web ACL(Access Control List) 정의 가능
+		악성 IP 주소 차단
+		특정 국가 엑세스 제어
+		SQL Injection, Cross-Site-Scripting(XSS) 방어
+		속도기반규칙(Rate-based rules)으로 DDoS 공격방어
+
+
+//AWS Firewall Manager
+	AWS 조직의 여러 계정과 어플리케이션의 방화벽 규칙을 중앙에서 구성 및 관리 서비스
+
+
+
+
+
 
 
