@@ -999,4 +999,223 @@
 	기본 VPC 경우 인터넷과 연결되어 있고 EC2 인스턴스도 기본 VPC에 연결
 
 
+//Security Group
+	EC2 인스턴스 레벨의 방화벽
+	인스턴스에 대한 인바운드, 아웃바운드 트래픽 제어
+	하나의 인스턴스 ENI에 5개의 보안그룹 연결 가능
+	허용 규칙만 지정 가능(거부 규칙 지정 불가)
+	연결 상태를 추적하는 상태 저장 방화벽(Stateful Firewall)
+	상태 저장 방화벽
+		나가는 트래픽을 보안그룹에서 허용하면 들어오는 트래픽은 확인하지 않음
+
+
+//NACL(Aetwork Access Control List)
+	서브넷 레벨의 방화벽
+	서브넷 내부와 외부의 트래픽 제어하는 방화벽
+	하나의 NACL은 여러 서브넷에 연결 가능
+	하나의 서브넷은 하나의 NACL만 연결 가능
+	허용 규칙과 거부 규칙 지정 가능
+	연결 상태를 추적하지 않는 상태 비저장 방화벽(Stateless Firewall)
+	EC2 웹서버 운영시 외부에서 클라이언트 접속 후 리턴 트래픽을 받을때 NAT 사용
+		임시 포트(Ephemeral ports) 1024-65535 허용 필수
+	규칙 번호가 가장 낮은 규칙부터 평가
+	규칙에 사용할 수 있는 가장 높은 값 32766
+
+
+//NAT(Network Address Translation)
+	프라이빗 IP 주소를 퍼블릭 IP 주소로 변환할 때 사용
+	NAT Instane
+		퍼블릭 EC2 인스턴스에 NAT 기능 추가
+		퍼블릭 EC2를 통해 프라이빗 EC2 인터넷 연결 가능
+		사용자가 직접 EC2 인스턴스에 NAT 기능 구성
+		EC2 자원을 많이 소비
+	NAT Gateway
+		EC2에 구성하지 않고 AWS 제공 서비스
+		최대 45Gbps 자동 대역폭 확장
+		포트 포워딩 등의 사용자 추가 기능 구현 불가
+		보안 그룹 적용 불가
+		Elastic IP 지정 필수
+
+
+//VPC Peering
+	VPC 간에는 기본적으로 네트워크 통신되지 않음
+	두 VPC 간에 트래픽을 라우팅할 수 있도록 네트워킹 연결
+	퍼블릭 인터넷을 통과하지 않고 프라이빗 IP 주소를 사용하여 서로 통신
+	같은 리전, 다른 리전, 다른 AWS 계정간 가능
+	일대일 연결만 가능
+	지원되지 않는 경우
+		CIDR Overlapping(CIDR 중첩)
+		Transitive Peering(전이적 피어링)
+
+
+//AWS PrivateLink
+	VPC와 서비스 간에 프라이빗 연결을 제공하는 기술
+	VPC 엔드포인트
+		인터넷을 통하지 않고 AWS 서비스에 프라이빗하게 연결할 수 있는 진입점
+		게이트웨이 엔드포인트
+			AWS S3와 DynamoDB에 대한 프라이빗 연결
+			하나의 엔드포인트는 하나의 VPC에만 연결 가능
+			동일한 리전에서만 지원
+		인터페이스 엔드포인트
+			서브넷 IP 주소 범위에서 프라이빗 IP 주소를 사용하는 탄력적 네트워크 인터페이스
+			지원되는 AWS 서비스 또는 VPC 엔드포인트 서비스로 전달되는 트래픽 진입점
+			동일한 리전에서만 지원
+		Gateway Load Balancer 엔드포인트
+	엔드포인트 서비스(AWS PrivateLink)
+		VPC 내에 있는 어플리케이션 또는 서비스
+		다른 AWS 계정의 VPC Endpoint에서 AWS PrivateLink로 연결
+
+
+
+//S3 연결 VPC 엔드포인트 비교
+	Gateway Endpoints
+		S3 퍼블릭 IP 주소 사용해서 엑세스
+		온프레미스 엑세스 허용 안함
+		다른 리전에서 엑세스 허용 안함
+		엔드포인트 사용 비용 무료
+	Interface Endpoints
+		VPC 프라이빗 IP 주소 사용해서 엑세스
+		온프레미스 엑세스 허용
+		VPC 피어링, AWS Transit Gateway로 다른 리전의 VPC에서 엑세스 허용
+		엔드포인트 사용 비용 발생
+
+
+//VPN
+	인터넷을 통해 가상 사설망(Vurtual Private Network) 구축
+	VPN 트래픽은 VPN 프로토콜로 보호
+	IPSec: Site-to-Site VPN 암호화 프로토콜
+	TLS: Client VPN
+
+
+//AWS VPN
+	Client VPN
+		AWS 리소스와 클라이언트 PC와 연결하는 OpenVPN 기반 서비스
+		Active Directory 등의 자격증명을 이용한 권한 부여
+		접속을 위한 VPN 구성 파일이 담긴 소프트웨어 설치
+	Site-to-Site VPN(AWS Managed VPN)
+		IPSec 암호화 프로토콜을 사용하여 AWS VPC와 온프레미스 간 프라이빗 네트워크 구성
+		AWS Direct Connect의 백업으로 사용 가능
+		VPN 터널당 최대 대역폭 1.25Gbps
+
+
+//Direct Connect
+	AWS와 온프레미스 간에 DX Location을 통한 전용선을 통해 프라이빗 네트워크 연결 생성
+	포트당 1Gbps, 10Gbps, 100Gbps 연결 속도 사용 가능
+	물리적인 구성을 위한 설치 기간 필요
+	VPN보다 가격이 높지만 인터넷 전송 비용이 들지 않음
+	기본적으로 암호화를 지원하지 않음
+
+
+//Transit Gateway(TGW)
+	복잡한 VPC 피어링 관계를 제거하고 네트워크를 간소화
+
+
+//AWS Data Transfer Costs
+	동일 가용영역 < 동일 리전 내의 서로 다른 가용영역 < 서로 다른 리전
+
+
+//CloudFormation(Infrastructure as Code)
+	AWS 인프라 세트를 수동으로 프로비저닝할수록 많은 노력이 소요
+	코드를 통해 인프라를 프로비저닝, 관리하는 서비스
+	코드를 통해 자동화하여 AWS 인프라를 생성, 업데이트, 삭제 가능
+	AWS 인프라를 프로비저닝하는 비용과 시간 절약 가능
+	구성요소
+		Template: 인스턴스 유형, 인프라 구성을 위한 설정값을 json, yaml 형식 텍스트 파일
+		Stack: Template을 사용하여 생성된 리소스
+		Change Set: Stack 리소스 변경 사항에 대한 세트
+
+
+//Container
+	어플리케이션 구성 라이브러리를 패키지로 묶어서 컨테이너 엔진 위에서 실행하는 것
+	OS 환경이 변경돼도 구동 가능하며 각각의 컨테이너가 독립적
+	대표적으로 Kubernetes, Docker 존재
+		마이크로서비스를 배포하는데 주로 사용
+
+
+//AWS 컨테이너 서비스
+	ECS(Elastic Container Service)
+		Docker 컨테이너를 배포 및 관리하는 컨테이너 오케스트레이션 서비스
+	EKS(Amazon Elastic Kubernetes Service)
+		Kubernetes를 실행하는 서비스
+		대규모 컨테이너 어플리케이션을 배포 및 관리하는 오픈 소스 컨테이너 오케스트레이션 서비스
+	AWS Fargate
+		서버리스 컨테이너 서비스
+		서버 프로비저닝, 패치 적용, 클러스터 용량 및 인프라 관리를 자동 수행
+		ECS, EKS와 연동해서 자동으로 컨테이너 크기를 조정하고 로드 밸런싱 가능
+	ECR(Amazon Elastic Container Registry)
+		Docker 등의 컨테이너 이미지를 공유, 배포 등의 관리 서비스
+		ECR에서 공유된 이미지를 사용하여 ECS, EKS에서 컨테이너 구성
+
+
+//Kubernetes
+	컨테이너 어플리케이션 배포, 확장 및 관리를 자동화하기 위한 오픈소스 시스템
+	배포 옵션
+		EKS: 자체 컨트롤 플레인 또는 노드 설치, 클러스터 배포 옵션
+		EKS Anywhere: 온프레미스에 클러스터 생성 및 운영 옵션
+	배포 옵션
+		EKS managed node groups
+			자동으로 클러스터 노드 생성 및 관리
+			사용자가 보안 업데이트 등의 일부 설정 및 관리 가능
+			Auto Scaling 그룹의 일부로 프로비저닝
+			온디맨드 또는 스팟 용량 유형을 선택 가능
+		Self managed nodes
+			노드를 직접 생성 및 관리
+			온디맨드 또는 스팟 용량 유형을 선택 가능
+		AWS Fargate
+			노드 관리를 AWS에서 담당
+			AWS에서 EKS 모든 환경 자동 관리
+
+
+//ECS(Amazon Elastic Container Service)
+	Docker 컨테이너를 지원하는 컨테이너 관리 서비스
+	EC2 인스턴스의 관리형 클러스터에서 어플리케이션 실행 가능
+	여러 EC2 서비스와 연동 가능
+	시작 유형(ECS Launch Type)
+		Fargate: 서버리스 방식으로 ECS 워크로드를 호스팅, EC2 관리 필요없음 
+		EC2: 직접 클러스터 등록 후 EC2 직접 관리
+		ECS Anywhere: 온프레미스 서버나 가상 머신에서 컨테이너 실행
+
+
+//Serverless
+	서버를 사용자가 관리할 필요 없음
+	서버는 존재하며 서버 인프라 운영은 AWS 등의 클라우드 회사에서 담당
+	AWS에서 용량조정, 프로비저닝, 패치 등의 인프라 관리
+	AWS Lambda, AWS Fargate, S3, DynamoDB, Aurora, SNS, SQS 등
+
+
+//Lambda
+	코드를 실행하여 동작하는 서버리스 컴퓨팅
+	코드를 입력하여 온디맨드 방식의 이벤트 중심의 실행
+	다양한 언어 지원(Node.js, Python, Java, C#, Ruby)
+	실행당 최대 15분 동안 구성
+	동시 처리 가능한 실행 수는 1000건이며 요청을 통한 한도 증가 가능
+	결합 서비스: API Gateway, Kinesis, DynamoDB, SNS, SQS, S3, CloudFront 등
+
+
+//Elastic Beanstalk
+	웹 어플리케이션 및 서비스를 배포하고 운영하는 서비스
+	사용자가 직접 인프라 리소스를 구성할 필요없이 어플리케이션 코드에만 집중 가능
+	Java, .NET, PHP, Node.js, Python, Ruby, Go, Docker 지원
+	워크플로
+		1. create application
+		2. upload version
+		3. launch environment
+		4. manage environment
+
+
+//머신 러닝
+	Comprehend: 텍스트 안에서 특정 항목을 찾아내는 서비스
+	Rekognition: 이미지, 비디오 분석
+	Polly: 텍스트를 음성으로 변환하는 서비스
+	Lex: 음성인식 서비스, 챗봇 구현 가능
+	Textract: 스캔문서의 문자, 테이블, 양식 추출 서비스
+	Translate: 번역 서비스
+	Transcribe: 음성을 텍스트로 변환
+	SageMaker: 머신러닝 모델 구축, 훈련 및 배포하는 서비스
+	Forecast: 머신러닝 기반 시계열 예측 서비스
+	Kendera: 지능형 검색 서비스
+	Personalize: 실시간 맞춤화 추천에 사용하는 것과 동일한 기술
+	Amazon Connect: 클라우드 기반 고객 센터 서비스
+
+
 
