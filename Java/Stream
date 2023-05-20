@@ -52,6 +52,11 @@
     5. 원소들의 시퀀스에서 특정 조건을 만족하는 원소 탐색 가능
 
 
+//for-each 비교
+  외부 반복(external iteration) : for-each 루프를 이용해서 각 요소를 반복하면서 작업 수행
+  내부 반복(internal iteration) : stream API와 같이 라이브러리 내부에서 모든 데이터 
+
+
 //스트림 한계
   한 데이터가 파이프라인의 여러 연산의 단계를 통과할 때 이 데이터의 각 상태의 값들에 동시에 접근하는 것 불가능
   스트림 파이프라인은 한 값을 다른 값에 매핑하면 원래의 값은 소실되는 구조
@@ -91,6 +96,25 @@
         freq = words
             .collect(groupingBy(String::toLowerCase, counting()));
     }
+
+
+//스트림 주요 기능
+  1. 필터링(filtering)
+  2. 추출(extracting)
+  3. 그룹화(grouping)
+  4. 병렬화
+    멀티코어 환경에서 여러 CPU를 이용해서 리스트를 포킹(forking)
+    각각의 CPU는 자신이 맡은 구간의 리스트 데이터 처리
+    마지막으로 하나의 CPU가 여러 CPU의 결과를 정리
+    
+      //순차 처리 방식
+      List<Apple> heavyApples = 
+          inventory.stream().filter(a -> a.getWeight() > 150)
+                            .collect(toList());
+      //병렬 처리 방식
+      List<Apple> heavyApples = 
+          inventory.parallelStream().filter(a -> a.getWeight() > 150)
+                                    .collect(toList());
 
 
 //Collector
