@@ -1,0 +1,35 @@
+//람다 표현식
+  메서드로 전달할 수 있는 익명 함수를 단순화한 것
+  파라미터 리스트, 바디, 반환 형식, 예외 리스트 소유 가능
+  람다 미적분학 학계에서 개발한 시스템에서 유래
+  
+  1. 익명 : 보통의 메서드와 달리 이름이 없으므로 익명으로 표현
+  2. 함수 : 특정 클래스에 종속되지 않으므로 메서드와 달리 함수로 칭함
+  3. 전달 : 메서드 인수로 전달하거나 변수로 저장 가능
+  4. 간결성 : 익명 클래스와 달리 불필요한 코드 구현할 필요 없음
+
+
+//람다 형식
+  1. 파라미터 리스트 : 람다 함수에 필요한 파라미터
+  2. 화살표 : 람다의 파라미터 리스트와 바디 구분
+  3. 람다 바디 : 람다의 반환값에 해당하는 표현식
+  
+    Comparator<Apple> byWeight = 
+        (Apple a1, Apple a2) -> a1.getWeight().compareTo(a2.getWeight());
+
+
+//람다 문법
+  1. 표현식(expression style) : (parameters) -> expression
+  2. 블록(block style) : (parameters) -> { statements; }
+
+
+//람다 활용
+  1. 불리언 표현식 : (List<String> list) -> list.isEmpty()
+  2. 객체 생성 : () -> new Apple();
+  3. 객체에서 소비 : (Apple a) -> { System.out.println(a.getWeight()); }
+  4. 객체에서 선택/추출 : (String s) -> s.length()
+  5. 두 값 조합 : (int a, int b) -> a * b
+  6. 두 값 비교 : (Apple a1, Apple a2) -> a1.getWeight().compareTo(a2.getWeight())
+
+
+
