@@ -26,6 +26,31 @@
     }
 
 
+//스트림 및 컬렉션 차이
+  스트림의 게으른 특성 덕분에 컬렉션보다 최적화 가능
+  중간 연산은 종단 연산에서 한번에 실행
+  
+  1. 쇼트서킷(short circuit) : limit 연산을 통해 모든 원소를 처리하지 않음
+  2. 루프 퓨전(loop fusion) : filter 및 map은 서로 다른 연산이지만 한과정으로 병합해서 처리
+  
+    List<String> names = menu.stream()
+        .filter(dish -> {
+            System.out.println("filtering:" + dish.getName());
+            return disg.getCalories() > 300;
+        })
+        .map(dish -> {
+            System.out.println("mapping:" + dish.getName());
+            return disg.getName();
+        })
+        .limit(3)
+        .collect(toList());
+    
+    //결과 : filtering:pork
+            mapping:pork
+            filtering:beef
+            mapping:beef
+            filtering:chicken
+            mapping:chicken
 
 
 
