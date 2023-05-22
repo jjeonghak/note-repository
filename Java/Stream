@@ -62,19 +62,6 @@
   스트림 파이프라인은 한 값을 다른 값에 매핑하면 원래의 값은 소실되는 구조
 
 
-//스트림 평탄화(flattening)
-  중간 연산으로 flatMap 사용
-  스트림의 각 원소를 하나의 스트림으로 매핑한 후 다음 그 스트림들을 다시 하나의 스트림으로 연결
-  
-    //평탄화를 사용한 데카르트 곱 계산
-    private static List<Card> newDeck() {
-        return Stream.of(Suit.values())
-            .flatMap(suit -> Stream.of(Rank.values())
-                .map(rank -> rnew Card(suit, rank)))
-            .collect(toList());
-    }
-
-
 //스트림 패러다임
   함수형 프로그래밍에 기초한 패러다임
   스트림 패러다임의 핵심은 계산을 일련의 변환(transformation)으로 재구성
@@ -157,6 +144,70 @@
         
         joining(',', '[', ']')  //[a, b, c]
 
+
+//스트림 슬라이싱
+  1. takeWhile : 무한 스트림을 포함한 모든 스트림에 프레디케이트를 적용해 스트림을 슬라이싱
+    List<Dish> slicedMenu = specialMenu.stream()      //이미 정렬된 컬렉션
+        .takeWhile(dish -> dish.getCalories() < 320)  //프레디케이트 불만족시 루프 종료 및 스트림 슬라이싱
+        .collect(toList());
+  
+  2. dropWhile : takeWhile과 반대의 작업, 처음으로 거짓이 되는 지점까지 요소를 버림
+    List<Dish> slicedMenu = specialMenu.stream()
+        .dropWhile(dish -> dish.getCalories() < 320)
+        .collect(toList());
+    
+
+//스트림 축소
+  limit : 주어진 값 이하의 크기를 갖는 새로운 스트림 반환
+  filter와 함께 사용해서 프레디케이트와 일치하는 첫 요소들을 선택한 즉시 결과 반환
+
+
+//스트림 요소 건너뛰기
+  skip : 처음 n개 요소를 제외한 스트림 반환
+
+
+//스트림 매핑
+  map : 특정 객체에서 특정 데이터를 선택하는 작업
+
+
+//스트림 평탄화(flattening)
+  중간 연산으로 flatMap 사용
+  스트림의 각 원소를 하나의 스트림으로 매핑한 후 다음 그 스트림들을 다시 하나의 스트림으로 연결
+  
+    //평탄화를 사용한 데카르트 곱 계산
+    private static List<Card> newDeck() {
+        return Stream.of(Suit.values())
+            .flatMap(suit -> Stream.of(Rank.values())
+                .map(rank -> new Card(suit, rank)))
+            .collect(toList());
+    }
+    
+    //잘못 사용된 평탄화
+    words.stream()
+        .map(word -> word.split(""))  //Stream(String) 형태가 아닌 Stream(String[])
+        .distinct()
+        .collect(toList())
+    
+    //잘 사용된 평탄화
+    words.stream()
+        .map(word -> word.split(""))
+        .flatMap(Arrays::stream)  //생성된 스트림을 하나의 스트림으로 평탄화
+        .distinct()
+        .collect(toList())
+
+
+//스트림 검색과 매칭
+  1. allMatch : 주어진 스트림에서 프레디케이트가 모든 요소에 일치하는지 확인
+  2. anyMatch : 주어진 스트림에서 프레디케이트에 적어도 한 요소가 일치하는지 확인
+  3. noneMatch : 주어진 스트림에서 프레디케이트가 모든 요소에 일치하지 않는지 확인
+  4. findFirst : 논리적인 요소의 순서가 정해져 있는 스트림에서 첫번째 요소 반환
+  5. findAny : 현재 스트림에서 임의의 요소를 반환, 쇼트서킷을 이용해 결과를 찾는 즉시 반환(Optional)
+    //병렬 실행에서 첫번째 요소를 찾기 어려움 -> findAny
+    
+
+//리듀싱(reducing)
+  스트림 요소를 조합해서 더 복잡한 질의를 표현하는 방법
+  함수형 프로그래밍 언어 용어로는 폴드(fold)라고 칭함
 
 
 
