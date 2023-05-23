@@ -1218,4 +1218,28 @@
 	Amazon Connect: 클라우드 기반 고객 센터 서비스
 
 
+//DR(Disaster Recovery)
+	Disaster: 비지니스에 심각한 부정적인 영향을 주는 사건
+		Natural disasters: 지진, 홍수 등
+		Technical failures: 전원 실패, 네트워크 연결 문제 등
+		Human actions: 부주의한 조작/설정, 허용되지 않은 엑세스 및 변경 등
+	비지니스의 연속성을 목표로 전체 워크로드를 별도의 장소에 복사
+	Recovery Objectives
+		RPO(Recovery Point Objective)
+			복구 시점 목표
+			손실 감당할 수 있는 데이터(Data Loss)의 양
+		RTO(Recovery time Objective)
+			복구 시간 목표
+			재해 발생 후 복구하는데 걸리는 목표 시간(Downtime)
+	Disaster Recovery Strategies
+		Backup & Restore(active/passive)
+			데이터 백업 및 장애발생시 백업으로 부터 복구
+		Pilot Light(active/passive)
+			코어 시스템만 복제 후 대기
+		Warm standby(active/passive)
+			전체 시스템을 작은 스케일로 구성하여 대기
+		Multi-site(active/active)
+			전체 시스템을 동일하게 복제하여 동시 운영
+
+
 
