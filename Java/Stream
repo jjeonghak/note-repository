@@ -208,6 +208,46 @@
 //리듀싱(reducing)
   스트림 요소를 조합해서 더 복잡한 질의를 표현하는 방법
   함수형 프로그래밍 언어 용어로는 폴드(fold)라고 칭함
+  스트림이 하나의 값으로 줄어들 때까지 각 요소를 반복해서 조합
+    
+    int sum = numbers.stream().reduce(0, (a, b) -> a + b);
+    int sum = numbers.stream().reduce(0, Integer::sum);
+    Optional<Integer> sum = numbers.stream().reduce(Integer::sum);  //초기값이 없는 경우 Optional
+    Optional<Integer> max = numbers.stream().reduce(Integer::max);
 
 
+//맵 리듀스 패턴(map-reduce pattern)
+  map과 reduce를 연결하는 기법으로 쉬운 병렬화 가능
+  구글의 웹 검색에 적용하면서 유명
+  가변 누적자 패턴(mutable accumulator pattern)은 병렬화와 어울리지 않기 때문
+    
+    int count = menu.stream()
+        .map(d -> 1)
+        .reduce(0, (a, b) -> a + b);  //병렬화하여 입력을 분할라고 결과를 합침
+
+
+//기본형 특화 스트림(primitive stream specialization)
+  기본 숫자 자료형에 대한 특화 스트림
+  숫자 관련 리듀싱 연산 수행 메서드(sum, min, max, average) 제공
+  다시 박싱 객체 스트림으로 복원하는 기능(boxed 메서드) 제공
+  
+  1. IntStream, OptionalInt : mapToInt 메서드로 생성, range, rangeClosed
+  2. DoubleStream, OptionalDouble : mapToDouble 메서드로 생성
+  3. LongStream, OptionalLong : mapToLong 메서드로 생성, range, rangeClosed
+
+
+//함수 스트림
+  함수에서 스트림을 만들 수 있는 정적 메서드 iterate, generate 제공
+  두 연산을 이용해서 무한 스트림(infinite stream), 언바운드 스트림(unbounded stream) 생성 가능
+  요청할 때마다 주어진 함수를 이용해서 값을 생성
+  보통의 경우 limit 메서드와 함께 연결해서 사용
+  
+  1. iterate : 이전 원소를 인자로 받아 연속적으로 계산
+    Stream.iterate(0, n -> n + 2)
+    Stream.iterate(0, n -> n < 100, n -> n + 4) //filter 메서드를 사용하는 경우 무한 루프 발생, 대신 takeWhile 메서드
+
+  2. generate : 생산된 각 원소를 연속적으로 계산하지 않고 Supplier<T> 발행자를 인수로 받아 새로운 값 생성
+    Stream.generate(Math::random)
+  
+    
 
