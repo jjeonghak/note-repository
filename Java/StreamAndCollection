@@ -61,4 +61,65 @@
   3. 요소 분할
 
 
+//리듀싱 요약
+  컬렉터를 이용한 카운트, counting 컬렉터는 다른 컨렉터와 함께 사용할 때 유용
+    long howManyDishes = menu.stream().collect(Collectors.countimg());
+    long howManyDishes = menu.stream().count();
+
+  최댓값과 최솟값 검색
+    Comparator<Dish> dishCaloriesComparactor = Comparator.comparingInt(Dish::getCalories);
+    Optional<Dish> mostCalorieDish = menu.stream()
+        .collect(maxBy(dishCaloriesComparactor));
+  
+  컬렉터 내에 여러 숫자 관련 요약 팩토리 메서드 지원
+    summingInt, averagingInt, summarizingInt(IntSummaryStatistics 클래스 반환, count, sum, min, max, average)
+
+  문자열 연결, 내부적으로 Stringbuiler 사용
+    String shortMenu = menu.stream().map(Dish::getName).collect(joining());
+    String shortMenu = menu.stream().map(Dish::getName).collect(joining(", "));
+
+
+//범용 리듀싱 요약 연산
+  위의 모든 컬렉터는 reducing 팩토리 메서드로 정의 가능
+  범용 Collectors.resucing으로 구현
+  프로그래밍적 편의성을 위해 특화된 컬렉터를 사용
+  세개의 인수를 받아 동작(초기값, 변환함수, BinaryOperator)
+  
+    int totalCalories = menu.stream()
+        .collect(reducing(0, Dish::getCalories, (i, j) -> i + j));
+    
+    Optional<Dish> mostCalorieDish = menu.stream()
+        .collect(reducing((d1, d2) -> d1.getCalories() > d2.getCalories() ? d1 : d2));
+
+
+//collect 및 reduce 비교
+  collect 메서드는 도출하려는 결과를 누적하는 컨테이너를 변경하도록 설계
+  reduce는 두 값을 하나로 도출하는 불변형 연산
+  
+    int totalCalories = menu.stream()
+        .collect(reducing(0, Dish::getCalories, Integer::sum));
+        
+    int totalCalories = menu.stream()
+        .map(Dish::getCalories).reduce(Integer::sum).get();
+        
+    int totalCalories = menu.stream
+        .mapToInt(Dish::getCalories).sum();
+    
+    public static <T> Collector<T, ?, Long> counting() {
+        return reducing(0L, e -> 1L, Long::sum);
+    }
+  
+    //잘못사용한 reduce
+    stream.reduce(
+        new ArrayList<Integer>(), 
+        (List<Integer> l1, Integer e) -> {
+            l1.add(e);
+            return l1;
+        },
+        (List<Integer> l2, List<Integer> l3) -> {
+            l2.addAll(l3);
+            return l2;
+        }
+    );
+ 
 
