@@ -121,5 +121,72 @@
             return l2;
         }
     );
- 
+
+
+//그룹화
+  데이터 집합을 하나 이상의 특성으로 분류해서 그룹화하는 연산
+  분류 함수(classification function)를 기준으로 스트림 그룹화
+    
+    Map<Dish.Type, List<Dish>> dishesByType = menu.stream()
+        .collect(groupingBy(Dish::getType));
+    
+    Map<CaloricLevel, List<Dish>> dishesByCaloricLevel = menu.stream()
+        .collect(groupingBy(dish -> {
+            if (dish.getCalories() <= 400) return CaloricLevel.DIET;
+            else if (dish.getCalories() <= 700) return CaloricLevel.NORMAL;
+            else return CaloricLevel.FAT;
+        }));
+
+
+//그룹화 요소 조작
+  필터를 적용해 그룹화의 요소를 필터링할 경우 모든 원소가 필터링된 키는 Map에서 제외
+    
+    Map<Dish.Type, List<Dish>> caloricDishesByType = menu.stream()
+        .filter(dish -> dish.getCalories() > 500)
+        .collect(groupingBy(Dish::getType));
+        
+    //groupingBy 팩토리 메서드 오버로드
+    Map<Dish.Type, List<Dish>> caloricDishesByType = menu.stream()
+        .collect(groupingBy(Dish::getType, filtering(dish -> dish.getCalories() > 500, toList())));
+        
+    //mapping 메서드 사용
+    Map<Dish.Type, List<String>> dishNamesByType = menu.stream()
+        .collect(groupingBy(Dish::getType, mapping(Dish::getName, toList())));
+    
+    //flatMapping
+    Map<Dish.Type, Set<String>> dishNamesByType = menu.stream()
+        .collect(groupingBy(Dish::getType, 
+            flatMapping(dish -> dishTags.get(dish.getName()).stream(), toSet())));
+
+
+//다수준 그룹화
+  Collectors.groupingBy 메서드는 일반적인 분류 함수와 컬렉터를 인수로 받음
+  groupingBy 메서드에 스트림의 항목을 분류할 두 번째 기준을 정의하는 내부 groupingBy 전달
+  n수준 그룹화의 결과는 n수준 트리 구조로 표현되는 n수준 맵
+    
+    Map<Dish.Type, Map<CaloricLevel, List<Dish>>> dishesByTypeCaloricLevel = menu.stream()
+        .collect(
+            groupingBy(Dish::getType, 
+                groupingBy(dish -> {
+                    if (dish.getCalories() <= 400)
+                        return CaloricLevel.DIET;
+                    else if (dish.getCalories() <= 700)
+                        return CaloricLevel.NORMAL;
+                    else
+                        return CaloricLevel.FAT;
+                })
+            )
+        );
+  
+
+//서브그룹 데이터 수집
+  분류 함수 한개의 인수를 갖는 groupingBy(f)는 groupingby(f, toList())의 축약형
+
+    Map<Dish.Type, Long> typeCount = menu.stream()
+        .collect(groupingBy(Dish::getType, counting()));
+
+    Map<Dish.Type, Optional<Dish>> mostCaloricByType = menu.stream()
+        .collect(groupingBy(Dish::getType, maxBy(comparingInt(Dish::getCalories))));
+
+
 
