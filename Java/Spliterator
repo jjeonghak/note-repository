@@ -84,11 +84,18 @@
             return ORDERED + SIZED + SUBSIZED + NON-NULL + IMMUTABLE;
         }
     }
+    
+    private int countWords(Stream<Character> stream) {
+        WordCounter wordCounter = stream.reduce(new WordCounter(0, true),
+            WordCounter::accumulate,
+            WordCounter::combine);
+        return wordCounter.getCounter();
+    }
 
-
-
-
-
+    Spliterator<Character> spliterator = new WordCounterSpliterator(SENTENCE);
+    //두번째 불리언 인수는 병렬 스트림 생성 여부 지시
+    Stream<Character> stream = StreamSupport.stream(spliterator, true);
+    countWords(stream);
 
 
 
