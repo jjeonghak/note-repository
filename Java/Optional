@@ -1,0 +1,45 @@
+//옵셔널
+  자바 8은 하스켈과 스칼라의 영향을 받아 java.util.Optional<T> 제공
+  선택형 값을 캡슐화하는 클래스
+  값이 존재하는 경우 Optional 클래스로 감쌈
+  값이 존재하지 않는 경우 Optional.empty 메서드를 통해 Optional 반환
+  Optional.empty 메서드는 Optional의 싱글톤 인스턴스를 반환하는 정적 팩토리 메서드
+  Optional 클래스 설계자는 선택형 반환값을 지원하는 것으로 명확하게 정의
+  도메인의 필드 형식으로 사용할 경우 직렬화 도구나 프레임워크에서 문제 발생
+  직렬화 모델이 필요한 경우 Optional 값을 반환하는 메서드를 추가하는 방식 사용 권장
+
+
+//옵셔널 패턴
+  1. Optional 객체 생성
+    Optional<Car> optCar = Optional.empty();  //빈 옵셔널 객체 생성
+    Optional<Car> optCar = Optional.of(car);  //null 아닌 값으로 옵셔널 객체 생성
+    Optional<Car> optCar = Optional.ofNullable(car) //어떤 값이든 옵셔널 객체 생성
+
+  2. Optional 값 추출 및 반환
+    Optional<Insurance> optInsurance = Optional.ofNullable(insurance);
+    Optional<String> name = optInsurance.map(Insurance::getName);
+
+  3. Optional 객체 연결
+    Optional<String> name = person.flatMap(Person::getCar)
+        .flatMap(Car::getInsurance) //map을 이용한 객체 연결의 경우 Optional이 중첩으로 래핑
+        .flatMap(Insurance::getName); 
+
+
+//옵셔널 스트림
+  Optional.stream() 메서드를 통해 값을 가진 스트림으로 변환 가능
+  
+    List<Person> person = ...
+    Set<String> result = persons.stream()
+        .map(Person::getCar)
+        .map(optCar -> optCar.flatMap(Car::getInsurance))
+        .map(optIns -> optIns.flatMap(Insurance::getName))
+        .flatMap(Optional::stream)  //Stream<Optional<String>> -> Stream<String>
+        .collect(toSet());
+
+    //flatMap(Optional::stream)과 같은 결과
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+    
+
+
+
