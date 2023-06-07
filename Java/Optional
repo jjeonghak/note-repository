@@ -41,5 +41,36 @@
         .map(Optional::get)
     
 
+//디폴트 액션
+  1. get()
+    값을 읽는 가장 간단한 메서드
+    안전하지 않음, 값이 존재하지 않는 경우 NoSuchElementException 오류 발생
+
+  2. orElse(T other)
+    값이 존재하지 않는 경우 기본값 제공
+  
+  3. orElseGet(Supplier<? extends T> other)
+    orElse 메서드의 게으른 버전 메서드
+    값이 존재하지 않는 경우 Supplier 실행해서 기본값 생성
+
+  4. orElseThrow(Supplier<? extends X> exceptionSupplier)
+    get 메서드와 유사하지만 발생시킬 예외의 종류 선택 가능
+  
+  5. ifPresent(Comsumer<? super T> consumer)
+    값이 존재하는 경우 인수로 넘겨서 동작 실행 가능
+    값이 존재하지 않는 경우 아무 일도 발생하지 않음
+
+  6. ifPresentOrElse(Consumer<? super T> action, Runnable emptyAction)
+    ifPresent 메서드와 유사하지만 값이 존재하지 않는 경우 Runnable 실행
+
+
+//기본형 옵셔널
+  스트림과 유사하게 OptionalInt, OptionalLong, Optionaldouble 지원
+  Optional의 최대 요소는 한개이므로 성능 개선 효과없음
+  map, flapMap, filter 메서드 등 지원안함
+  Optional로 생성한 다른 객체와 혼용불가
+  사용하지 않는 것을 권장
+
+
 
 
