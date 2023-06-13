@@ -1,0 +1,32 @@
+//RxJava
+  자바로 리액티브 어플리케이션을 구현할때 사용하는 라이브러리
+  RxJava는 넷플릭스의 Reactive Extensions(Rx) 프로젝트의 일부로 시작
+  Flow.Publisher를 구현하는 두 클래스 제공
+  리액티브 당김 기반 역압력 기능이 있는 io.reactivex.Flowable
+  역압력을 지원하지 않는 기존 버전의 io.reactivex.Observable
+  천 개 이하 요소의 스트림, 마우스 및 터치 등 GUI 이벤트, 발생 빈도가 낮은 이벤트에 역압력 적용 권장하지 않음
+  모든 구독자는 구독 객체의 request(Long.MAX_VALUE) 메서드를 이용해서 역압력 해제 가능
+  Observable 클래스는 Publisher, Observer 클래스는 Subscriber 역할 감당
+  
+
+//Observable
+  just() 팩토리 메서드를 이용해서 생성 가능
+  한 개 이상의 요소를 이용해 이를 방출하는 Observable 객체로 변환
+  
+    Observable<String> strings = Observable.just("first", "second");
+    
+  사용자와 실시간으로 상호작용하면서 지정된 속도로 이벤트를 방출하는 상황에선 interval 메서드
+    
+    Observable<Long> onePerSec = Observable.interval(1, TimeUnit.SECONDS);
+  
+  
+
+
+
+
+
+
+
+
+
+
