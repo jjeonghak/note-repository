@@ -14,10 +14,10 @@
   just() 팩토리 메서드를 이용해서 생성 가능
   한 개 이상의 요소를 이용해 이를 방출하는 Observable 객체로 변환
   사용자와 실시간으로 상호작용하면서 지정된 속도로 이벤트를 방출하는 상황에선 interval 메서드
-  
-    Observable<String> strings = Observable.just("first", "second");
-    Observable<Long> onePerSec = Observable.interval(1, TimeUnit.SECONDS);
-    onePerSec.subscribe(i -> System.out.println(TempInfo.fetch("New York")));
+  RxJava는 플로보다 유연
+  Comsuner의 onNext 메서드만 람다로 구현하고 나머지 완료, 오류 메서드는 기본 동작으로 구현 가능
+  기본적으로 데몬 스레드를 이용하므로 main 스레드 종료시 같이 종료
+  Emitter 인터페이스는 Disposable 설정 메서드와 시퀀스가 이미 다운스트림 폐기 여부 메서드 제공
   
     public interface Observer<T> {
         void onSubscribe(Disposable d);
@@ -25,13 +25,83 @@
         void onError(Throwable t);
         void onComplete();
     }
+    
+    public interface Emitter<T> {
+        void onNext(T t);
+        void onError(Throwable t);
+        void onComplete();
+    }
+
+    Observable<String> strings = Observable.just("first", "second");
+    Observable<Long> onePerSec = Observable.interval(1, TimeUnit.SECONDS);
+    
+    //람다로 onNext 메서드만 구현
+    onePerSec.subscribe(i -> System.out.println(TempInfo.fetch("New York")));
+    onePerSec.blockingSubscribe(i -> System.out.println(TempInfo.fetch("New York")));
+  
+    public static Observable<TmepInfo> getTemperature(String town) {
+        return Observable.create(
+            emitter -> Observable.interval(1, TimeUnit.SECONDS)
+                .subscribe(i -> {
+                    if (!emitter.isDisposed()) {
+                        if (i >= 5) {
+                            emitter.onComplete();
+                        } else {
+                            try {
+                                emitter.onNext(TempInfo.fetch(town));
+                            } catch (Exception e) {
+                                emitter.onError(e);
+                            }
+                        }
+                    }
+                }));
+    }
+    
+    public class TempObserver impelements Observer<TempInfo> {
+        @Override
+        public void onComplete() {
+            System.out.println("Done");
+        }
+        
+        @Override
+        public void onError(Throwable throwable) {
+            System.out.println("Error: " + throwable.getMessage());
+        }
+        
+        @Override
+        public void onSubscribe(Disposable disposable) {
+            
+        }
+        
+        @Override
+        public void onNext(TempInfo tempInfo) {
+            System.out.println(tempInfo);
+        }
+    }
+  
+    public class Main {
+        public static void main(String[] args) {
+            Observable<TempInfo> observable = getTemperature("New York");
+            observable.blockingSubscribe(new TempObserver());
+        }
+    }
 
 
-
-
-
-
-
+//Observable 변환 및 병합
+  Flow.Processor 인터페이스보다 유연하고 복잡한 기능 제공
+  
+    //변환
+    public static Observer<TempInfo> getCelsiusTemperature(String town) {
+        return getTemperature(town)
+            .map(temp -> new TempInfo(temp.getTown(), (temp.getTemp() - 32) * 5 / 9);
+    }
+    
+    //병합
+    public static Observable<TempInfo> getCelsiusTemperatures(String... towns) {
+        return Observable.merge(Arrays.stream(towns)
+            .map(TempObservable::getCelsiusTemperature)
+            .collect(toList()));
+    }
 
 
 
