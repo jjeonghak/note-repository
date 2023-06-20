@@ -1,0 +1,175 @@
+//연산자
+  업스트림의 Observable<T>를 취해 다운스트림으로 Observable<R>을 내보내는 함수
+  연산자를 결합하고 여러 하위 스트림으로 분기 후 다시 병합 가능
+  기본적으로 원본 Observable을 포장하지만 스스로 구독하지 않음
+
+
+//매핑과 필터링
+  filter() : 이벤트를 계속 전달할지 버릴지 정함
+
+      //원본 업스트림에 영향을 주지 않고 새로운 Observable 객체 반환
+      Observable<String> strings = someFileSource.lines();
+      Observable<String> comments = strings.filter(s -> s.startsWith("#"));
+      Observable<String> instructions = strings.filter(s -> s.startWith(">"));
+      Observable<String> empty = strings.filter(String::isBlank);
+
+  map() : 이벤트를 확장하거나 포장 또는 다른 값으로 추출
+
+    Observable<Status> tweets = ...
+    Observable<Date> dates = tweets
+        .map(Status::getCreateAt)
+        .map(d -> d.toInstant());
+
+  flatMap() : 개별 변환한 요소를 다른 중첩된 혹은 내부의 Observable로 반환
+
+    Observable<LicensePlate> recognize(CarPhoto photo) {
+        ...
+    }
+    Observable<CarPhoto> cars = cars();
+    Observable<Observable<LicensePlate>> plates = cars.map(this::recognize);
+    Observable<LicensePlate> plates2 = cars.flatMap(this::recognize);
+
+    Observable<Order> orders = customers
+        .map(Customer::getOrders)
+        .flatMap(Observable::from);
+    Observable<Order> orders = customers
+        .flatMapIterable(Customer::getOrders);
+    
+    //이벤트, 오류, 완료 등 어떠한 알림에도 반응하는 오버로딩 버전
+    <R> Observable<R> flatMap(
+        Func1<T, Observable<R>> onNext,
+        Func1<Throwable, Observable<R>> onError,
+        Func0<Observable<R>> onCompleted
+    )
+
+    Observable.just(DayOfWeek.SUNDAY, DayOfWeek.MONDAY)
+        .flatMap(this::loadRecordsFor);
+    Observable<String> loadRecordsFor(DayOfWeek dow) {
+        switch(dow) {
+            case SUNDAY:
+                return Observable.interval(90, MILLISECONDS)
+                    .take(5)
+                    .map(i -> "Sun-" + i);
+            case MONDAY:
+                return Observable.interval(65, MILLISECONDS)
+                    .take(5)
+                    .map(i -> "MON-" + i);
+            ...
+        }
+    }
+    //반환하는 부속 순열을 합쳐서 동등하게 취급, 이들 모두를 즉시 구독하고 다운스트림 방출
+    Mon-0, Sun-0, Mon-1, Sun-1, Mon-2, Mon-3, Sun-2, Mon-4, Sun-3, Sun-4
+
+
+//순서 유지
+  다운스트림 이벤트의 순서를 업스트림 이벤트와 유지하기 위해 concatMap() 메서드 사용
+  n번째 업스트림 이벤트의 다운스트림과 n + 1번째 업스트림 이벤트의 다운스트림의 순서 보장
+  flatMap() 메서드는 내부적으로 merge() 메서드를 사용해서 이벤트들이 서로 꼬임
+  concatMap() 메서드는 내부적으로 concat() 메서드 사용
+
+    Observable.just(DayOfWeek.SUNDAY, DayOfWeek.MONDAY)
+        .concatMAp(this::loadRecordsFor)
+    //flapMap 메서드와 다르게 업스트림 이벤트의 다운스트림 순서 보장
+    Sun-0, Sun-1, Sun-2, Sun-3, Sun-4, Mon-0, Mon-1, Mon-2, Mon-3, Mon-4
+
+
+//동시성 제어
+  flatMap() 메서드는 개별 업스트림 값을 동시에 계산하기 위해 고안한 연산자
+
+      //지속적으로 새로운 연결을 하는 방식, maxConcurrent 인자 필수
+      class User {
+          Observable<Profile> loadProfile() {
+              //Http 요청 등 수행
+          }
+      }
+      List<User> users = ...
+      Observable<Profile> profiles = Observable.from(users)
+          .flatMap(User::loadProfile, 10);  //내부 진행중인 Observable 갯수 10개 제한
+          
+
+//짝 합성
+  zip()과 zipWith() 메서드를 통해 서로 대응하는 개별 이벤트끼리 짝을 맞춤
+  두 스트림의 방출값을 함께 묶어서 사용, 하나의 스트림이 종료되면 나머지 스트림 조기 폐기
+  짝 지어진 모든 업스트림에서 이벤트를 방출해야 다운스트림 이벤트 방출 가능(명백한 블록킹은 아님)
+  반환형으로는 튜플과 페어가 적합하지만 내장 자료구조가 없으므로 직접 구현 또는 외부 라이브러리 사용 권장
+
+    s1.zipWith(s2, ...)  //하나의 스트림에 메서드 체인으로 다른 스트림 짝 연결
+    Observable.zip(s1, s2, s3, ...)  //2개 이상 9개 이하까지 스트림 짝 연결
+
+    class Weather {
+        public Weather(Temperature temperature, Wind wind) {
+            ...
+        }
+    }
+    Observable<Temperature> temperatureMeasurements = station.temperature();
+    Observable<Wind> windMeasurements = station.wind();
+    temperatureMeasurements.zipWith(windMeasurements,
+        (temperature, wind) -> new Weather(temperature, wind));
+
+    Observable<LocalDate> nextTenDay = Observable.range(1, 10)
+        .map(i -> LocalDate.now().plusDays(i));
+    Observable<Vacation> possibleVacations = Observable.just(City.Warsw, City.London, City.Paris)
+        .flatMap(city -> nextTneDays.map(date -> new Vacation(city, date)))
+        .flatMap(vacation -> Observable.zip(
+            vacation.weather().filter(Weather::isSunny),
+            vacation.cheapFlightFrom(City.NewYork),
+            vacation.cheapHotel(),
+            (w, f, h) -> vacation
+        ));
+
+
+//조화롭지 않은 짝 합성
+  zip()과 zipWith() 메서드는 항상 같은 주기로 비슷한 순간에 이벤트를 생성한다는 가정
+  방출 속도가 다른 업스트림의 이벤트를 합치는 경우 combineLatest(), withLatestFrom(), amb() 메서드 사용
+  combineLatest() 메서드는 대칭적으로 스트림의 새 값이 나올때마다 다른 스트림의 최근값과 짝으로 묶어서 방출
+  withLatestFrom() 메서드는 특정 스트림의 새 값에만 방출
+
+    //conbineLatest() 메서드 활용
+    Observable<Long> red = Observable.interval(10, TimeUnit.MILLISECONDS);
+    Observable<Long> green = Observable.interval(17, TimeUnit.MILLISECONDS);
+    Observable.combineLatest(
+        red.map(x -> "R" + x),
+        green.map(x -> "G" + x),
+        (r, g) -> r + ":" + g
+    ).forEach(System.out::println);
+    
+    R0:G0
+    R1:G0
+    R2:G0
+    R2:G1
+    R3:G1
+    R4:G1
+    R4:G2
+    R5:G2
+    R5:G3
+    ...
+    R999:G587
+    R1000:G587
+    R1000:G588
+    R1001:G588
+
+    //withLatestFrom() 메서드 활용
+    green.withLatestFrom(red, (g, r) -> g + ":" + r)
+        .forEach(System.out::println);
+
+    G0:R1
+    G1:R2
+    G2:R4
+    G3:R5
+    G4:R7
+    G5:R9
+    G6:R11
+    ...
+
+    
+
+  
+
+
+
+
+
+
+
+
+
