@@ -161,15 +161,63 @@
     G6:R11
     ...
 
-    
 
+//고수준 연산자
+  1. 연산
+    scan() : 중간 계산 결과를 지속적으로 방출
+    reduce() : 최종 결과만 방출
   
+      Observable<Long> totalProgress = progress
+          .scan((total, chunk) -> total + chunk);
+      Observable<BigInteger> factorials = Observable
+          .range(2, 100)
+          .scan(BigInteger.ONE, (big, cur) -> big.multiply(BigInteger.valueOf(cur)));  //초기값 제공
 
+      Observable<BigDecimal> total = transfers
+          .map(CashTransfer::getAmount)
+          .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+      public <R> Observable<R> reduce(R initialValue, Func2<R, T, R> accumulator) {
+          return scan(initialValue, accumulator).takeLast(1);
+      }      
 
+  2. 환산
+    collect() : 불변이 아닌 가변 누산기를 이용해 컬렉션 생성
 
+      //불변 누산기
+      Observable<List<Integer>> all = Observable
+          .range(10, 20)
+          .reduce(new ArrayList<>(), (list, item) -> {
+              list.add(item);
+              return list;
+      });
+  
+      Observable<List<Integer>> all = Observable
+          .range(10, 20)
+          .collect(ArrayList::new, List::add);
+      Observable<String> str = Observable
+          .range(1, 10)
+          .collect(StringBuilder::new, (sb, x) -> sb.append(x).append("\n"))
+          .map(StringBuilder::toString);
 
+  3. 하나의 항목 보장
+    single() : 하나의 이벤트만 방출, 가정이 틀린 경우 예외 발생
 
+  4. 중복 제거
+    distinct() : 내부적으로 해당값이 존재하는지 검토(equals(), hashCode() 사용)
+    distinctUntilChanged() : 주어진 이벤트가 직전 이벤트와 같은 경우 버림(equals() 사용)
 
+      Observable<Integer> randomInts = Observable.create(subscriber -> {
+          Random random = new Random();
+          while (!subscriber.isUnsubscribed()) {
+              subscriber.onNext(random.nextInt(1000));
+          }
+      });
+      Observable<Integer> uniqueRandomInts = randomInts
+          .distinct()
+          .take(10);
+
+      Observalbe<Weather> tempChanges = measurements
+          .distinctUnitChanged(Weather::getTemperature);
 
 
