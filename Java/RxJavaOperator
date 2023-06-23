@@ -220,4 +220,185 @@
       Observalbe<Weather> tempChanges = measurements
           .distinctUnitChanged(Weather::getTemperature);
 
+  5. 분해
+    take(n) : 처음 n개의 값만 업스트림에서 방출
+    takeLast(n) : 스트림 완료 이전 n개의 값만 방출
+    skip(n) : 처음 n개의 값을 버림
+    skipLast(n) : 마지막 n개의 값을 버림
+    first() : take(1).single()
+    last() : takeLast(1).single()
+    takeFirst(predicate) : filter(predicate).take(1), 일치하는 값 없는 경우 NoSuchElemntEception 발생
+    takeUntil(predicate) : 값을 방출하다가 predicate와 일치하는 첫 번째 항목을 방출한 다음 완료
+    takeWhile(predicate) : predicate를 만족하는 한 계속 방출
+    elementAt(n) : 특정 위치의 항복을 뽑아내는 경우 사용
+    ...OrDefault() : 연산 중에 예외 발생시 기본값으로 치환
+    count() : 업스트림에서 방출한 이벤트 갯수를 계산
+    all(predicate) : 모든 이벤트가 predicate와 일치하면 true 반환
+    exists(predicate) : 이벤트 중 하나라도 predicate와 일치하면 true 반환
+    contains(value) : exists 파라미터로 predicate 대신 값 또는 상수 사용하는 경우
+
+  6. 결합
+    concat() : 정적 메서드로 두개의 업스트림을 연결, 첫번째 Observable 종료시 두번째 방출 시작
+    concatWith() : 인스턴스 메서드로 두개의 업스트림을 연결
+    switchOnNext() : Observable<Observale<T>> 형태의 여러 구독들 중 나오는 순서대로 구독 변환
+
+      Observable<String> speak(String quote, long millisPerChar) {
+          String[] tokens = quote.replaceAll("[:,]", "").split(" ");
+          Observalbe<String> words = Observable.from(tokens);
+          Observable<Long> absoluteDelay = words
+              .map(String::length)
+              .map(len -> len * millisPerChar)
+              .scan((total, current) -> total + current);
+          return words
+              .zipWith(absoluteDelay.startWith(0L), Pair::of)
+              .flatMap(pair -> just(pair.getLeft()))
+                  .delay(pair.getRight(), MILLISECONDS));
+      }
+      Observable<String> alice = speak("To bew, or not to be: that is the question", 110);
+      Observable<String> bob = speak("Though this be madness, yet there is method in't", 90);
+      Observalbe<String> jane = speak("There are more things in Heaven and Earth," +
+          "Horatio, than are dreamt of in your philosophy", 100);
+      
+      //동시 호출 - merge
+      Observale.merge(
+          alice.map(w -> "Alice: " + w),
+          bob.map(w -> "Bob: " + w),
+          jane.map(w -> "Jane: " + w)
+      ).subscribe(System.out::println);
+
+      Alice: To
+      Bob: Though
+      Jane: There
+      Alice: be
+      Alice: or
+      Jane: are
+      ...
+
+      //동시 호출 - concat
+      Alice: To
+      Alice: be
+      ...
+      Bob: Though
+      Bob: this
+      ...
+      Jane: There
+      Jane: are
+      ...
+
+      //동시 호출 - switchOnNext
+      Alice: To
+      Alice: be
+      Bob: Though
+      Bob: this
+      Jane: There
+      Jane: are
+      Jane: more
+      Jane: things
+      Jane: in
+      Jane : Heaven
+      ...
+
+  7. 그룹
+    groupBy(): 스트림을 특정 키 기반으로 여러 개의 병렬 스트림으로 나눔
+
+      Observable<ReservationEvent> facts = factStore.observe();
+      Observable<GroupedObservable<UUID, ReservationEvent>> grouped = fact
+          .groupBy(ReservationEvent::getReservationUuid);
+      grouped.subscribe(byUuid -> {
+          byUuid.subscribe(this::updateProjection);
+      });
+
+
+//연산자 재사용
+  compose(): 연산자를 연결하여 업스트림 Observalbe을 변환하는 함수를 인자로 받음
+
+    public <T> Observable.Transformer<T, T> odd() {
+        Observable<Boolean> trueFalse = just(true, false).repeat();
+        return upstream -> upstream
+            .zipWith(trueFalse, Pair::of)
+            .filter(Pair::getRight)
+            .map(Pair::getLeft);
+    }
+
+    Observable
+        .range(0, 'Z' - 'A' + 1)
+        .map(c -> (char) ('A' + c))
+        .compose(odd())
+        .forEach(System.out::println);
+
+
+//연산자 생성
+  lift() : 어떠한 연산이라도 구현 가능(flatMap 제외), 업스트림 이벤트의 흐름 변경 가능
+
+    Observable
+        .range(1, 1000)
+        .filter(x -> x % 3 == 0)
+        .distinct()
+        .reduce((a, x) -> a + x)
+        .map(Integer::toHexString)
+        .subscribe(System.out::println);
+
+    Observable
+        .range(1, 1000)
+        .lift(new OperatorFilter<>(x -> x % 3 == 0))
+        .lift(    OperatorDistinct.<Integer>instance())
+        .lift(new OperatorScan<>((Integer a, Integer x) -> a + x))
+        .lift(    OperatorTakeLastOne.<Integer>instance())
+        .lift(    OperatorSingle.<Integer>instance())
+        .lift(new OperatorMap<>(Integer::toHexString))
+        .subscribe(System.out::println);
+
+
+//map() 내부 구현
+  OperatorMap 클래스는 다운스트림 Subscriber<R>을 업스트림 Subscriber<T>로 변환
+  T와 R의 제네릭 순서가 변환
+  다운스트림을 구독한 Subscriber<R>을 업스트림 Subscriber<T>로 변환하는 과정
+  구독이 시작되면 call() 메서드 호출
+  후자의 Subscriber가 앞선 연산자를 향해 업스트림으로 올라감
+
+    public final class OperatorMap<T, R> implements Operator<R, T> {
+        private final Func1<T, R> transformer;
+
+        public OperatorMap(Func1<T, R> transformer) {
+            this.transformer = transformer;
+        }
+
+        @Override
+        public Subscriber<T> call(final Subscriber<R> child) {
+            return new Subscriber<T>(child) {
+                @Override
+                public void onCompleted() {
+                    child.onCompleted();
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    child.onError(e);
+                }
+
+                @Override
+                public void onNext(T t) {
+                    try {
+                        child.onNext(transformer.call(t));
+                    } catch (Exception e) {
+                        onError(e);
+                    }
+                }
+            };
+        }
+    }
+
+    Observable<String> odd = Observable
+
+    Observable<String> odd = Observable
+        .range(1, 9)
+        .lift(toStringOfOdd());
+
+
+
+
+
+
+
+
 
