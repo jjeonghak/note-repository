@@ -389,16 +389,46 @@
     }
 
     Observable<String> odd = Observable
+        .range(1, 9)
+        .buffer(1, 2)
+        .concatMapIterable(x -> x)
+        .map(Object::toString)
 
     Observable<String> odd = Observable
         .range(1, 9)
         .lift(toStringOfOdd());
 
-
-
-
-
-
+    //연산자 구현
+    public <T> Observable.Operator<String, T> toStringOdd() {
+        return new Observable.Operator<String, T>() {
+            private boolean odd = true;
+    
+            @Override
+            public Subsciber<? super T> call(Subscriber<? super String> child) {
+                return new Subscriber<T>(child) {
+                    @Override
+                    public void onCompleted() {
+                        child.onCompleted();
+                    }
+    
+                    @Override
+                    public void onError(Throwable e) {
+                        child.onError(e);
+                    }
+    
+                    @Override
+                    public void onNext(T t) {
+                        if (odd) {
+                            child.onNext(t.toString());
+                        } else {
+                            request(1);
+                        }
+                        odd = !odd;
+                    }
+                };
+            }
+        };
+    }
 
 
 
