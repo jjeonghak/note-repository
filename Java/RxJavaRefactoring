@@ -1,0 +1,176 @@
+//collection
+  Observale<T>와 Iterable<T>는 쌍대(dual)
+  기존 API 손상 및 시스템 호환성에 문제 발생 우려가 있으므로 이른 시점에 도입 권장
+
+    class PersonDao {
+        List<Person> listPeople() {
+            return query("SELECT * FROM PEOPLE");
+        }
+
+        private List<Person> query(String sql) {
+            ...
+        }
+    }
+
+    Observable<Person> listPeople() {
+        final List<Person> people = query("SELECT * FROM PEOPLE");
+        return Observale.from(people);
+    }
+
+
+//블로킹
+  블로킹 및 명령형 방식의 기존 코드에 결합할때는 Observable 객체를 평범한 컬렉션으로 변환 필요
+  Observable 완료까지 블로킹 처리
+  BlockingObservable을 사용, 블로킹 코드와 논블로킹 코드 결합에 불가피한 선택
+  Observable 완료까지 BlockingObservable 연산자는 블록
+
+    Observable<Person> peopleStream = personDao.listPeople();
+    Observable<List<Person>> peopleList = peopleStream.toList();
+    BlockingObservable<List<Person>> peopleBlocking = peopleList.toBlocking();
+    List<Person> people = peopleBlocking.single();
+  
+
+//느긋함 포용
+  조급한 Observable을 defer() 메서드로 포장
+  defer() 메서드는 구독되기 전까지 대기, Observable 실제 생성을 늦춤
+
+    public Observable<Person> listPeople() {
+        return Observable.defer(() -> Observabel.from(query("SELECT * FROM PEOPLE")));
+    }
+
+    //기존 코드
+    void bestBookFor(Person person) {
+        Book book;
+        try {
+            book = recommend(person);
+        } catch (Exception e) {
+            book = bestSeller();
+        }
+        display(book.getTitle());
+    }
+
+    //RxJava 적용
+    void bestBookFor(Person person) {
+        recommend(person)
+            .onErrorResumeNext(bestSeller())
+            .map(Book::getTitle)
+            .subscribe(this::display);
+    }
+  
+    //데이터를 덩어리로 나눠 느긋하게 불러오는 기법은 무척 유용
+    List<Person> listPeople(int page) {
+        return query("SELECT * FROM PEOPLE ORDER BY id LIMIT ? OFFSET ?",
+            PAGE_SIZE, page * PAGE_SIZE);
+    }
+
+    //StackOverflowError 발생 가능성 있지만 구독 취소시 재귀 중단
+    Observable<Person> allPeople(int initialPage) {
+        return defer(() -> from(listPeople(inititalPage)))
+            .concatWith(defer(() -> allPeople(initialPage + 1)));  
+    }
+
+
+//느긋한 페이지 분할 및 연결
+  전부를 가져온 후 원하는 만큼 취하는 것
+  어리석어 보이지만 느긋함 덕분에 실현 가능
+
+    Observable<List<Person>> allPages = Observable
+        .range(0, Integer.MAX_VALUE)
+        .map(this::listPeople)
+        .takeWhile(list -> !list.isEmpty);
+    Observable<Person> people = allPages.concatMap(Observable::from);
+    Observable<Person> people = allPages.concatMapIterable(Observable::from)  //Iterable<Person>
+    people.take(15);  //원하는 레코드 갯수 제한
+
+
+//명령형 방식의 동시성
+  대부분 스레드 하나가 요청 하나 처리
+  톰캣은 요청 처리 스레드 갯수 default 200
+  요청이 짧은 시간 몰리면 연결을 대기열에 보관, 지속되는 경우 연결 거부
+    1. TCP/IP 연결
+    2. HTTP 요청 해석
+    3. 컨트롤러 혹은 서블릿 호출
+    4. 데이터베이스 요청 및 블로킹
+    5. 결과 처리
+    6. 결과값 인코딩
+    7. 클라이언트에 응답(바이트 패킷 전달)
+
+    Flight       lookupFlight(String flightNo) { ... }
+    Passenger    findPassenger(long id) { ... }
+    Ticket       bookTicket(Flight flight, Passenger passenger) { ... }
+    SmtpResponse sendEmail(Ticket ticket) {...}
+
+    //전형적인 블로킹 코드
+    Flight flight = lookupFlight("LOT 783");
+    Passenger passenger = findPassenger(42);
+    Ticket ticket = bookTicket(flight, passenger);
+    sendEmail(ticket);
+
+    //블로킹 코드 포장
+    Observable<Flight> rxLookupFlight(String flightNo) {
+        return Observable.defer(() -> Observable.just(lookupFlight(flightNo)));
+    }
+
+    Observable<Passenger> rxFindPassenger(long id) {
+        return Observable.defer(() -> Observable.just(findPassenger(id)));
+    }
+
+    //전형적인 블로킹 코드와 정확한 방식으로 동작
+    Observable<Flight> flight = rxLookupFlight("LOT 783");
+    Observable<Passenger> passenger = rxFindPassenger(42);
+    Observable<Ticket> ticket = flight.zipWith(passenger, (f, p) -> bookTicket(f, p));
+    ticket.subscribe(this::sendEmail);
+
+    //동기적으로 실행을 원할 경우, 권장하지 않는 마지막 수단
+    Observable<Flight> flight = rxLookupflight("LOT 783")
+        .subscribeOn(Scheduler.io());
+    Observable<Passenger> passenger = rxFindPassenger(42)
+        .subscribeOn(Scheduler.io());
+
+    //완전한 논블로킹
+    Observable<Ticket> rxBookTicket(Flight flight, Passenger passenger) { ... }
+    Observable<Ticket> ticket = flight
+        .zipWith(passenger, (f, p) -> Pair.of(f, p))
+        .flatMap(pair -> rxBookTicket(pair.getLeft(), pair.getRight()));
+    Observable<Ticket> ticket = flight
+        .zipWith(passenger, this::rxBookTicket)
+        .flatMap(obs -> obs)  //항등 함수
+    
+
+//비동기 체이닝 연산자
+  
+    List<Pair<Ticket, Future<SmtpResponse>>> tasks = tickets
+        .stream()
+        .map(ticket -> Pair.of(ticket, sendEmailAsync(ticket)))
+        .collect(toList())
+    List<Ticket> failures = tasks.stream()
+        .flatMap(pair -> {
+            try {
+                Future<SmtpResponse> future = pair.getRight();
+                future.get(1, TimeUnit.SECONDS);
+                return Stream.empty();
+            } catch (Exception e) {
+                Ticket ticket = pair.getLeft();
+                log.warn("Failed to send {}", ticket, e);
+                return Stream.of(ticket);
+            }
+        }).collect(toList());
+    private Future<SmtpResponse> sendEmailAsync(Ticket ticket) {
+        return pool.submit(() -> sendEmail(ticket));
+    }
+
+    //보편적이지 않은 동기 방식 Observable
+    Observable<SmtpResponse> rxSendEmail(Ticket ticket) {
+        return fromCallable(() -> sendEamil())
+    }  
+    List<Ticket> failures = Observable.from(tickets)
+        .flatMap(ticket -> rxSendEmail(ticket)
+            .flatMap(response -> Observable.<Ticket>empty())
+            .doOnError(e -> log.warn("Failed to send {}", ticket, e))
+            .onErrorReturn(err -> ticket))
+            .subscribeOn(Schedulers.io())  //순차 실행 코드를 멀티 스레드 연산으로 변경
+        .toList()
+        .toBlocking()
+        .single();
+
+
