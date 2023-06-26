@@ -138,7 +138,6 @@
     
 
 //비동기 체이닝 연산자
-  
     List<Pair<Ticket, Future<SmtpResponse>>> tasks = tickets
         .stream()
         .map(ticket -> Pair.of(ticket, sendEmailAsync(ticket)))
@@ -166,11 +165,98 @@
     List<Ticket> failures = Observable.from(tickets)
         .flatMap(ticket -> rxSendEmail(ticket)
             .flatMap(response -> Observable.<Ticket>empty())
+            //.ignoreElements() 메서드와 동일
             .doOnError(e -> log.warn("Failed to send {}", ticket, e))
             .onErrorReturn(err -> ticket))
             .subscribeOn(Schedulers.io())  //순차 실행 코드를 멀티 스레드 연산으로 변경
         .toList()
         .toBlocking()
         .single();
+
+
+//스트림 콜백 대체
+  자바 메시지 서비스(JMS)는 이벤트 리스너(콜백)을 제공 필수
+  밀어내기 방식의 콜백 기반 API를 Observable로 변경하는 쉬운 방식은 Subject
+
+    @Component
+    class JmsConsumer {
+        @JmsListener(destination = "orders")
+        public void newOrder(Message msg) {
+            ...
+        }
+    }
+
+    //외부에 있는 뜨거운 Observable과 유사
+    private final PublishSubject<Message> subject = PublishSubject.create();
+
+    @JmsListener(destination = "orders", concurrency = "1")  //concurrency = "1" 복수의 스레드 호출 방지
+    public void newOrder(Message msg) {
+        subject.onNext(msg);  //뜨거운 Observable, 이전 메시지는 그냥 버림
+    }
+
+    Observable<Message> observe() {
+        return subject;
+    }
+
+    //Subject 대신 Observable
+    public Observable<Message> observe(ConnectionFactory connectionFactory, Topic topic) {
+        return Observable.create(subscriber -> {
+            try {
+                subscribeThrowing(subscriber, connectionFactory, topic);
+            } catch (JMSException e) {
+                subscriber.onError(e);
+            }
+        });
+    }
+
+    private void subscribeThrowing(
+            Subscriber<? super Message> subscriber, ConnectionFactory connectionFactory, Topic topic) {
+        Connection conneciton = connectionFactory.createConnection();
+        Session session = connection.creaeteSesstion(true, AUTO_ACKNOWLEDGE);
+        MessageConsumer consumer = session.createConsumer(orders);
+        consumer.setMessageListener(subscriber::onNext);
+        subscriber.add(onUnsubscribe(connection));
+        connection.start();
+    }
+
+    private Subscription onUnsubscribe(Connection connection) {
+        return Subscription.create(() -> {
+            try {
+                connection.close();
+            } catch (Exception e) {
+                log.error("Failed close", e);
+            }
+        });
+    }
+
+    //ActiveMQ 메시지 브로커로 메시지 소비
+    ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+    Observable<String> txMessages = observe(connectionFactory, new ActiveMQTopic("orders"))
+        .cast(TextMessage.class)
+        //.map(x -> (TextMessage) x)와 유사
+        .flatMap(m -> {
+            try {
+                return Observable.just(m.getText());
+            } catch (JMSException e) {
+                return Observable.error(e);
+            }
+        });
+
+
+//주기적 변경사항 폴링
+  최악의 블로킹 API 작업을 위해 변경 사항 폴링 필수
+  변경 사항이 일어날때만 이벤트 방출
+
+    Observable<Item> observeNewItems() {
+        return Observable
+            .interval(1, TimeUnit.SECONDS)
+            .flatMapIterable(x -> query())
+            .distinct();
+    }
+
+    List<Item> query() {
+        //파일 시스템 디렉토리 또는 데이터베이스 테이블의 스냅샷을 조회
+    }
+
 
 
