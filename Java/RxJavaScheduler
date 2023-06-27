@@ -219,15 +219,54 @@
   
 
 //선언적 동시성 처리
+  observeOn() 메서드 이후에 발생하는 다운스트림 Subscriber를 호출할 때 어떤 Scheduler를 사용할지 제어
+  subscribeOn() 메서드로 구독 시작할 스케줄러 선택, 이후 observeOn() 메서드로 스케줄러 변경
+  두 메서드 모두 생산자와 소비자를 물리적으로 분리하고자 할 때 잘 작동
 
+    log.info("start");
+    Observable<String> obs = Observable.create(subscriber -> {
+        log.info("subscribe");
+        subscriber.onNext("A");
+        subscriber.onNext("B");
+        subscriber.onNext("C");
+        subscriber.onNext("D");
+        subscriber.onCompleted();
+    });
+    log.info("create");
+    obs.subscribeOn(schedulerA)
+        .flatMap(record -> store(record).subscribeOn(schedulerB))
+        .observeOn(schedulerC)
+        .subscribe(
+            x -> log.info("get: " + x),
+            Throwable::printStackTrace,
+            () -> log.info("complete")
+        );
+    log.info("exit");
 
+    Observable<UUID> store(String s) {
+        return Observable.create(subscriber -> {
+            log.info("storing " + s);
+            ...
+            subscriber.onNext(UUID.randomUUID());
+            subscriber.onCompleted();
+        });
+    }
 
+    26   | main | start
+    93   | main | create
+    121  | main | exit
+  
+    122  | Sched-A-0 | subscribed
+    124  | Sched-B-0 | storing A
+    124  | Sched-B-1 | storing B
+    124  | Sched-B-2 | storing C
+    124  | Sched-B-3 | storing D
 
-
-
-
-
-
+    1136 | Sched-C-1 | get: 44b8b999-e687-485f-b17a-a11f6a4bb9ce
+    1136 | Sched-C-1 | get: 532ed720-eb35-4764-844e-690327ac4fe8
+    1136 | Sched-C-1 | get: 13ddf253-c720-48fa-b248-4737579a2c2a
+    1136 | Sched-C-1 | get: 0eced01d-3fa7-45ec-96fb-572ff1e33587
+    1137 | Sched-C-1 | complete
 
 
 
