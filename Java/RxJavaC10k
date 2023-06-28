@@ -213,11 +213,26 @@
       }
 
 
+//RxNetty Client
+  네티를 적용한 RxJava는 네트워크가 작동하는 방식에 충분히 근접한 추상화 제공
+  클라이언트 측 RxNetty는 간결한 API 제공
 
+    //단일 url 연결
+    Observable<ByteBuf> response = HttpClient
+        .newClient("example.com", 80)
+        .createGet("/")
+        .flatMap(HttpClientResponse::getContent);
+    response
+        .map(bb -> bb.toString(UTF_8))
+        .subscribe(System.out::println);
 
-
-
-
+    //동적 url, 각기 출처가 다른 ByteBuf 메시지를 뒤섞는 인위적인 예제
+    Observalbe<URL> sources = ...
+    Observable<ByteBuf> packets = sources
+        .flatMap(url -> HttpClient
+            .newClient(url.getHost(), url.getPort())
+            .createGet(url.getPath()))
+        .flatMap(HttpClientResponse::getContent);
 
 
 
