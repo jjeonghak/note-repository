@@ -8,9 +8,53 @@
   publish().refCount() 메서드를 통해 기반 리소스 제어
   해당 메서드 연동은 기반 Observable을 둘러싸서 모든 구독자를 가로챔
 
+    Observable<Status> observable = Observable.create(subscriber -> {
+        System.out.println("Establishing connection");
+        TwitterStream twitterStream = new TwitterStreamFactory().getInstance();
+        ...
+        subscriber.add(Subscriptions.create(() -> {
+            System.out.println("Disconnecting");
+            twitterStream.shutdown();
+        }));
+        twitterStream.sample();
+    });
+
+    //각각의 Subscriber마다 새로운 연결 및 종료
+    Subscription sub1 = observable.subscribe();
+    System.out.println("Subscribed 1");
+    Subscription sub2 = observable.subscribe();
+    System.out.println("Subscribed 2");
+    sub1.unsubscribe();
+    System.out.println("Unsubscribed 1");
+    sub2.unsubscribe();
+    System.out.println("Unsubscribed 2");
+    
+    Establishing connection
+    Subscribed 1
+    Establishing connection
+    Subscribed 2
+    Disconnecting
+    Unsubscribed 1
+    Disconnecting
+    Unsubscribed 2
+
+    //하나의 연결로 여러 구독자 관리
     lazy = observable.publish().refCount();
     Subscription sub1 = lazy.subscribe();
+    System.out.println("Subscribed 1");
     Subscription sub2 = lazy.subscribe();
+    System.out.println("Subscribed 2");
+    sub1.unsubscribe();
+    System.out.println("Unsubscribed 1");
+    sub2.unsubscribe();
+    System.out.println("Unsubscribed 2");
+    
+    Establishing connection
+    Subscribed 1
+    Subscribed 2
+    Unsubscribed 1
+    Disconnecting
+    Unsubscribed 2
     
 
 //refCount()
