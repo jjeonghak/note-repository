@@ -1,0 +1,43 @@
+//RxJava 흐름 제어 방식
+  내장된 연산자를 사용한 샘플링이나 일괄 처리와 같은 다양한 흐름 제어 방식 구현
+  구독자는 배압을 사용해서 처리할 수 있는 만큼 항목을 요청하고 전파
+
+
+//주기적인 샘플링과 스로틀링
+  sample() 연산자는 업스트림 Observable을 주기적으로 관찰
+  주기별로 관측값을 방출, 관측 중에 이벤트 발생 없다면 방출되는 다운스트림 없음
+
+    long startTime = System.currentTimeMillis();
+    Observable
+        .interval(7, TimeUnit.MILLISECONDS)
+        .timestamp()
+        .sample(1, TimeUnit.SECONDS)
+        .map(ts -> ts.getTimestampMillis() - startTime + "ms: " + ts.getValue())
+        .take(5)
+        .subscribe(System.out::println);
+
+    //1초마다 관측값 방출
+    1088ms: 141
+    2089ms: 284
+    3090ms: 427
+    4084ms: 569
+    5085ms: 712
+
+    Observable<String> names = Observable
+        .just("Mary", "Patricia", "Linda", "Barbara", "Elizabeth", "Jennifer",
+            "Maria", "Susan", "Margaret", "Dorothy");
+    Observable<Long> absoluteDelayMillis = Observable
+        .just(0.1, 0.6, 0.9, 1.1, 3.3, 3.4, 3.5, 3.6, 4.4, 4.8)
+        .map(d -> (long)(d * 1_000));
+    Observable<String> delayedNames = names
+        .zipWith(absoluteDelayMillis, (n, d) -> Observable
+            .just(n)
+            .delay(d, MILLISECONDS))
+        .flatMap(o -> o);
+    delayedNames
+        .sample(1, SECONDS)
+        .subscribe(System.out::println);
+
+
+
+
