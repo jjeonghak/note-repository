@@ -4,8 +4,12 @@
 
 
 //주기적인 샘플링과 스로틀링
-  sample() 연산자는 업스트림 Observable을 주기적으로 관찰
+  sample() 연산자는 업스트림 Observable을 주기적으로 관찰, 마지막 이벤트는 버림
   주기별로 관측값을 방출, 관측 중에 이벤트 발생 없다면 방출되는 다운스트림 없음
+  2.1부터 sample(long period, TimeUnit unit, boolean emitLast) 오버로드 형태 제공
+  인자로 Observable(샘플러) 가능
+  throttleLast() 메서드로는 지정된 기간 내에 가장 최근 이벤트를 방출(sample())
+  throttleFirst() 메서드는 지정된 기간 내에 첫 번째 이벤트를 방출(debounce())
 
     long startTime = System.currentTimeMillis();
     Observable
@@ -36,7 +40,100 @@
         .flatMap(o -> o);
     delayedNames
         .sample(1, SECONDS)
+        //.throttleLast(1, SECONDS)
         .subscribe(System.out::println);
+
+    //똑같은 동작
+    obs.sample(1, SECONDS);
+    obs.sample(Observable.interval(1, SECONDS));
+
+
+//리스트 버퍼링
+  buffer() 연산자는 이벤트 묶음을 실시간으로 List에 집계
+  toList() 메서드와는 다르게 모든 이벤트를 하나로 모으지 않고 그룹화한 여러 목록으로 집계
+  지정한 버퍼 크기가 될 때까지 버퍼링 후 전체 버퍼를 다운스트림으로 방출
+  완료 알림이 온 시점에 내부 버퍼가 비어있지 않다면 그대로 방출
+  윈도우 형식의 오버로드 존재
+  시간 간격에 따라 일괄 처리하는 오버로드 존재
+
+    Observable
+        .range(1, 7)
+        .buffer(3)
+        .subscribe((List<Integer> list) -> {
+            System.out.println(list);
+        });
+
+    [1, 2, 3]
+    [4, 5, 6]
+    [7]
+
+    //세분화된 이벤트를 병합해서 연산 횟수 감소
+    Observable
+        .subscribe(repository::store);
+    Observable
+        .buffer(10)
+        .subscribe(repository::storeAll);
+
+    //슬라이딩 윈도우 형식의 오버로드 buffer
+    Observable
+        .range(1, 7)
+        .buffer(3, 1)
+        .subscribe(System.out::println);
+
+    [1, 2, 3]
+    [2, 3, 4]
+    [3, 4, 5]
+    [4, 5, 6]
+    [5, 6, 7]
+    [6, 7]
+    [7]
+
+    //두번째 인수는 버퍼 크기보다 클 수 있음
+    Observable<Integer> odd = Observable
+        .range(1, 7)
+        .buffer(1, 2)
+        .flatMapIterable(list -> list);
+
+    //시간 간격으로 버퍼링
+    Obseravble
+        .range(1, 7)
+        .delay(500, TimeUnit.MILLISECONDS)
+        .buffer(1, TimeUnit.SECONDS)
+        .subscriber(System.out::println);
+  
+    Observable
+        .range(1, 7)
+        .delay(500, TimeUnit.MILLISECONDS)
+        .buffer(1, TimeUnit.SECONDS)
+        .map(List::size);
+
+    //시간대별로 이벤트 처리
+    Observable<Duration> insideBusinessHours = Observable
+        .interval(1, TimeUnit.SECONDS)
+        .filter(x -> isBusinessHour())
+        .map(x -> Duration.ofMillis(100));
+    Observable<Duration> outsideBusinessHours = Observable
+        .interval(5, TimeUnit.SECONDS)
+        .filter(x -> !isBusinessHour())
+        .map(x -> Duration.ofMillis(200));
+    Observable<Duration> openings = Observable
+        .merge(insideBusinessHours, outsideBusinessHours);
+    Observalbe<TeleData> upstream = ...
+    Observable<List<TeleData>> samples = upstream
+        .buffer(openings);
+
+    private static final LocalTime BUSINESS_START = LocalTime.of(9, 0);
+    private static final LocalTime BUSINESS_END = LocalTime.of(17, 0);
+
+    private boolean isBusinessHour() {
+        ZoneId zone = ZoneId.of("Europe/Warsaw");
+        ZonedDateTime zdt = ZonedDateTime.now(zone);
+        LocalTime localTime = zdt.toLocalTime();
+        return !localTime.isBefore(BUSINESS_START) && !localTime.isAfter(BUSINESS_END);
+    }
+
+
+
 
 
 
