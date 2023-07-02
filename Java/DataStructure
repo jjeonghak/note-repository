@@ -185,18 +185,29 @@
     PriorityQueue와 같은 방식으로 정렬
     자원 고갈시 오류 발생
 
+  6. DelayQueue
+    offer           : O(log n)
+    peek            : O(1)
+    poll            : O(log n)
+    size            : O(1)
 
+    지연이 만료된 경우 요소를 조회 가능
 
+  7. ArrayDeque
+    offer           : O(1)
+    peek            : O(1)
+    poll            : O(1)
+    size            : O(1)
 
+    양 측면에서 요소를 추가하거나 제거 가능
+    확장 가능한 배열의 특별한 종류
 
+  8. LinkedBlockingDeque
+    offer           : O(1)
+    peek            : O(1)
+    poll            : O(1)
+    size            : O(1)
 
-
-    
-
-
-
-
-
-
+    무제한으로 인스턴스화 가능
 
 
