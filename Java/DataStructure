@@ -63,7 +63,7 @@
   4. TreeSet
     add             : O(log n)
     contains        : O(log n)
-    next            : O(long n)
+    next            : O(log n)
 
     객체 기준으로 정렬
     느린 성능
