@@ -132,6 +132,74 @@
         return !localTime.isBefore(BUSINESS_START) && !localTime.isAfter(BUSINESS_END);
     }
 
+    //일괄처리 오버로드
+    Observable<List<TeleData>> samples = upstream
+        .buffer(openings, duration -> empty().delay(duration.toMillis(), MILLISECONDS));
+
+
+//윈도우
+  buffer() 연산자는 현재 버퍼를 다운스트림으로 전달할 때마다 임시 List 생성
+  불필요한 가비지 컬렉션이나 메모리 사용을 유발할 가능성 존재
+  즉시 이벤트를 처리하기 위한 window() 연산자
+  하나의 일괄 처리 또는 버퍼를 포함하는 고정 리스트를 받는 대신 스트림의 스트림을 받음
+  int를 인수로 받아 원본에서 이벤트를 고정 크기 목록으로 그룹화하는 오버로드 존재
+  시간 단위를 받아 고정된 시간 간격 안에 이벤트를 그룹화하는 오버로드 존재
+  개별 일괄 처리의 시작과 끝을 나타내는 사용자 정의 Observable을 인수로 받는 오버로드 존재
+
+    //많은 낭비
+    Observable<KeyEvent> eventPerSecond = keyEvents
+        .buffer(1, SECONDS)
+        .map(List::size);
+
+    //buffer() 연산자와 다른 window()
+    Observable<Observable<KeyEvent>> windows = keyEvents.window(1, SECONDS);
+    Observable<Integer> eventPerSecond = windows
+        .flatMap(eventsInSecond -> eventsInSecond.count());
+
+
+//낡은 이벤트 건너뛰기
+  위의 연산자들은 이벤트 사이의 경과 시간을 고려하지 않움
+  바로 이어서 새로운 이벤트 발생시 이전 이벤트를 무시할 가능성 존재
+  debounce() 또는 throttleWithTimeout() 연산자는 특정 이벤트 직후에 뒤따른 모든 이벤트를 버림
+  지정된 이벤트 이후 타임 윈도우 안에 다른 이벤트가 나타나지 않는 경우 해당 이벤트를 방출
+  즉 새로운 이벤트가 앞선 이벤트를 진압
+  
+    //100ms 이내에 이벤트가 나타나는지 관찰, 나타나는 경우 다시 100ms 대기
+    Observable<BigDecimal> prices = tradingPlatform.priceOf("NFLX");
+    Observable<BigDecimal> debounced = prices.debounce(100, MILLISECONDS);
+
+    //이벤트 조건에 따른 상이한 관찰 시간 오버로드(debounceSelector)
+    prices.debounce(x -> {
+        boolean goodPrice = x.compareTo(BigDecimal.valueOf(150)) > 0;
+        return Observable
+            .empty()
+            .delay(goodPrice ? 10 : 100, MILLISECONDS);
+    });
+
+    Observable<BigDecimal> pricesOf(String ticker) {
+        return Observable
+            .interval(50, MILLISECONDS)
+            .flatMap(this::randomDelay)
+            .map(this::randomStockPrice)
+            .map(BigDecimal::valueOf);
+    }
+
+    Observable<Long> randomDelay(long x) {
+        return Observable
+            .just(x)
+            .delay((long) (Math.random() * 100), MILLISECONDS);
+    }
+
+    double randomStockPrice(long x) {
+        return 100 + Math.random() * 10 + (Math.sin(x/100.0)) * 60.0;
+    }
+
+
+
+
+
+
+
 
 
 
