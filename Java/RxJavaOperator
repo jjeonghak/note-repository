@@ -68,7 +68,7 @@
   concatMap() 메서드는 내부적으로 concat() 메서드 사용
 
     Observable.just(DayOfWeek.SUNDAY, DayOfWeek.MONDAY)
-        .concatMAp(this::loadRecordsFor)
+        .concatMap(this::loadRecordsFor)
     //flapMap 메서드와 다르게 업스트림 이벤트의 다운스트림 순서 보장
     Sun-0, Sun-1, Sun-2, Sun-3, Sun-4, Mon-0, Mon-1, Mon-2, Mon-3, Mon-4
 
