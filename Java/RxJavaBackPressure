@@ -195,7 +195,32 @@
     }
 
 
+//이벤트 고갈 회피
+  이벤트가 지속적으로 자주 등장하는 경우 debounce() 연산자가 모든 이벤트 방출을 막는 경우
 
+    Observable
+        .interval(99, MILLISECONDS)
+        .debounce(100, MILLISECONDS)  //이벤트 방출 안됨
+        .timeout(1, SECONDS)          //TimeoutException 발생
+
+    //timeout() 메서드로 회피 - 미묘한 버그
+    ConnectableObservable<Long> upstream = Observable
+        .interval(99, MILLISECONDS)
+        .publish();
+    upstream
+        .debounce(100, MILLISECONDS)
+        .timeout(1, SECONDS, upstream.take(1));
+    upstream.connect();
+
+    //재귀를 사용(defer() 메서드를 활용한 생성 지연)
+    Observable<Long> timedDebounce(Observable<Long> upstream) {
+        Observable<Long> onTimeout = upstream
+            .take(1)
+            .concatWith(defer(() -> timedDebounce(upstream)));    //defer() 메서드를 활용해 구독할 때 Observalbe 생성
+        return upstream
+            .debounce(100, MILLISECONDS)
+            .timeout(1, SECONDS, onTimeout);
+    }
 
 
 
