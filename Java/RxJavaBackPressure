@@ -432,6 +432,82 @@
     다운스트림에서 뒤늦게 request() 요청하면 마지막으로 본 값을 제공
 
 
+//ResultSet
+  다운스트림의 배압 요청을 지원하는 쉬운 방안은 range(), from(Iterable<T>)과 같은 내장 팩토리 메서드를 사용하는 것
+  Iterable을 사용하여 소스를 만들지만 배압을 내장
+  스트림으로 포장한 JDBC의 ResultSet은 배압이 가능한 Observable처럼 끌어오기 기반
+  하지만 Iterable이나 Iterator가 아니므로 우선 Iterator<Object[]> 형태로 변환 필수
+  Object[] 형태는 데이터베이스에서 하나의 행을 느슨하게 형식화한 표현
+  ResultSet은 파괴적이며 완료시 닫아야한다는 점이 차이점
+
+    //오류 처리 기능없는 ResultSetIterator
+    public class ResultSetIterator implements Iterator<Object[]> {
+
+        private final ResultSet rs;
+
+        public ResultSetIterator(ResultSet rs) {
+            this.rs = rs;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return !rs.isLast();
+        }
+
+        @Override
+        public Object[] next() {
+            rs.next();
+            return toArray(rs);
+        }
+
+    }
+
+    //변환 메서드
+    public static Iterable<Object[]> iterable(final Result rs) {
+        return new Iterable<Object[]>() {
+            @Override
+            public Iterator<Object[]> iterator() {
+                return new ResultSetIterator(rs);
+            }
+        };
+    }
+
+
+    //배압 지원 Observable<Object[]>
+    Connection con = ...
+    PreparedStatement stmt = con.prepareStatement("SELECT ...");
+    stmt.setFetchSize(1000);
+    ResultSet rs = stmt.executeQuery();
+    Observable<Object[]> result = Observable.from(ResultSetIterator.iterable(rs))
+        .doAfterTerminate(() -> {
+            try {
+                rs.close();
+                stmt.close();
+                con.close();
+            } catch (SQLException e) {
+                log.warn("Unable to close", e);
+            }
+        });
+
+    내장된 from() 연산자를 지원
+    Subscriber 처리량은 더이상 관련없이 MissingBackpressureException 오류 발생안함
+    JDBC 드라이버는 모든 레코드를 메모리에 적재하려는 시도 때문에 setFetchSize() 메서드 필수
+
+
+//Producer 맞춤 구현
+  이 작업은 오류가 발생하기 쉬움
+  도우미 클래스인 SyncOnSubscribe 사용
+
+    Observable.OnSubscribe<Double> onSubscribe = SyncOnSubscribe.createStateless(
+        observer -> observer.onNext(Math.random())
+    );
+    Observable<Double> rand = Observable.create(onSubscribe);
+
+
+
+
+
+
 
 
 
