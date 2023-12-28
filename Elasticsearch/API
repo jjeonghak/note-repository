@@ -1,0 +1,378 @@
+//API 종류
+  1. 인덱스 관리 API(Indices API)
+  2. 문서 관리 API(Document API)
+  3. 검색 API(Search API)
+  4. 집계 API(Aggregation API)
+
+
+//용어 정리
+  index: 색인 데이터(색인: 데이터가 토큰화되어 저장된 자료구조)
+  indexing: 색인하는 과정
+  indices: 매핑 정보를 저장하는 논리적인 데이터 공간
+
+
+//스키마리스(Schemaless)
+  문서 색인을 위해 기본적으로 인덱스를 생성하는 과정 필요
+  이 과정 없이 문서를 추가하더라도 문서가 색인되도록 지원하는 평의 기능
+  성능과 밀접한 연관이 있기 때문에 특수한 상황에서만 사용 권장
+  인덱스 매핑 정보가 정의되지 않기때문에 JSON 형식의 분석으로 필드명과 각종 속성정보 자동 생성
+  반드시 인덱스를 직접 정의해서 사용하는 습관 필수
+
+  action.auto_create_index: false
+  index.mapper.dynamic: false
+
+
+//인덱스 관리 API
+  인덱스를 추가하거나 삭제 가능
+
+    1. 인덱스 생성
+      인덱스 생성시 매핑이라는 세부 설정 이용 가능
+      매핑은 문서와 문서에 포함된 필드, 필드 타입 등을 세세하게 지정하는 것이 가능
+      keyword: 단순 문자열
+      text: 형태소 분석(검색)을 위한 문자열
+
+        //인덱스 생성 API
+        PUT /movie
+        {
+          "settings": {
+            "number_of_shards": 3,
+            "number_of_replicas": 2
+          }
+          "mappings": {
+            "_doc": {
+              "properties": {
+                "movieCd": { "type": "integer" },
+                "movieNm": { "type": "text" },
+                "openDt": { "type": "date" },
+                ...
+                "repGenreNm": { "type": "keyword" }
+              }
+            }
+          }
+        }
+
+        //실행결과
+        {
+          "acknowledged": true,
+          "shards_acknowledged": true,
+          "index": "movie"
+        }
+
+    2. 인덱스 삭제
+      인덱스 한번 삭제하면 다시 복구 불가
+      삭제 전에 반드시 한번더 확인하는 습관 필수
+
+        //인덱스 삭제 API
+        DELETE /movie
+
+        //실행결과
+        {
+          "acknowledged": false
+        }
+
+        //인덱스 이름이 없는 경우
+        {
+          "error": {
+            "root_cause": [
+              {
+                "type": "index_not_found_exception",
+                "reason": "no such index",
+                "index_uuid": "RO2VDL88Q9WnQx14NXEnLA",
+                "index": "movie"
+              }
+            ],
+            "type": "index_not_found_exception",
+            "reason": "no such index",
+            "index_uuid": "RO2VDL88Q9WnQx14NXEnLA",
+            "index": "movie"
+          },
+          "status": 404
+        }
+
+//문서 관리 API
+  실제 문서를 색인하고 조회, 수정, 삭제를 지원
+  
+  Single document API
+    index API: 한건의 문서 색인
+    Get API: 한건의 문서 조회
+    Delete API: 한건의 문서 삭제
+    Update API: 한건의 문서 업데이트
+
+  Multi-document API
+    Multi Get API: 다수의 문서 조회
+    Bulk API: 다수의 문서 색인
+    Delete By Query API: 다수의 문서 삭제
+    Update By Query API: 다수의 문서 업데이트
+    Reindex API: 인덱스의 문서 다시 색인
+
+    1. 문서 생성
+      문서를 생성하기 위해서 POST 메서드 사용
+      아이디를 직접 입력하지 않는 경우 UUID 무작위 값으로 생성
+
+        //문서 생성 API
+        POST /movie/_doc/1
+        {
+          "movieCd": "1",
+          "moviceNm": "살아남은 아이",
+          "openDt": "2017-10-20",
+          ...
+          "repGenreNm": "드라마"
+        }
+
+        //실행 결과
+        {
+          "_index": "movie",
+          "_type": "_doc",
+          "_id": "1",
+          "_version": 1,
+          "result": "created",
+          "_shards": {
+            "total": 2,
+            "successful": 2,
+            "failed": 0
+          }
+          "_seq_no": 0,
+          "_primary_term": 1
+        }
+
+    2. 문서 조회
+      문서 조회는 GET 메서드 사용
+
+        //문서 조회 API
+        GET /movie/_doc/1
+
+        //실행 결과
+        {
+          "_index": "movie",
+          "_type": "_doc",
+          "_id" : 1,
+          "_version": 1,
+          "found": true,
+          "_source": {
+            "movieCd": "1",
+            ...
+            "repGenreNm": "드라마"
+          }
+        }
+
+    3. 문서 삭제
+      생성된 무서의 Id를 지정하고 DELETE 메서드 사용
+
+        //문서 삭제 API
+        DELETE /movie/_doc/1
+
+        //실행 결과
+        {
+          "_index": "movie",
+          "_type": "_doc",
+          "_id": "1",
+          "_version": 1,
+          "result": "deleted",
+          "_shards": {
+            "total": 2,
+            "successful": 2,
+            "failed": 0
+          }
+        }
+
+
+//검색 API
+  1. URI 방식의 검색 질의
+    HTTP URI 형태의 파라미터를 URI에 추가해 검색
+
+      //Id 검색
+      GET /movie/_doc/HZuX6mEB06UMLL9exnak?pretty=true
+
+      //용어 검색
+      POST /movie/_search?q=드라마
+      POST /movie/_search?q=repGenreNm:드라마
+
+      {
+        "took": 1403,
+        "timed_out": false,
+        "_shards": {
+          "total": 3,
+          "successful": 3,
+          "skipped": 0,
+          "failed": 0
+        },
+        "hits": {
+          "total": 1,
+          "max_score": 0.18232156,
+          "hits": [
+            {
+              "_index": "movie",
+              "_type": "_doc",
+              "_id": "HZuX6mEB06UMLL9exnak",
+              "_score": 0.18232156,
+              "_source": {
+                "movieCd": "1",
+                ...
+                "repGenreNm": "드라마"
+              }
+            }
+          ]
+        }
+      }
+
+  2. Request Body 방식의 검색 질의
+    RESTful API 방식 QueryDSL을 사용해 요청 본문에 질의 내용 추가해 검색
+    여러 필드를 각기 다른 검색어로 질의하는 경우 사용
+
+      //형식
+      {
+        "size": 몇 개의 결과를 반환할지 결정(기본값 10),
+        "from": 어느 위치부터 반환할지 결정, 0부터 시작시 상위 0 ~ 10건의 데이터 반환(기본값 0),
+        "_source": 특정 필드만 결과로 반환하고 싶은 경우 사용,
+        "sort": 특정 필드 기준 정렬(asc, desc),
+        "query": {
+          검색될 조건 정의
+        },
+        "filter": {
+          검색 결과 중 특정 값 다시 노출
+          결과 내에서 재검색할때 사용
+          필터 사용시 자동으로 score 값 정렬안됨
+        }
+      }
+
+      //검색 API
+      POST /movie/_search
+      {
+        "query": {
+          "term": { "repGenreNm": "드라마" }
+        }
+      }
+    
+
+//집계 API
+  과거 통계 작업을 위해 루씬이 제공하는 패싯(Facets) 기능 사용
+  패싯 기능은 기본적으로 디스크 기반 동작, 분산 환경에 최적화되지 않음
+  5.0 버전 이후 패싯 방식 통계 기능 제거
+
+    //데이터 집계 타입
+    버킷 집계(Bucket Aggregation): 집계 중 가장 많이 사용, 문서의 필드 기준으로 버킷 집계
+    메트릭 집계(Metric Aggregation): 문서에서 추출된 값을 가지고 sum, max, min, arg 계산
+    매트릭스 집계(Matrix Aggregation): 행렬의 값을 합하거나 곱함
+    파이프라인 집계(Pipeline Aggregation): 버킷에서 도출된 결과 문서를 다른 필드 값으로 재분류
+
+    //데이터 집계
+    POST /movie/_search?size=0
+    {
+      "aggs": {
+        "genre": {
+          "terms": {
+            "field": "genreAlt"
+          }
+        }
+      }
+    }
+
+    //실행결과
+    {
+      "took": 10,
+      "timed_out": false,
+      "_shards": {
+        "total": 5,
+        "successful": 5,
+        "skipped": 0,
+        "failed": 0
+      },
+      "hits": {
+        "total": 63069,
+        "max_score": 0,
+        "hits": [
+
+        ]
+      },
+      "aggregations": {
+        "genre": {
+          "doc_count_error_upper_bound": 291,
+          "sum_other_doc_count": 21317,
+          "buckets": [
+            {
+              "key": "드라마",
+              "doc_count": 19856
+            },
+            {
+              "key": "장르없음",
+              "doc_count": 16426
+            },
+            ...
+            {
+              "key": "스릴러",
+              "doc_count": 4438
+            }
+          ]
+        }
+      }
+    }
+
+    //중첩(조합) 통계
+    POST /movie/_search>size=0
+    {
+      "aggs": {
+        "genre": {
+          "terms": {
+            "field": "genreAlt"
+          },
+          "aggs": {
+            "nation": {
+              "terms": {
+                "field": "nationAlt"
+              }
+            }
+          }
+        }
+      }
+    }
+
+    //실행결과
+    {
+      "took": 154,
+      "timed_out": false,
+      "_shards": {
+        "total": 10,
+        "successful": 10,
+        "skipped": 0,
+        "failed': 0
+      },
+      "hits": {
+        "total": 63069,
+        "max_score": 0,
+        "hits": [
+
+        ]
+      },
+      "aggregations": {
+        "genre": {
+          "doc_count_error_upper_bound": 136,
+          "sum_other_doc_count": 11220,
+          "buckets": [
+            {
+              "key": "드라마",
+              "doc_count": 10579,
+              "nation": {
+                "doc_count_error_upper_bound": 32,
+                "sum_other_doc_count": 2513,
+                "buckets": [
+                  {
+                    "key": "한국",
+                    "doc_count": 3848
+                  },
+                  {
+                    "key": "미국",
+                    "doc_count": 1817
+                  },
+                  ...
+                ]
+              }
+            },
+            ...
+          ]
+        }
+      }
+    }
+
+
+
+
