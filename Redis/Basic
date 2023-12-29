@@ -1,0 +1,124 @@
+//Redis(Remote Dictionary Server)
+  인메모리 데이터 저장소
+  memcached와는 다르게 collection 지원
+  자료구조가 기본적으로 atomic(race condition 회피 가능)
+  single threaded 방식
+  키-값 모델의 NoSQL(JSON) 지원
+
+  1. redis as cache
+    캐시로 사용할 경우 문제가 적게 발생
+    consistent hashing도 실제 부하를 아주 균등하게 나누지 않음
+    adaptive consistent hashing 사용 고려
+
+  2. redis as persistent store
+    무조건 primary/secondary 구조로 구성
+    메모리 여유분을 크게 관리
+    RDB/AOF 필요시 secondary에서만 구동
+
+//자료구조 
+  strings
+  set
+  sorted-set
+  hashes
+  list
+  hyperloglog
+  bitmap
+  geospatial index
+  stream
+
+
+//cache
+  나중 요청에 대해 결과를 미리 저장해두었다가 빠르게 서비스
+  다이나믹 프로그래밍과 유사
+
+  1. look asdie cache
+    웹 서버에서 먼저 cache 데이터가 있는지 조회
+    없는 경우 DB 조회
+
+  2. write back
+    쓰기가 빈번한 경우 사용
+    여러 데이터 쓰기를 cache에 저장한 수 특정 주기마다 배치 작업으로 일괄처리
+    로그를 DB에 저장하는 경우 사용
+
+
+//monitoring factor
+  1. redis info
+    RSS: 실제로 사용하는 피지컬 메모리(메모리 파편화 적용)
+    used memory: redis 스스로 인지하는 사용 메모리(메모리 파편화 미적용)
+    connetion
+    초당 처리 요청수
+
+  2. system
+    CPU, disk, network rx/tx
+    CPU 사용량이 100%인 경우 처리량이 매우 많거나 O(n) 계열 명령이 많은 경우
+
+
+//redis failover
+  1. coordinator 기반
+    zookeeper, etcd, consul 등의 coorinator 사용
+    health checker가 직접 API 서버에 서버 모듈 지정(Coordinator: current Redis is Redis #2)
+    해당 기능 이용을 위해 클라이언트 측 개발 필요
+
+  2. VIP/DNS 기반
+    Virtual IP 또는 DNS 사용
+    API 서버는 가상 IP 또는 DNS로만 접속
+    health checker가 모듈에 가상 IP 할당
+    클라이언트에 추가적인 구현 필요하지 않음(요청 재시도는 필요)
+    VIP 기반은 외부로 서비스를 제공해야하는 서비스 업자에 유리
+    DNS 기반은 DNS cache TTL 관리 필요
+
+  3. redis cluster
+    hash 기반으로 slot 16384로 구분
+    hash 알고리즘은 CRC16 사용
+    slot = crc16(key) % 16384
+    key가 key{hashKey} 패턴이면 실제 crc16에 hashkey 사용
+    특정 redis 서버는 이 slot range를 가지고 있고, 데이터 마이그레이션은 이 slot 단위의 데이터를 다른 서버로 전달
+    master 장애시 slave가 master로 승격
+    각 master마다 slot range 보유
+    자신의 slot range가 아닌 요청이 오는 경우(MOVED Primary #2) 알맞은 서버 반환
+    자체적인 primary/secondary failover
+    slot 단위의 데이터 관리
+    메모리 사용량이 더 많음
+    마이그레이션 자체는 관리자가 시점을 결정해야함
+    라이브러리 구현이 필요(알맞은 slot 서버에 요청)
+
+
+//redis 운영
+  1. 메모리 관리
+    피지컬 메모리 이상 사용시 문제 발생
+    maxmemory 설정하더라도 메모리 파편화로 인해 이보다 더 사용할 가능성 존재
+    RSS 값 모니터링 필수
+
+  2. O(N) 명령어 금지
+    싱글 스레드 방식이라 시간이 걸리는 요청 금지
+    processInputBuffer가 packet을 모아 command 생성
+    processCommand가 완성된 command 실행
+    실행되는 동안 packet 쌓임
+    단순한 쿼리는 초당 10만 TPS 이상 가능
+    하지만 만약 하나의 쿼리가 딜레이되면 최악의 경우 99만개의 쿼리도 딜레이
+    scan 명령을 이용해서 벌크 요청을 분산해서 요청 가능
+
+      //Spring security oauth Redis TokenStore 이슈
+      Access Tocken 저장을 List(O(N)) 자료구조를 사용해서 검색, 삭제 실행
+      모든 검색, 삭제 작업이 모든 데이터를 탐색
+      현재는 Set(O(1)) 자료구조로 변경
+
+    3. 레플리케이션
+      async replication(replication lag 발생 가능성 존재)
+      replicaof(hostname port) 또는 slaveof 명령으로 설정 가능
+      DBMS로 보면 statement replication과 유사
+
+        //replication 설정
+        seconary에 replicaof 또는 slaveof 명령으로 설정 가능
+        secondary는 primary에 sync 명령 전달
+        primary는 현재 메모리 상태를 저장하기 위해 fork 수행
+        fork 한 프로세서는 현재 메모리 정보를 disk에 dump
+        해당 정보를 seconary에 전달
+        fork 이후의 데이터를 secondary에 계속 전달
+        fork로 인한 메모리 부족 발생 가능성 존재
+        또는 redis-cli --rdb 명령은 현재
+
+
+
+
+
