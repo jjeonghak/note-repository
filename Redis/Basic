@@ -116,8 +116,31 @@
         해당 정보를 seconary에 전달
         fork 이후의 데이터를 secondary에 계속 전달
         fork로 인한 메모리 부족 발생 가능성 존재
-        또는 redis-cli --rdb 명령은 현재
+        또는 redis-cli --rdb 명령은 현재 상태의 메모리 스냅샷을 가져오므로 같은 문제 발생
+        AWS 및 클라우드의 redis는 좀 다르게 구현되어 fork 없이 복제 가능
 
+  4. 권장 설정
+    maxclient 설정 50000(최대한 높게)
+    RDB/AOF 설정 off
+    특정 commands disable(AWS ElasticCache는 이미 진행)
+    전체 장애의 90% 이상이 keys와 save 설정을 사용해서 발생
+
+
+//데이터 분산
+  1. application 레벨
+    consistent hashing
+      기존 hash 문제점 보완(서버 장애 및 확장에 취약, 많은 데이터 이동 발생)
+      서버 모듈에서 각각의 hash 값 보유
+      데이터는 자신의 hash 값보다 크면서 가까운 서버 모듈로 이동
+      서버 모듈 장애 발생시 장애가 일어난 데이터만 이동
+      서버 모듈 추가시 가장 작은 서버 모듈에서 데이터 이동
+
+    range sharding
+      특정 range를 정의하고 해당 range에 속하면 거기에 저장
+      서버 모듈마다 부하 차이가 극심하게 발생할 가능성 존재
+      확장이 굉장히 쉬움
+
+  2. redis cluster
 
 
 
