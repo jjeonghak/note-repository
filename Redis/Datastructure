@@ -1,0 +1,140 @@
+//String
+  레디스에서 데이터를 저장할 수 있는 가장 간단한 자료구조
+  최대 512MB의 문자열 데이터 저장 가능
+  binary-safe하게 처리되기 때문에 jpeg, 바이트 값, http 응답값 등 다양한 데이터 저장 가능
+  키-값 형태로 일대일로 연결되는 유일한 자료 구조
+
+    GET key
+
+    SET key value
+    SET key value NX  //지정한 키가 없는 경우에만 새로운 키 저장
+    SET key value XX  //키가 이미 존재하는 경우에만 덮어쓰기
+
+    SET key 100
+    INCR key        //숫자 형태의 데이터값 1 증가
+    INCRBY key 50   //숫자 형태의 데이터값 지정한 수만큼 증가
+    DECR key        //숫자 형태의 데이터값 1 감소
+    DECRBY key 50   //숫자 형태의 데이터값 지정한 수만큼 감소
+
+    MGET key1 ... keyN
+    MSET key1 value1 ... keyN valueN
+
+
+//List
+  순서를 가지는 문자열 목록
+  최대 42억여 개의 아이템 저장 가능
+  일반적으로 스택과 큐와 유사하게 사용
+  랜덤 엑세스 권장하지 않음(O(N))
+
+  LPUSH key value1 ... valueN
+  RPUSH key value1 ... valueN
+
+  LPOP key
+  RPOP key
+
+  LTRIM key start stop      //인덱스 start부터 stop까지만 남기고 삭제
+  LRANGE key start stop     //인덱스 start부터 stop까지 조회
+  LRANGE key 0 -1           //인덱스 0부터 끝까지 조회
+  
+  LINSERT key BEFORE|AFTER value target  //처음 나오는 인덱스 값 앞뒤에 타겟값 삽입
+  LSET key 0 target                      //인덱스의 값을 변경
+
+
+//Hash
+  필드-값 쌍을 가진 데이터 집합
+  객체를 표현하기에 적절하기 때문에 관계형 데이터베이스의 테이블 데이터로 변환 간단
+  관계형 데이터베이스와 다르게 칼럼이 고정되지 않고 필드 추가 간단
+
+    HSET key field1 value1 ... fieldN valueN
+    HGET key field
+
+    HMGET key field1 ... fieldN    //한번에 여러 필드값 조회
+    HGETALL key                    //해당 키값에 해당하는 필드명
+
+
+//Set
+  정렬되지 않은 문자열의 모음
+  중복해서 저장되지 않고 여러 집합 메서드 지원(교집합, 합집합, 차집합 등)
+
+    SADD key value1 ... valueN
+    SMEMBERS key
+
+    SREM key value    //해당 값 삭제
+    SPOP key          //랜덤한 값을 반환 후 삭제
+
+    SUNION key1 key2  //합집합
+    SINTER key1 key2  //교집합
+    SDIFF key1 key2   //차집합
+
+
+//sorted Set
+  스코어값에 따라 정렬되는 고유한 문자열의 집합
+  스코어-값 쌍으로 데이터 저장
+  같은 스코어를 가진 아이템은 데이터의 사전 순으로 정렬
+  데이터는 중복없이 유일하게 저장
+  리스트와 같이 순서가 있지만 랜덤 엑세스에 강점(O(logN))
+
+    ZADD key score value XX    //아이템이 이미 존재할 때에만 스코어 값 업데이트
+    ZADD key score value NX    //아이템이 존재하지 않은 경우에만 신규 삽입, 기존 아이템 스코어 변경 없음
+    ZADD key score value LT    //업데이트하고자 하는 스코어가 기존 아이템의 스코어보다 작을 때만 업데이트
+    ZADD key score value GT    //업데이트하고자 하는 스코어가 기존 아이템의 스코어보다 클 때만 업데이트
+    ZADD key score1 value1 ... scoreN valueN
+
+    ZRANGE key start stop [BYSCORE | BYLEX] [REV] [LIMIT offset count] [WITHSCORES]
+      기본적으로 인덱스 기반 데이터 조회(score 순으로 정렬)
+      인수로 전달하는 스코어에 '(' 문자 추가시 해당 스코어를 포함하지 않는 값만 조회
+      스코어 최솟값, 최대값은 -inf, +inf
+      BYSCORE: 해당 범위의 스코어 값을 가진 인덱스만 조회
+      WITHSCORES: 스코어 값도 같이 조회
+      REV: 데이터를 역순으로 조회
+      BYLEX: 해당 문자사이의 값을 가진 인덱스만 조회
+        ZRANGE key (b (f BYLEX    //사전식 조회를 위해 문자 '(' 추가
+        ZRANGE key - + BYLEX      //문자의 가장 처음은 '-', 가장 끝은 '+'
+
+
+//Bitmap
+  독자적인 자료구조는 아니며 string 자료 구조에 bit 연산을 수행할 수 있도록 확장된 형태
+  2^32 비트 보유
+  저장 공간을 획기적으로 줄일 수 있음
+
+    SETBIT key offset value
+    GETBIT key offset
+    
+    BITCOUNT key      //1로 설정된 비트의 갯수
+    BITFIELD key [GET encoding offset|[OVERFLOW WRAP|SAT|FAIL] SET e
+    
+
+//Hyperloglog
+  집합의 원소 개수인 카디널리티 추정 가능한 자료구조
+  중복되지 않는 유일한 원소의 개수 계산 용이
+  대량 데이터에서 중복되지 않는 고유한 값을 집계할 때 유용
+  저장되는 데이터 개수에 구애받지 않고 계속 일정한 메모리 유지
+  set 같은 데이터 구조는 중복을 피하기 위해 저장된 데이터를 모두 기억(많은 메모리 사용)
+  최대 12KB 크기, 카디널리티 추정 오차는 0.81%, 최대 2^64개의 아이템을 저장
+
+    PFADD key value
+    PFCOUNT key        //카디널리티 추정
+  
+  
+//Geospatial
+  경도, 위도 데이터 쌍의 집합
+  쉽게 지리 데이터 저장
+  내부적으로 sorted set 사용(중복 저장 불가)
+  
+    GEOADD key [NX|XX] longitude latitude member
+    GEODIST key member1 member2                   //두 아이템 사이의 거리 반환
+    
+    GEOSEARCH key FROMMEMBER member               //특정 아이템 기준 원하는 거리 내에 있는 아이템 검색
+    GEOSEARCH key FROMLONLAT longitude latitude   //특정 위치 기준 원하는 거리 내에 있는 아이템 검색
+      BYRADIUS: 반경 거리 기준
+      BYBOX: 직사각형 거리 기준
+
+
+//Stream
+
+
+
+
+
+
+
