@@ -1,0 +1,80 @@
+//메타 필드
+  엘라스틱서치에서 생성한 문서에서 제공하는 특별한 필드
+  메타데이터를 저장하는 특수 목적의 필드로서 검색시 문서를 다양한 형태로 제어 가능
+  실제 문서의 정보를 담고 있는 _source 항목과 그 외 항목(_index, _type, _id)
+
+
+//_index 메타 필드
+  해당 문서가 속한 인덱스의 이름
+  집계 API와 함께 사용하면 인덱스별 카우늩 정보 확인 가능
+
+    POST movie_search/_search
+    {
+      "size": 0,
+      "aggs": {
+        "indices": {
+          "terms": {
+            "fiedl": "_index", 
+            "size": 10
+          }
+        }
+      }
+    }
+
+
+//_type 메타 필드
+  해당 문서가 속한 매핑의 타입 정보
+  집계 API와 함께 사용하면 인덱스 내부에서 타입별로 몇 개의 문서가 있는지 확인 가능
+
+    POST movie_search/_search
+    {
+      "size": 0,
+      "aggs": {
+        "indices": {
+          "terms": {
+            "field": "_type",
+            "size": 10
+          }
+        }
+      }
+    }
+
+
+//_id 메타 필드
+  문서를 식별하는 유일한 키 값
+  한 인덱스에서 색인된 문서마다 서로 다른 키 값을 가짐
+  집계 API와 함께 사용하면 키 값에 댕ㅇ하는 모든 문서 출력
+
+    POST movie_search/_search
+    {
+      "size": 0,
+      "aggs": {
+        "indices": {
+          "terms": {
+            "field": "_id",
+            "size": 10
+          }
+        }
+      }
+    }
+
+//_uid 메타 필드
+  특수한 목적의 식별키
+  "#" 태그를 사용해 _type과 _id값을 조합해서 사용
+  내부적으로만 사용되기 때문에 검색시 조회되는 값은 아님
+
+    POST movie_search/_search
+    {
+      "size": 0,
+      "aggs": {
+        "indices": {
+          "terms": {
+            "field": "_uid",
+            "size": 10
+          }
+        }
+      }
+    }
+
+
+
