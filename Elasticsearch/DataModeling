@@ -1,0 +1,225 @@
+//매핑
+  색인할 문서의 데이터 유형에 따라 필드에 적절한 데이터 타입을 지정
+  데이터베이스의 스키마에 대응하는 개념
+  사전에 매핑을 설정하면 지정된 데이터 타읍으로 색인
+  설정하지 않는 경우 엘라스틱서치가 자동으로 필드를 생성하고 필드 타입을 결정
+  한번 생성된 매핑의 타입은 변경 불가(인덱스 삭제 후 다시 생성 또는 매핑 재정의 필요)
+
+    # 문서1
+    {
+      "movieCd": "20173732",    //movieCd 필드 숫자 타입으로 자동 매핑
+      "movieNm": "캡틴 아메리카",  //movieNm 필드 문자 타입으로 자동 매핑
+      ...
+    }
+
+    # 문서2
+    {
+      "movieCd": "XT001",      //이미 숫자 타입으로 매핑되어 색인 실패
+      "movieNm": "아이언맨",
+      ...
+    }
+
+
+//매핑 정보 설정 주의 사항
+  1. 문자열을 분석할 것인가?
+  2. _source에 어떤 필드를 정의할 것인가?
+  3. 날짜 필드를 가지는 필드는 무엇인가?
+  4. 매핑에 정의되지 않고 유입되는 필드는 어떻게 처리할 것인가?
+
+
+//매핑 인덱스 생성
+  인덱스 매핑 목록
+    인덱스 키, movieCd, keyword
+    영화제목, movieNm, text
+    제작연도, prdtYear, integer
+    영화감독명, directors.peopleNm, object -> keyword
+  
+  색인할 실제 데이터
+    {
+      "movieCd": "20173732",
+      "movieNm": "살아남은 아이",
+      "prdtYear": "2017",
+      "directors": [
+        {
+          "peopleNm": "신동석"
+        }
+      ]
+    }
+
+  인덱스 생성
+    PUT movie_search
+    {
+      "settings": {
+        "number_of_shards": 5,
+        "number_of_replicas": 1
+      },
+      "mappings": {
+        "_doc": {
+          "properties": {
+            "movieCd": {
+              "type": "keyword"
+            },
+            "movieNm": {
+              "type": "text",
+              "analyzer": "standard"
+            },
+            "prdtYear": {
+              "type": "integer"
+            },
+            "directors": {
+              "properties": {
+                "peopleNm": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+
+//매핑 확인
+  이미 만들어진 매핑 확인은 _mapping API 사용
+    GET movie_search/_mapping
+
+
+//매핑 파라미터
+  1. analyzer
+    해당 필드의 데이터를 형태소 분석
+    색인과 검색시 지정한 분석기로 형태소 분석을 수행
+    text 데이터 타입의 필드는 analyer 매핑 파라미터를 기본적으로 사용해야함
+    별도의 분석기 지정 없으면 Standard Analyzer 사용
+
+  2. normalizer
+    term query에 분석기를 사용하기 위해 사용
+    keyword 데이터 타입의 경우 문서 기준 색인(cafe, Cafe는 서로 다른 문서)
+    normalizer 분석기에 asciifolding 필터를 사용하면 같은 데이터로 인식
+
+  3. boost
+    최신 엘라스틱서치에서는 사용불가(루씬 기능 제거), 원래도 검색 시점에만 사용
+    필드에 가중치를 부여
+    가중치에 따라 유사도 점수(_score)가 달라지기 때문에 검색 결과의 노출 순서에 영향
+    
+  4. coerce
+    색인 시 자동 변환을 허용 여부 설정
+    "10" 같은 숫자 형태의 문자열의 자동 형변환 여부
+
+  5. copy_to
+    매핑 파라미터를 추가한 필드의 값을 지정한 필드로 복사
+    여러 개의 필드 데이터를 하나의 필드에 모아서 전체 검색 용도로 사용 가능
+
+  6. fielddata
+    엘라스틱서치가 힙 공간에 생성하는 메모리 캐시
+    반복적인 메모리 부족 현상과 잦은 GC로 현재는 거의 사용하지 않음
+    최신 버전에서는 doc_values 캐시를 제공
+
+  7. doc_values
+    엘라스틱서치가 사용하는 기본 캐시
+    text 타입을 제외한 모든 타입에서 기본적으로 사용하는 캐시
+    
+  8. dynamic
+    매핑에 필드를 추가할 때 동적 생성 여부
+      true: 새로 추가되는 필드를 매핑에 추가
+      false: 새로 추가되는 필드를 무시, 해당 필드는 색인되지 않지만 _source에는 표시
+      strict: 새로운 필드를 감지하면 예외 발생, 새로 유입되는 필드는 사용자가 매핑에 명시적으로 추가해야함
+
+  9. enabled
+    검색 결과에는 포함하지만 색인은 하고 싶지 않은 경우 사용
+    메타 성격의 데이터
+
+  10. format
+    엘라스틱서치에서 사용 가능한 날짜/시간 문자열
+      basic_date: yyyyMMdd
+      basic_date_time: yyyyMMdd'T'HHmmss.SSSZ
+      basic_time: HHmmss.SSS
+      date/strict_date: yyyy-MM-dd
+      date_hour_minute_second/strict_date_hour_minute_second: yyyy-MM-dd'T'HH:mm:ss.
+      date_hour_minute_second_millis/strict_date_hour_minute_second_millis: yyyy-MM-dd'T'HH:mm:ss.SSS.
+      date_time/strict_date_time: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+
+  11. ignore_above
+    필드에 저장되는 문자열이 지정한 크기를 넘어서면 빈 값으로 색인
+    지정한 크기만큼만 색인되지 않고 빈값으로 저장
+    
+  12. ignore_malformed
+    잘못된 데이터 타입 색인 시도시 해당 필드만 무시하고 문서 색인
+    기본적으로 잘못된 데이터 타입 색인 시도시 예외 발생 후 해당 문서 전체가 색인되지 않음
+
+  13. index
+    필드값을 색인할지 여부
+    기본값은 true
+
+  14. fields
+    다중 필드를 설정할 수 있는 옵션
+      PUT movie_search_mapping
+      {
+        "mappings": {
+          "_doc": {
+            "properties": {
+              "awards": {
+                "type": "text",
+                "fields": {
+                  "name": {
+                    "type": "keyword"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    
+  15. norms
+    문서의 _score 값 계산에 필요한 정규화 인수 사용 여부
+    기본값은 true, _score 계산 불필요 또는 단순 필터링 용도 필드에 사용
+
+  16. null_value
+    문서의 값이 null이더라도 필드를 생성하고 그에 해당하는 값 저장
+    기본적으로 색인 시 문서에 필드가 없거나 필드의 값이 null이면 필드 생성하지 않음
+      PUT movie_search_mapping/_mapping/_doc
+      {
+        "properties": {
+          "audiCnt": {
+            "type": "integer",
+            "null_value": "0"
+          }
+        }
+      }
+
+  17. position_increment_gap
+    배열 형태의 데이터를 색인할 때 검색의 정확도를 높이기 위해 제공되는 옵션
+    필드 데이터 중 단어와 단어 사이의 간격(gap)을 허용할지 결정
+    ["Jonhn Abraham", "Lincon Smith"] 데이터를 "Abraham Lincon"으로 검색 가능
+
+  18. properties
+    오브젝트(object) 타입이나 중첩(nested) 타입의 스키마를 정의할 때 사용하는 옵션으로 필드의 타입을 매핑
+    
+  19. search_analyzer
+    검색시 사용할 분석기를 별도 지정 가능
+    기본적으로 색인과 검색은 같은 분석기 사용
+
+  20. similarity
+    유사도 측정 알고리즘을 지정
+    기본 알고리즘 BM25 이외의 알고리즘으로 변경 가능
+      BM25: Okapi BM25 알고리즘, 엘라스틱서치 기본 유사도 측정 알고리즘
+      classic: TF/IDF 알고리즘, 문서 내 용어의 개수와 전체 용어의 개수를 이용해 유사도 계산
+      boolean: 복잡한 수학적 모델을 사용하지 않고 단순히 boolean 연산으로 유사도 측정
+        score는 검색어 일치 여부에 따라 결정, 검색 결과의 일치 여부에 따라 쿼리 가중치에 사용된 점수로만 유사도 계산
+
+  21. store
+    필드의 값을 저장해 검색 결과에 값을 포함
+    기본적으로 _score에 색인된 문서가 저장
+    해당 파라미터 사용시 해당 필드를 자체적으로 저장 가능
+    디스크를 더 많이 사용
+
+  22. term_vector
+    루씬에서 분석된 용어의 정보를 포함할지 여부
+      no: 텀벡터를 저장하지 않음
+      yes: 필드와 용어만 저장
+      with_positions: 용어, 용어의 시작과 끝 위치를 저장
+      with_offsets: 용어, 문자 오프셋을 저장
+      with_positions_offsets: 용어, 용어의 시작과 끝 위치, 문자 오프셋을 저장
+
+
+
