@@ -77,4 +77,55 @@
     }
 
 
+//_source 메타 필드
+  문서의 원본 데이터 제공
+  내부에는 색인시 전달된 원본 JSON 문서의 본문이 저장
+  _reindex API나 스크립트 사용해 해당 값을 계산할 때 해당 메타 필드 사용 가능
+
+  //재색인 예시
+  PUT /reindex_movie
+  POST /_reindex
+  {
+    "source": {
+      "index": "movie_search",
+      "query": {
+        "match": {
+          "movieCd": "20173732"
+        }
+      }
+    },
+    "dest": {
+      "index": "reindex_movie"
+    },
+    "script": {
+      "source": "ctx._source.prdtYear++"
+    }
+  }
+
+
+//_all 메타 필드
+  데이터 크기를 너무 많이 차지하기 때문에 6.0 이상부터 폐기(deprecated)
+  색인에 사용된 모든 필드의 정보를 가진 메타 필드
+  모든 필드의 내용이 하나의 텍스트로 합쳐져서 제공
+  
+
+//_routing 메타 필드
+  특정 문서를 특정 샤드에 저장하기 위해 사용자가 지정하는 메타 필드
+  기본적으로 색인시 문서는 다음 수식에 따라 문서 id를 이용해 문서가 색인될 샤드 결정
+    Hash (document_id) % num_of_shards
+  특정 문서들을 하나의 샤드에 저장하고 싶은 경우 동일한 라우팅 ID를 지정
+    Hash (_routing) % num_of_shards
+
+    //문서 색인
+    POST movie_routing/_doc/1?routing=ko
+    {
+      "repGenreNm": "한국어",
+      "movieNm": "살아남은 아이"
+    }
+
+    //색인된 문서 검색
+    POST movie_routing/_doc/_search?routing=ko
+
+
+
 
