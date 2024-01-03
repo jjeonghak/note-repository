@@ -1,0 +1,245 @@
+//필드 데이터 타입
+  1. keyword, text 같은 문자열 데이터 타입
+  2. date, long, double, integer, boolean, ip 같은 일반적인 데이터 타입
+  3. 객체 또는 중첩문과 같은 JSON 계층 특성의 데이터 타입
+  4. geo_point, geo_shape 같은 특수한 데이터 타입
+
+
+//Keyword
+  키워드 형태로 사용할 데이터에 적합
+  별도의 분석기를 거치지 않고 원문 그대로 색인
+  엘라스틱서치의 일부 기능은 형태소 분석을 하지 않아야 사용 가능(이럴때 사용)
+
+    //keyword 데이터타입을 사용하는 경우
+    1. 검색 시 필터링되는 항목
+    2. 정렬이 필요한 항목
+    3. 집계해야하는 항목
+  
+    //주요 파라미터
+    boost, doc_values, index, null_value, store
+
+
+//Text
+  색인시 지정된 분석기가 칼럼의 데이터를 문자열 데이터로 인식하고 분석
+  전문 검색이 가능, 전체 텍스트가 토큰화되어 생성, 특정 단어를 검색하는 것 가능
+  만약 정렬이나 집계연산이 필요한 경우 text와 keyword 타입을 동시에 갖도록 멀티 필드로 설정
+
+    PUT movie_search/_mapping/_doc
+    {
+      "properties": {
+        "movieComment": {
+          "type": "text"
+          "feilds": {
+            "movieComment_keyword": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+
+    //주요 파라미터
+    analyzer, boost, fielddata, index, norms, store, search_analyzer, similarity, term_vector
+
+
+//Array
+  하나의 필드에 여러개의 값이 매핑된 상태의 2차원으로 존재하는 경우 사용
+  하나의 타입으로 여러개의 값 저장
+  매핑 설정시 array 타입을 명시적으로 정의하지 않지만 모든 필드가 기본적으로 다수의 값 가능
+
+    PUT movie_search_datatype/_doc/1
+    {
+      "title": "해리포터와 마법사의 돌",
+      "subtitleLang": ["ko", "en"]
+    }
+
+
+//Numeric
+  숫자 데이터 타입은 여러가지 종류가 제공됨
+    long, integer, short, byte, double, float, half_float
+
+
+//Date
+  JSON 포맷에서 문자열로 처리
+  기본 형식 "yyyy-MM-ddTHH:mm:ssZ"
+
+    문자열이 포함된 날짜형식: "2018-04-20"
+    ISO_INSTANT 포맷: "2018-04-10T10:50:00Z"
+    밀리초: 1524449145579
+
+    //데이터 입력
+    PUT movie_text/_mapping/_doc
+    {
+      "properties": {
+        "date": {
+          "type": "date",
+          "format": "yyyy-MM-dd HH:mm:ss"
+        }
+      }
+    }
+
+
+//Range
+  범위가 있는 데이터를 저장할때 사용
+    integer_range: 최솟값과 최댓값을 갖는 부호 있는 32비트 정수 범위
+    float_range: 부동 소수점 값을 갖는 32비트 실수 범위
+    long_range: 최솟값과 최댓값을 갖는 부호 있는 64비트 정수 범위
+    double_range: 부동 소수점 값을 갖는 64비트 실수 범위
+    date_range: 64비트 정수 형태의 밀리초로 표시되는 날짜값 범위
+    ip_range: IPv4, IPv6 주소를 지원하는 IP 값
+
+      //필드 타입 매핑
+      PUT movie_search_datatype/_mapping/_doc
+      {
+        "properties": {
+          "showRange": {
+            "type": "data_range"
+          }
+        }
+      }
+
+      //데이터 입력
+      PUT movie_search_datatype/_doc/2
+      {
+        "showRange": {
+          "gte": "2001-01-01",
+          "lte": "2001-12-31"
+        }
+      }
+
+
+//Boolean
+  참과 거짓 두가지 논리값을 가지는 데이터 타입
+  참과 거짓 값을 문자열로 표현 가능
+
+
+//Geo-Point
+  위도, 경도 등 위치 정보를 담은 데이터 타입
+  위치 기반 쿼리 가능(반경 내 쿼리, 위치 기반 집계, 위치별 정렬 등)
+
+    //필드 타입 매핑
+    PUT movie_search_datatype/_mapping/_doc
+    {
+      "properties": {
+        "filmLocation": {
+          "type": "geo_point"
+        }
+      }
+    }
+
+    //날짜 포맷 지정
+    PUT movie_search_datatype/_doc/3
+    {
+      "title": "해리포터와 마법사의 돌",
+      "filmLocation": {
+        "lat": 55.4155828,
+        "lon": -1.7081091
+      }
+    }
+
+
+//IP
+  IP 주소와 같은 데이터를 저장하는 데이터 타입
+  IPv4, IPv6 모두 지정 가능
+
+    //필드 타입 매핑
+    PUT movie_search_datatype/_mapping/_doc
+    {
+      "properties": {
+        "ipAddr": {
+          "type": "ip"
+        }
+      }
+    }
+
+    //데이터 입력
+    PUT movie_search_datatype/_doc/4
+    {
+      "ipAddr": "127.0.0.1"
+    }
+
+
+//Object
+  JSON 포맷의 문서는 내부 객체를 계층적으로 포함 가능
+  문서의 필드에 단순히 값이 아닌 복잡한 형태의 또 다른 문서를 포함할때 사용
+
+    //필드 타입 매핑
+    PUT movie_search_datatype/_mapping/_doc
+    {
+      "properties": {
+        "companies": {
+          "properties": {
+            "companyName": {
+              "type": "text"
+            }
+          }
+        }
+      }
+    }
+
+    //데이터 입력
+    PUT movie_search_datatype/_doc/5
+    {
+      "title": "해리포터와 마법사의 돌",
+      "companies": {
+        "companyName": "워너브라더스"
+      }
+    }
+
+
+//Nested
+  Object 객체 배열을 독립적으로 색인하고 질의하는 형태의 데이터 타입
+  데이터가 배열 형태로 저장되면 한 필드 내의 검색은 기본적으로 or 조건으로 검색
+  배열 중 정확히 모든 조건을 일치하는 문서만 검색하려는 경우 사용
+
+    //필드 타입 매핑
+    PUT movie_search_datatype/_mapping/_doc
+    {
+      "properties": {
+        "companies_nested": {
+          "type": "nested"
+        }
+      }
+    }
+
+    //데이터 입력
+    PUT movie_search_datatype/_doc/8
+    {
+      "title": "해리포터와 마법사의 돌",
+      "companies_nested": [
+        {
+          "companyCd": "1",
+          "companyName": "워너브라더스"
+        }, 
+        {
+          "companyCd": "2",
+          "companyName": "Heyday Films"
+        }
+      ]
+    }
+
+    //데이터 검색
+    PUT movie_search_datatype/_search
+    {
+      "query": {
+        "nested": {
+          "path": "companies_nested",
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "match": { "companies_nested.companyName": "워너브라더스" }
+                }, 
+                {
+                  "match": { "companies_newsted.companyCd": "2" }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+
+
+
+
