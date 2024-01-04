@@ -31,7 +31,7 @@
 
   3. SCAN
 
-      SCAN sursor [MATCH pattern] [COUNT count] [TYPE type]
+      SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
 
     KEYS 커맨드를 대체해 키를 조회할 때 사용
     커서 기반 특정 범위의 키만 조회
