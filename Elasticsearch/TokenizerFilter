@@ -1,0 +1,135 @@
+//전처리 필터(charactor filter)
+  분석기는 전처리 필터를 이용한 데이터 정제 후 토크나이저를 이용한 본격적인 토큰 분리 작업 수행
+  생성된 토큰 리스트를 토큰 필터를 통해 재가공하는 3단계 방식으로 동작
+  토크나이저 내부에서도 일종의 전처리가 가능하기 때문에 전처리 필터는 상대적으로 활용도가 낮음
+
+  HTML strip char 필터
+  문장에서 HTML을 제거하는 전처리 필터
+    escaped_tags: 특정 태그만 삭제, 기본값은 모든 HTML 태그 전부 삭제
+
+      //인덱스 생성
+      PUT movie_html_analyzer
+      {
+        "settings": {
+          "analysis": {
+            "analyzer": {
+              "html_strip_analyzer": {
+                "tokenizer": "keyword",
+                "char_filter": [
+                  "html_strip_char_filter"
+                ]
+              }
+            },
+            "char_filter": {
+              "html_strip_char_filter": {
+                "type": "html_strip",
+                "escaped_tags": [
+                  "b"
+                ]
+              }
+            }
+          }
+        }
+      }
+
+      //분석
+      POST movie_html_analyzer/_analyze
+      {
+        "analyzer": "html_strip_analyzer",
+        "text": "<span>Harry Potter</span> and the <b>Chamber</b> of Secrets"
+      }
+
+
+//토크나이저 필터(tokenizer filter)
+  분석기를 구성하는 가장 핵심 구성요소
+  전처리 필터를 거쳐 토크나이저 필터로 문서가 넘어오면 해당 토크나이저의 특성에 맞게 분해
+  
+    1. Standard Tokenizer
+      일반적으로 사용하는 토크나이저
+      대부분의 기호를 만나면 토큰으로 분해
+        max_token_length: 최대 토큰 길이를 초과하는 경우 해당 간격으로 토큰 분할, 기본값 255
+
+    2. Whitespace Tokenizer
+      공백을 만나면 토큰으로 분해
+        max_token_length: 최대 토큰 길이를 초과하는 경우 해당 간격으로 토큰 분할, 기본값 255
+
+    3. Ngram Tokenizer
+      기본적으로 한글자씩 토큰화
+      Ngram에 특정 문자를 지정해서 지정 목록 단어를 만날 때마다 단어 분리
+        min_gram: Ngram을 적용할 문자의 최소 길이, 기본값 1
+        max_gram: Ngram을 적용할 문자의 최대 길이, 기본값 2
+        token_chars: 토큰에 포함할 문자열 지정, 다양한 옵션 제공
+          letter(문자), digit(숫자), whitespace(공백), punctuation(구두점), symbol(특수기호)
+
+        //인덱스 생성
+        PUT movie_ngram_analyzer
+        {
+          "settings": {
+            "analysis": {
+              "analyzer": {
+                "ngram_analyzer": {
+                  "tokenizer": "ngram_tokenizer"
+                }
+              },
+              "tokenizer": {
+                "ngram_tokenizer": {
+                  "type": "ngram",
+                  "min_gram": 3,
+                  "max_gram": 3,
+                  "token_chars": [
+                    "letter"
+                  ]
+                }
+              }
+            }
+          }
+        }
+
+        //결과
+        "Harry Potter and the Chamber of Secrets"
+        [Har, arr, rry, Pot, ott, tte, ter, and, the, Cha, ham, amb, mbe, ber, Sec, ecr, cre, ret, ets]
+
+    4. Edge Ngram Tokenizer
+      지정된 문자의 목록 중 하나를 만날 때마다 시작 부분을 고정시켜 단어를 자르는 방식
+  
+        //인덱스 생성
+        PUT movie_engram_analyzer
+        {
+          "settings": {
+            "analysis": {
+              "analyzer": {
+                "edge_ngram_analyzer": {
+                  "tokenizer": "edge_ngram_tokenizer"
+                }
+              },
+              "tokenizer": {
+                "edge_ngram_tokenizer": {
+                  "type": "edge_ngram",
+                  "min_gram": 2,
+                  "max_gram": 10,
+                  "token_chars": [
+                    "letter"
+                  ]
+                }
+              }
+            }
+          }
+        }
+  
+        //결과
+        "Harry Potter and the Chamber of Secrets"
+        [Ha, Har, Harr, Harry, Po, Pot, Pott, Potte, Potter, an, and, th, the, 
+        Ch, Cha, Cham, Chamb, Chambe, Chamber, of, Se, Sec, Secr, Secre, Secret, Secrets]
+        
+    5. Keyword Tokenizer
+      텍스트를 하나의 토큰으로 분리
+        buffer_size: 텀을 버퍼로 읽어 들일 문자수를 지정, 기본값 256
+
+        //결과
+        "Harry Potter and the Chamber of Secrets"
+        [Harry Potter and the Chamber of Secrets]
+
+    
+  
+  
+
