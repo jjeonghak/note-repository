@@ -1,0 +1,146 @@
+//토큰 필터
+  토크나이저에서 분리된 토큰들을 변형, 추가, 삭제할때 사용
+  토크나이저에 의해 분리된 토큰은 배열 형태로 토큰 필터에 전달
+  토크나이저 없이 독립적으로 사용불가
+
+    1. Ascii Folding Token Filter
+      아스키 코드에 해당하는 127개 알파벳, 숫자, 기호에 해당하지 않는 경우 ASCII 요소로 변경
+
+        //인덱스 생성
+        PUT movie_af_analyzer
+        {
+          "settings": {
+            "analysis": {
+              "analyzer": {
+                "asciifolding_analyzer": {
+                  "tokenizer": "standard",
+                  "filter": [
+                    "standard",
+                    "asciifolding"
+                  ]
+                }
+              }
+            }
+          }
+        }
+
+        //결과
+        "hello 𝒿𝒶𝓋𝒶𝒸𝒶𝒻ℯ"
+        [hello, javacafe]
+
+    2. Lowercase Token Filter
+      전체 문자열을 소문자로 변환
+
+    3. Uppercase Token Filter
+      전체 문자열을 대문자로 변환
+
+    4. Stop Token Filter
+      불용어로 등록할 사전을 구축해서 사용하는 필터
+      인덱스 생성 방지 및 검색 방지를 위한 단어를 등록해서 불용어 사전 구축
+        stopwords: 불용어 매핑에 직접 등록해서 사용
+        stopwords_path: 불용어 사전이 존재하는 경로를 지정, 해당 경로는 서버가 존재하는 config 폴더 안에 생성
+        ignore_case: 해당 옵션 적용시 모든 단어를 소문자로 변경해서 저장, 기본값은 false
+
+        //인덱스 생성
+        PUT movie_stop_analyzer
+        {
+          "settings": {
+            "analysis": {
+              "analyzer": {
+                "stop_filter_analyzer": {
+                  "tokenizer": "standard",
+                  "filter": [
+                    "standard",
+                    "stop_filter"
+                  ]
+                }
+              },
+              "filter": {
+                "stop_filter": {
+                  "type": "stop",
+                  "stopwords": [
+                    "and", "is", "the"
+                  ]
+                }
+              }
+            }
+          }
+        }
+
+        //결과
+        "Harry Potter and the Chamber of Secrets"
+        [Harry, Potter, Chamber, of, Secrets]
+
+    5. Stemmer Token Filter
+      Stemming 알고리즘을 사용해 토큰을 변형
+      분리된 토큰이 영단어 원형으로 변환되는지 확인
+        name: 다른 나라의 언어도 사용가능, 한글은 지원하지 않음
+      
+        //인덱스 생성
+        PUT movie_stem_analyzer
+        {
+          "settings": {
+            "analysis": {
+              "analyzer": {
+                "stemmer_eng_analyzer": {
+                  "tokenizer": "standard",
+                  "filter": [
+                    "standard", "lowercase", "stemmer_eng_filter"
+                  ]
+                }
+              },
+              "filter": {
+                "stemmer_eng_filter": {
+                  "type": "stemmer",
+                  "name": "english"
+                }
+              }
+            }
+          }
+        }
+
+        //결과
+        "Harry Potter and the Chamber of Secrets"
+        [harri, potter, and, the, chmber, of, secret]
+
+    6. Synonym Token Filter
+      동의어를 처리하는 필터
+        synonyms: 동의어로 사용할 단어 등록
+        synonyms_path: 파일로 관리할 경우 엘라스틱서치 서버의 config 폴더 아래 생성
+
+        //인덱스 생성
+        PUT movie_syno_analyzer
+        {
+          "settings": {
+            "analysis": {
+              "analyzer": {
+                "synonym_analyzer": {
+                  "tokenzier": "whitespace",
+                  "filter": [
+                    "synonym_filter"
+                  ]
+                }
+              },
+              "filter": {
+                "synonym_filter": {
+                  "type": "synonym",
+                  "synonyms": [
+                    "Harry => 해리"
+                  ]
+                }
+              }
+            }
+          }
+        }
+
+        //결과
+        "Harry Potter and the Chamber of Secrets"
+        [해리, Potter, and, the, Chamber, of, Secrets]
+
+    7. Trim Token Filter
+      앞뒤 공백을 제거하는 토큰 필터
+      
+    
+
+
+
