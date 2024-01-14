@@ -83,8 +83,57 @@
       RPOPLPUSH source destination
 
 
+//stream
+  레디스 5.0에 추가된 대용량, 대규모 메시징 데이터 처리를 위해 설계된 자료구조
+  데이터를 계속해서 추가만 하는 방식으로 저장(append-only)
+  stream에서 각 메시지는 시간과 관련된 유니크한 ID를 가지며 이 값은 중복되지 않음    
+    
+    <millisecondsTime>-<sequenceNumber>
+    millisecondsTime: 실제 stream에 아이템이 저장되는 시점의 레디스 노드 로컬 시간
+    sequenceNumber: 동일한 밀리세컨드 시간에 여러 아이템이 저장된 순서 의미, 64bit로 설정되어 하나의 밀리세컨드 내에 수많은 항목 가능
 
-  
+  1. 스트림 생성
+    따로 생성하는 과정 필요없이 새로운 이름의 스트림에 데이터 저장하면 자동으로 생성
+
+      XADD key [NOMKSTREAM] [MAXLEN|MINID [=|~] threshold [LIMIT count]] *|id field value [field value ...]
+      *|id: ID 설정 가능, * 사용시 레디스에서 자동 생성되는 타임스탬프 ID를 사용
+
+  2. 데이터 조회
+    실시간 리스닝 가능: 기존 데이터 반환 후 신규 메시지를 지속적으로 반환
+      
+      XREAD [COUNT count] [BLOCK milliseconds] STREAMS key [key ...] ID [ID ...]
+      BLOCK: 스트림에 가져올 데이터가 없더라도 연결을 끊지 않는 시간, 0인 경우 계속 연결
+      STREAMS: 스트림에 저장된 데이터 중 지정한 key 값보다 큰값만 조회, 0인 경우 처음부터 저장된 모든 데이터를 조회
+
+    특정한 데이터 조회: 커맨드를 수행하는 시점의 데이터를 반환 후 종료
+
+      XRANGE key start end [COUNT count]
+      XREVRANGE key end start [COUNT count]
+      
+
+  3. 소비자와 소비자 그룹
+    같은 데이터를 여러 소비자에게 전달하는 팬아웃(fan-out) 방식
+    XREAD 커맨드를 여러 소비자가 수행하면 팬아웃 가능
+    레디스는 카프카와 달리 메시지 전달 순서를 신경쓰지 않아도 순서대로 소비 가능
+    레디스 소비자 그룹은 그룹 내의 소비자가 읽지 않은 데이터만을 읽음
+    데이터를 조회하는 경우 XREAD 대신 XREADGROUP 커맨드 사용(해당 그룹으로 조회하겠다는 의미)
+    
+      XGROUP CREATE key group id|$ [MKSTREAM] [ENTRIESREAD entries-read]
+      id|$: 해당 ID 이후 데이터부터 리스닝, $ 사용시 현재 시점 이후 데이터부터 리스닝
+
+      XREADGROUP GROUP group consumer [COUNT count] [BLOCK milliseconds] [NOACK] STREAMS key [key ...] id [id ...]
+      id: 숫자 ID 입력할 경우 새로운 메시지를 확인하는 것이 아닌 입력값보다 큰 ID 중 대기 리스트에 속한 메시지 반환, > 사용시 다른 소비자에게 전달되지 않은 새로운 메시지 반환
+
+
+
+
+
+
+
+
+
+
+
 
 
 
