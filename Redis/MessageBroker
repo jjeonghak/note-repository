@@ -109,7 +109,6 @@
 
       XRANGE key start end [COUNT count]
       XREVRANGE key end start [COUNT count]
-      
 
   3. 소비자와 소비자 그룹
     같은 데이터를 여러 소비자에게 전달하는 팬아웃(fan-out) 방식
@@ -124,9 +123,42 @@
       XREADGROUP GROUP group consumer [COUNT count] [BLOCK milliseconds] [NOACK] STREAMS key [key ...] id [id ...]
       id: 숫자 ID 입력할 경우 새로운 메시지를 확인하는 것이 아닌 입력값보다 큰 ID 중 대기 리스트에 속한 메시지 반환, > 사용시 다른 소비자에게 전달되지 않은 새로운 메시지 반환
 
+  4. ACK 및 보류 리스트
+    여러 서비스가 메시지 브로커를 이용해 데이터를 처리하는 경우 예상치 못한 장애로 시스템 종료를 인지하고 재처리하는 기능 필요
+    소비자 그룹별로 읽어간 메시지에 대한 리스트를 새로 생성, 마지막으로 읽어간 데이터의 ID로 last_delivered_id 값 갱신
+    동일한 메시지 중복 전달 방지
+    만약 소비자 그룹이 데이터를 받고 ACK를 보낸다면 보류 리스트에서 해당 데이터를 삭제
+    서비스 재부팅시 stream의 보류 리스트를 먼저 불러와 처리하는 작업을 선행적으로 수행하면 놓치는 데이터 없이 서비스 가능
+
+      XPENDING key group [[IDLE min-idle-time] start end count [consumer]]
+      첫번째 반환값: 현재 소비자 그룹에서 ACK를 받지 못해 보류 중인 메시지 개수
+      두번째, 세번째 반환값: 각각 보류 중인 메시지 ID의 최솟값, 최댓값, 이후 반환값은 각 소비자별 보류 중인 메시지 개수
+      
+      XACK key group id
+      해당 ID를 가진 메시지를 처리했다는 의미
+
+  5. 메시지 재할당
+    만약 장애 발생한 소비자가 복구되지 않는 경우 다른 소비자가 대신 처리
+
+      XCLAIM key group consumer min-idle-time id [id ...] [IDLE ms] [TIME unix-time-milliseconds] [RETRYCOUNT count] [FORCE] [JUSTID] [LASTID lastid]
+      min-idle-time: 메시지가 보류 상태로 머무르는 최소 대기 시간
 
 
+// stream 메시지 보증 전략
+  1. at most once
+    메시지를 최소 한번 보내는 것을 의미
+    소비자는 메시지를 받는 순간 처리하기 전에 먼저 ACK 전송
+    메시지 일부 손실이 있지만 빠른 응답이 필요한 경우 선택
 
+  2. at least once
+    소비자는 받은 메시지를 모두 처리하고 ACK 전송
+    메시지 처리 후 ACK 전송 전에 소비자가 종료되는 상황이 발생할 가능성 존재
+    이 경우 이미 처리한 메시지를 한번 더 처리하게되는 상황 발생
+    멱등함이 보장되는 서비스라면 상관없지만 그렇지 않은 경우 문제 발생
+
+  3. exactly once
+    모든 메시지가 무조건 한번씩 전송되는 것을 보장
+    추가적인 자료구조(set)를 이용해 이미 처리된 메시지인지 아닌지 확인하는 과정 필요
 
 
 
