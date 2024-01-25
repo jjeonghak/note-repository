@@ -143,6 +143,33 @@
       XCLAIM key group consumer min-idle-time id [id ...] [IDLE ms] [TIME unix-time-milliseconds] [RETRYCOUNT count] [FORCE] [JUSTID] [LASTID lastid]
       min-idle-time: 메시지가 보류 상태로 머무르는 최소 대기 시간
 
+  6. 메시지 자동 재할당
+    위의 XPEENDING, XCLAIM 명령을 이용해서 메시지 재할당하는 경우가 많은 경우 사용
+    소비자 그룹에서 최소 대기 시간을 만족하는 보류 중인 메시지가 있다면 지정한 소비자에 소유권을 재할당하는 방식
+
+      XAUTOCLAIM key group consumer min-idle-time start [COUNT count] [JUSTID]
+
+  7. 메시지 수동 재할당
+    stream 내의 각 메시지는 counter 값을 각각 보유
+    재할당이 일어나는 경우 1씩 증가
+    만약 메시지에 문제가 있어서 여러 소비자에 할당되기를 반복하면서 counter 값이 계속 증가는 경우
+    특정 counter 값에 도달하면 해당 메시즈를 특수한 다른 stream으로 보내 관리자가 추후 처리
+    보통 이런 메시지를 dead letter로 칭함
+
+  8. stream 상태 확인
+    stream의 전반적인 상황 확인 가능
+
+      XINFO HELP
+        XINFO <subcommand> [<arg> [value] [opt] ...]. Subcommands are:
+        2) CONSUMERS <key> <groupname>
+        3)     Show consumers of <groupname>.
+        4) GROUPS <key>
+        5)     Show the stream consumer groups.
+        6) STREAM <key> [FULL [COUNT <count>]
+        7)     Show information about the stream.
+        8) HELP
+        9)     Print this help.
+
 
 // stream 메시지 보증 전략
   1. at most once
@@ -160,7 +187,7 @@
     모든 메시지가 무조건 한번씩 전송되는 것을 보장
     추가적인 자료구조(set)를 이용해 이미 처리된 메시지인지 아닌지 확인하는 과정 필요
 
-
+    
 
 
 
