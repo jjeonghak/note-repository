@@ -14,7 +14,7 @@ new 키워드를 이용한 할당 방식과 차이 존재
 
 1. ClassName.class
   ````java
-  Class<Member< memberClass = Member.class;
+  Class<Member> memberClass = Member.class;
   ````
 
 2. Instance.getClass()
