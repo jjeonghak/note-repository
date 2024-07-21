@@ -6,20 +6,20 @@
 호출될 때마다 새로운 배열 할당 및 초기화로 인한 성능 이슈 존재  
 
 ````java
-    //간단한 가변인수 메서드
-    static int sum(int... args) {
-        int sum = 0;
-        for (int arg : args)
-            sum += arg;
-        return sum;
-    }
-  
-    //런타임에 정해지는 배열의 크기로 인한 문제점
-    static int min(int... args) {
-        if (args.length == 0)   //컴파일 오류가 아닌 런타임 오류
-            throw new IllegalArgumentException("인수가 한개 이상 필요.");
-        ...
-    }
+//간단한 가변인수 메서드
+static int sum(int... args) {
+    int sum = 0;
+    for (int arg : args)
+        sum += arg;
+    return sum;
+}
+
+//런타임에 정해지는 배열의 크기로 인한 문제점
+static int min(int... args) {
+    if (args.length == 0)   //컴파일 오류가 아닌 런타임 오류
+        throw new IllegalArgumentException("인수가 한개 이상 필요.");
+    ...
+}
 ````
 <br>
 
