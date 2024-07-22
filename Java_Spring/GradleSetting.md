@@ -1,5 +1,6 @@
-//버전에 맞게 
+## 버전에 맞게 
 
+````java
 //querydsl 추가
 buildscript {
 	dependencies {
@@ -54,8 +55,12 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+````
 
-//querydsl 추가
+<br>
+
+### querydsl 추가
+````java
 //def querydslDir = 'src/main/generated'
 def querydslDir = "$buildDir/generated/querydsl"
 
@@ -80,4 +85,6 @@ compileQuerydsl{
 configurations {
 	querydsl.extendsFrom compileClasspath
 }
+````
 
+<br>
