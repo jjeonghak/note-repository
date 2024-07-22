@@ -1,9 +1,12 @@
-//application.yml
-  설정 정보가 많다면 application.property 파일보다 추천
-  스프링 데이터베이스 설정 및 로그 설정
-  main과 test에 각각 하나씩 생성가능(각 디렉토리의 yml 파일이 우선순위 높음)
+## application.yml
+설정 정보가 많다면 application.property 파일보다 추천  
+스프링 데이터베이스 설정 및 로그 설정  
+main과 test에 각각 하나씩 생성가능(각 디렉토리의 yml 파일이 우선순위 높음)  
+
+<br>
 
 
+````yml
 spring:
   datasource:
     url: jdbc:h2:tcp://localhost/~/jpashop;
@@ -36,3 +39,6 @@ spring.messages.basename=messages,errors
 server.servlet.session.tracking-modes=cookie
 server.servlet.session.timeout=1800
 
+````
+
+<br>
