@@ -1,10 +1,13 @@
-//Singleton
-  전역변수를 사용하지 않고 객체를 하나만 생성하도록 관리
-  생성된 객체는 어디서나 참조가능
-  한 클래스에 한 객체만 존재하도록 제한
-  상태를 유지(stateful)하지않고 무상태(stateless)로 설계
+## Singleton
+전역변수를 사용하지 않고 객체를 하나만 생성하도록 관리  
+생성된 객체는 어디서나 참조가능  
+한 클래스에 한 객체만 존재하도록 제한  
+상태를 유지(stateful)하지않고 무상태(stateless)로 설계  
 
+<br>
 
+### 싱글톤 객체 구현  
+````java
 public class SingletonService {
 
     private static final SingletonService instance = new SingletonService();
@@ -17,8 +20,12 @@ public class SingletonService {
     private SingletonService() {
     }
 }
+````
 
+<br>
 
+### 싱글톤 객체 테스트
+````java
 public class Singletontest {
 
     @Test
@@ -56,3 +63,6 @@ public class Singletontest {
         Assertions.assertThat(memberService1).isSameAs(memberService2);
     }
 }
+````
+
+<br>
