@@ -258,4 +258,40 @@ outer();
 고차 함수는 콜백 함수를 자신의 일부분으로 합성  
 콜백 함수는 함수형 프로그래밍 패러다임, 비동기 처리, 배열 고차 함수 등 사용  
 
+````javascript
+var arrMap = [1, 2, 3].map(function (item) {
+  return item * 2;
+});
+
+var arrFilter = [1, 2, 3].filter(function (item) {
+  return item % 2;
+});
+
+var arrReduce = [1, 2, 3].reduce(function (acc, cur) {
+  return acc + cur;
+});
+````
+
+<br>
+
+### 순수 함수와 비순수 함수
+순수함수(pure function)는 부수 효과가 발생하지 않는 함수  
+비순수함수(impure function)은 부수 효과가 발생하는 함수  
+순수함수는 동일한 인수에는 언제나 동일한 값을 반환, 즉 외부 상태에 의존하지 않는 함수  
+만약 함수의 내부 상태에만 의존한다해도 호출할때마다 변경되는 값(시간 등)을 의존하는 경우 비순수함수  
+
+````javascript
+var count = 0;
+
+// 순수 함수
+function pureIncrease(n) {
+  return ++n;
+}
+
+// 비순수 함수
+function impureIncrease() {
+  return ++count;
+}
+````
+
 <br>
