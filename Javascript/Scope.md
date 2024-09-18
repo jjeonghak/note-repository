@@ -121,7 +121,7 @@ console.log(i);      // 5
 var x = 1;
 
 function foo() {
-  var = 10;
+  var x = 10;
   bar();
 }
 
