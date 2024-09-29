@@ -18,7 +18,7 @@ Integer와 String 클래스와 같이 객체가 아닌 값이 같은지 검사�
 
 4. private 또는 package-private인 클래스에서 equals 메서드를 호출하지 않는 경우  
     ````java
-    @Override p[ublic boolean equals(Object o) {
+    @Override public boolean equals(Object o) {
         throw new AssertionError();
     }
     ````
