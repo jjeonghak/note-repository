@@ -138,6 +138,28 @@ pq.poll();      // 최상위 우선순위 요소 제거 및 반환
 pq.peek();      // 최상위 우선순위 요소 반환
 ````
 
+````java
+// 기본 오름차순 정렬
+PriorityQueue<Integer> pq = new PriorityQueue<>();
+
+// Comparator 내림차순 정렬
+PriorityQueue<Integer> pq = new PriorityQueue<>(Comparator.reverseOrder());
+
+// 커스텀 Comparator 내림차순 정렬
+PriorityQueue<Integer> pq = new PriorityQueue<>((a, b) -> b - a);
+
+// 객체에 Comparator 적용, 복합 기준 정렬
+PriorityQueue<Person> pq = new PriorityQueue<>(
+    Comparator.comparingInt(Person::getAge)                           // 첫 번째 기준: 나이 오름차순
+        .thenComparing(Person::getName)                               // 두 번째 기준: 이름 오름차순
+);
+
+PriorityQueue<Person> pq = new PriorityQueue<>(
+    Comparator.comparingInt(Person::getAge).reversed()                // 첫 번째 기준: 나이 내림차순
+        .thenComparing(Person::getName, Comparator.reverseOrder())    // 두 번째 기준: 이름 내림차순
+);
+````
+
 <br>
 
 ## Deque(ArrayDeque)
