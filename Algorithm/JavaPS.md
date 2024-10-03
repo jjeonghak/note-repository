@@ -1,4 +1,14 @@
-# 자료구조
+## Buffer
+
+````java
+import java.io.*;
+
+BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));
+StringBuilder sb = new StringBuilder();
+````
+
+<br>
 
 ## Array
 고정 크기의 데이터 구조  
@@ -8,6 +18,11 @@
 arr.length;              // 배열 길이 반환
 Arrays.toString(arr);    // 배열 요소를 문자열로 출력
 Arrays.sort(arr)         // 배열 오름차순 정렬
+````
+
+````java
+Arrays.sort(arr);                               // 오름차순 정렬
+Arrays.sort(arr, Comparator.reverseOrder());    // 내림차순 정렬
 ````
 
 <br>
@@ -22,6 +37,20 @@ list.set(i, e);       // 주어진 인덱스 요소 변경
 list.remove(i);       // 주어진 인덱스 요소 제거
 list.size();          // 리스트 크기 반환
 list.contains(o);     // 리스트 특정 요소 존재 여부 확인
+````
+
+````java
+Collections.sort(list);                               // 오름차순 정렬
+Collections.sort(list, Comparator.reverseOrder());    // 내림차순 정렬
+
+list.sort(Comparator.naturalOrder());                 // 오름차순 정렬
+list.sort(Comparator.reverseOrder());                 // 내림차순 정렬
+````
+
+````java
+import java.util.stream.Collectors;
+
+List<Integer> sortedList = list.stream().sorted().collect(Collectors.toList());    // 스트림 정렬
 ````
 
 <br>
@@ -53,6 +82,11 @@ map.containsValue(v);    // 값 존재 여부 확인
 map.size();              // 엔트리 갯수 반환
 ````
 
+````java
+for (String key : map.keySet()) { ... }                            // 키 순회
+for (Integer value : map.values()) { ... }                         // 값 순회
+for (Map.Entry<String, Integer> entry : map.entrySet()) { ... }    // 키-값 엔트리 순회
+````
 <br>
 
 ## HashSet
@@ -63,6 +97,10 @@ set.add(e);         // 요소 추가
 set.remove(o);      // 주어진 요소 제거
 set.contains(o);    // 특정 요소 존재 여부 확인
 set.size();         // 요소 갯수 반환
+````
+
+````java
+for (String element : set) { ... }    // 값 순회
 ````
 
 <br>
@@ -129,8 +167,6 @@ map.lastKey();     // 마지막 키 반환
 
 <br>
 
-# ReferenceType
-
 ## String
 ````java
 // 문자열 길이 반환
@@ -180,6 +216,30 @@ s.matches(regex);
 
 // 문자열을 문자 배열로 변환한 결과 반환
 s.toCharArray();
+````
+
+<br>
+
+## Pair
+
+````java
+private static class Pair implements Comparable<Pair> {
+    private int x;
+    private int y;
+
+    private Pair(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    @Override
+    public int compareTo(Pair o) {
+        if (this.x != o.x) {
+            return Integer.compare(this.x, o.x);
+        }
+        return Integer.compare(this.y, o.y);
+    }
+}
 ````
 
 <br>
