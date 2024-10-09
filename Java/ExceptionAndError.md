@@ -29,17 +29,41 @@ Exception, RuntimeException, Throwable, Error 객체는 직접 사용 금지
 
 <br>
 
+````
+Object : 예외도 객체, 모든 객체의 최상위 부모 객체
+
+Throwable : 최상위 예외, 하위에 Exception, Error 존재
+
+Error : 메모리 부족 또는 심각한 시스템 오류와 같이 어플리케이션에서 복구 불가한 시스템 예외(언체크 예외)
+        어플리케이션 개발자가 이 예외를 잡으려고 해서는 안됨(try ~ catch (Throwable, Error) 금지)
+
+Exception : 어플리케이션 로직에서 사용할 수 있는 실질적 최상위 예외
+            그 하위 예외(SQLException, IOException)는 모두 컴파일러가 체크하는 체크 예외(RuntimeException 제외)
+
+RuntimeException : 런타임에 발생하는 언체크 예외
+                   NullPointerException, IllegalArgumentException 등 런타임 예외들이 속함
+````
+<br>
+
 ## 검사 예외(checked exception)
 컴파일 단계에서 컴파일러가 체크  
 Exception 하위 클래스 중 RuntimeException 제외한 예외  
 처리하지 않는 경우 컴파일 오류 발생  
 예외 발생시 트랜잭션 롤백하지 않음  
+기본적으로 검사 예외 사용 권장  
+비즈니스 로직상 의도적으로 던지는 예외에만 사용(예외를 잡아서 반드시 처리해야하는 경우 사용)  
   
 <br>
 
 ## 비검사 예외(unchecked exception)
 컴파일 단계가 아닌 실행 단계에서 발생  
 예외 발생시 트랜잭션 롤백  
+
+<br>
+
+## 예외 포함 및 스택 트레이스
+예외를 전환할 때는 꼭 기존 예외를 포함해야 스택 트레이스 정상 확인 가능(root cause 확인 불가)  
+예외 발생 원인과 스택 트레이스를 정확히 알 수 없음, 전환된 예외까지만 스택 트레이스 확인가능  
 
 <br>
 
