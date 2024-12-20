@@ -7,7 +7,7 @@
 
 ## InnoDB 스토리지 엔진 아키텍처
 
-<img width="550" alt="mysqlInnoDBStorageEngine" src="https://github.com/user-attachments/assets/e9c7adbd-5041-41ba-b505-a220ddd55b78" />
+<img width="600" alt="mysqlInnoDBStorageEngine" src="https://github.com/user-attachments/assets/c82fb37f-f72d-4329-9ed5-75b7f1409b13" />
 
 <br>
 
