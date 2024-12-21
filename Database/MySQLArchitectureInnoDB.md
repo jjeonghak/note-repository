@@ -356,33 +356,176 @@ mysql> DROP UNDO TABLESPACE extra_undo_003;
 <br>
 
 ### 체인지 버퍼
+데이터 변경이 발생할때 데이터 파일뿐만 아니라 인덱스 업데이트도 필수  
+인덱스 업데이트 작업은 랜덤하게 디스크를 읽는 작업 필요  
+변경해야할 인덱스 페이지가 버퍼풀에 존재하면 바로 업데이트 수행  
+없다면 임시 공간 체인지 버퍼(`change buffer`)에 저장하고 사용  
 
+반드시 중복 여부를 체크해야하는 유니크 인덱스는 체인지 버퍼 사용 불가  
+체인지 버퍼에 임시로 저장된 인덱스 레코드 조각은 이후 백그라운드에 의해 병합  
+체인지 버퍼 머지 스레드(`merge thread`)에 의해 해당 작업 수행  
+`innodb_change_buffering` 시스템 변수값을 통해 설정  
+- `all`: 모든 인덱스 관련 작업 버퍼링  
+- `none`: 버퍼링 사용 안함  
+- `inserts`: 인덱스에 새로운 아이템 추가시 버퍼링  
+- `deletes`: 인덱스에 기존 아이템 삭제시 버퍼링  
+- `changes`: 인덱스에 추가/삭제시 버퍼링  
+- `purges`: 인덱스 아이템을 영구적으로 삭제시 버퍼링  
 
+체인지 버퍼는 버퍼풀의 메모리 공간의 `25 ~ 50%`까지 사용 가능  
+`innodb_change_buffer_max_size` 시스템 변수값으로 비율 설정  
 
+```
+mysql> SELECT EVENT_NAME, CURRENT_NUMBBER_OF_BYTES_USED
+        FROM performance_schema.memory_summary_global_by_event_name
+        WHERE EVENT_NAME='memory/innodb/ibuf0ibuf';
++-------------------------+-------------------------------+
+| EVENT_NAME              | CURRENT_NUMBBER_OF_BYTES_USED |
++-------------------------+-------------------------------+
+| memory/innodb/ibuf0ibuf |                           144 |
++-------------------------+-------------------------------+
+```
 
+<br>
 
+### 리두 로그 및 로그 버퍼
+리두 로그는 트랜잭션 ACID 중 D(`durable`)에 해당하는 영속성과 가장 밀접  
+서버가 비정상 종료시 데이터 파일에 기록되지 못한 데이터를 잃지 않게 해주는 안전장치  
+데이터 변경 내용을 로그로 가장 먼저 기록  
+데이터베이스는 읽기 성능을 고려한 자료구조를 사용하기 때문에 쓰기 작업은 디스크 랜덤 엑세스 필요  
+리두 로그는 쓰기 비용이 낮은 자료구조를 사용  
 
+1. 커밋됐지만 데이터 파일에 기록되지 않은 데이터 - 리두 로그 활용  
+2. 롤백됐지만 데이터 파일에 이미 기록된 데이터 - 언두 로그 활용  
 
+리두 로그는 트랜잭션이 커밋되면 즉시 디스크로 기록되도록 시스템 변수를 설정하는 것을 권장  
+`innodb_flush_log_at_trx_commit` 시스템 변수값으로 설정  
+- 0: 1초에 한번씩 리두 로그를 디스크로 기록 및 동기화  
+- 1: 매번 트랜잭션이 커밋될 때마다 디스크로 기록 및 동기화  
+- 2: 매번 트랜잭션이 커밋될 때마다 디스크로 기록, 실질적인 동기화는 1초에 한번씩  
 
+리두 로그 파일의 크기는 `innodb_log_file_size` 시스템 변수값으로 설정  
+리두 로그 파일의 갯수는 `innodb_log_files_in_group` 시스템 변수값으로 설정  
+로그 버퍼 크기는 기본값 16MB 수준에서 설정하는 것이 적합(BLOB, TEXT 같은 큰 데이터의 경우 더 크게 설정)  
 
+<br>
 
+### 리두 로그 아카이빙
+8.0 버전부터 리두 로그 아카이빙 기능 추가  
+데이터 변경이 많아서 리두 로그를 덮어쓴다고 하더라도 백업에 실패하지 않음  
+아카이빙된 리두 로그가 저장될 디렉토리는 `innodb_redo_log_archive_dirs` 시스템 변수값으로 설정  
 
+```
+linux> mkdir /var/log/mysql_redo_archive
+linux> mkdir /var/log/mysql_redo_archive/20200722
+linux> chmod 700 /var/log/mysql_redo_archive/20200722
 
+mysql> SET GLOBAL innodb_redo_log_archive_dirs='backup:/var/log/mysql_redo_archive';
+```
 
+<br>
 
+디렉토리 준비 후 `innodb_redo_log_archive_start` UDF(`user defined function`) 실행  
+1번째 파라미터는 리두 로그 아카이빙 디렉토리에 대한 레이블  
+2번째 파라미터는 서브디렉토리 이름, 필수 아님  
 
+```sql
+## 리두 로그 아카이빙 활성화
+DO innodb_redo_log_archive_start('backup', '20200722');
+CREATE TABLE test (id bigint auto_increment, data mediumtext, PRIMARY KEY(id));
+INSERT INTO test (data)
+SELECT repeat(`123456789`, 10000) FROM employees.salaries LIMIT 100;
+```
 
+```
+linux> ls -alh /var/log/mysql_redo_archive/20200722
+-r--r-----  1 matt.lee 991M  7 22 11:12 archive.5b30884e-726c-11ea-951c-f91ea9f6d340.000001.log
+```
 
+```sql
+## 리두 로그 아카이빙 비활성화
+DO innodb_redo_log_archive_stop();
+```
 
+해당 방법으로 아카이빙을 실행한 세션을 끊지않는다면 비정상 종료로 간주하고 쓸모 없어진 리두 로그를 삭제  
 
+<br>
 
+### 리두 로그 활성화 및 비활성화
+8.0 버전부터 데이터를 복구하거나 대용량 데이터를 한번에 적재하는 경우 리두 로그를 비활성화 가능  
 
+```
+mysql> ALTER INSTANCE DISABLE REDO_LOG;
+mysql> SHOW GLOBAL STATUS LIKE 'Innodb_redo_log_enabled';
++-------------------------+-------+
+| Variable_name           | Value |
++-------------------------+-------+
+| Innodb_redo_log_enabled | OFF   |
++-------------------------+-------+
 
+-- // 데이터 적재 작업 이후
 
+mysql> ALTER INSTANCE ENABLE INNODB REDO_LOG;
+mysql> SHOW GLOBAL STATUS LIKE 'Innodb_redo_log_enabled';
++-------------------------+-------+
+| Variable_name           | Value |
++-------------------------+-------+
+| Innodb_redo_log_enabled | ON    |
++-------------------------+-------+
 
+```
 
+<br>
 
+### 어댑티브 해시 인덱스
+일반적으로 인덱스는 사용자가 생성해준 B-Tree 인덱스를 의미  
+어댑티브 해시 인덱스는 사용자가 수동으로 생성하는 인덱스가 아닌 InnoDB 스토리지 엔진에서 사용자가 자주 요청하는 데이터를 자동으로 생성하는 인덱스  
+`innodb_adaptive_hash_index` 시스템 변수값으로 활성화 가능  
 
+어댑티브 해시 인덱스는 B-Tree 검색 시간을 줄이려는 목적으로 도입된 기능  
+자주 조회되는 데이터 페이지를 키 값으로 해시 인덱스를 생성하고 즉시 조회 가능  
+B-Tree 루트 노드부터 리프 노드까지 탐색하는 비용 제거  
 
+해시 인덱스 키 값은 B-Tree 인덱스 고유 번호와 B-Tree 인덱스 실제 키 값의 조합으로 생성  
+B-Tree 인덱스 고유 번호가 포함되는 이유는 어댑티브 해시 인덱스는 서버에 단 하나 존재하기 때문  
+또한 버퍼풀에 존재하는 데이터 페이지만 관리  
 
+이전에는 서버에 하나뿐인 어댑티브 해시 인덱스에 대한 경합이 상당히 빈번  
+8.0 버전부터 어댑티브 해시 인덱스 파티션 기능을 기본 8개로 제공  
+`innodb_adaptive_hash_index_parts` 시스템 변수값으로 파티션 갯수 설정  
 
+어댑티브 해시 인덱스는 테이블 삭제 또는 변경 작업에 매우 치명적  
+어댑티브 해시 인덱스를 효율적으로 사용중인지 확인 필수  
+
+```
+mysql> SHOW ENGINE INNODB STATUS\G
+...
+-------------------------------------
+INSERT BUFFER AND ADAPTIVE HASH INDEX
+-------------------------------------
+...
+Hash table size 8747, node heap has 1 buffer(s)
+Hash table size 8747, node heap has 0 buffer(s)
+Hash table size 8747, node heap has 0 buffer(s)
+Hash table size 8747, node heap has 0 buffer(s)
+Hash table size 8747, node heap has 0 buffer(s)
+Hash table size 8747, node heap has 0 buffer(s)
+Hash table size 8747, node heap has 0 buffer(s)
+Hash table size 8747, node heap has 0 buffer(s)
+1.03 hash searches/s, 2.64 non-hash searches/s
+...
+
+mysql> SELECT EVENT_NAME, CURRENT_NUMBER_OF_BYTES_USED
+        FROM performance_schema.memory_summary_global_by_event_name
+        WHERE EVENT_NAME='memory/innodb/adaptive hash index';
++-----------------------------------+------------------------------+
+| EVENT_NAME                        | CURRENT_NUMBER_OF_BYTES_USED |
++-----------------------------------+------------------------------+
+| memory/innodb/adaptive hash index |                         1512 |
++-----------------------------------+------------------------------+
+```
+
+해당 결과에서 초당 3.67(= 1.03 + 2.64)번의 검색 실행, 그중 1.03번은 어댑티브 해시 인덱스 사용  
+해시 인덱스 히트율, 해시 인덱스 메모리 사용륭, CPU 사용량을 종합해서 판단  
+
+<br>
