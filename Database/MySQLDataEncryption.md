@@ -88,26 +88,187 @@ WHERE file_name LIKE '%DB_NAME/TABLE_NAME%';
 <br>
 
 ### 암호화와 복제
+레플리카 서버는 소스 서버의 모든 사용자 데이터를 동기화  
+하지만 `TDE`를 이용한 암호화 사용시 마스터 키와 테이블스페이스 키는 서로 다르도록 설정  
+마스터 키 자체가 레플리카로 복제되지 않기 때문에 테이블스페이스 키도 복제되지 않음  
+`ALTER INSTANCE ROTATE INNODB MASTER KEY` 명령을 통해 소스 서버와 레플리카 서버가 각각 서로 다른 마스터 키를 새로 발급  
+백업에서 키링 파일을 백업하지 않는 경우 데이터 복구 불가  
 
+<br>
 
+## keyring_file 플러그인 설치
+`TDE` 암호화 키 관리는 플러그인 방식으로 제공  
+`keyring_file` 플러그인은 마스터 키를 디스크 파일로 관리  
+평문으로 디스크에 저장되기 때문에 외부로 노출되지 않도록 주의  
 
+서버가 시작되는 단계에서 가장 빨리 초기화 필수  
+설정 파일에서 `early-plugin-load` 시스템 변수값에 `keyring_file` 플러그인을 위한 `keyring_file.so` 라이브러리 명시 필수  
+마스터 키 저장을 위한 파일 경로는 `keyring_file_data` 설정에 명시  
 
+```ini
+early-plugin-load = kering_file.so
+keyring_file_data = /very/secure/directory/tde_master.key
+```
 
+```
+mysql> SHOW PLUGINS;
++-----------------------+--------+----------------+-----------------+---------+
+| Name                  | Status | Type           | Libary          | License |
++-----------------------+--------+----------------+-----------------+---------+
+| keyring_file          | ACTIVE | KEYRING        | keyring_file.so | GPL     |
+| binlog                | ACTIVE | STORAGE ENGINE | NULL            | GPL     |
+| mysql_native_password | ACTIVE | AUTHENTICATION | NULL            | GPL     |
+| ...                   | ...    | ...            | ...             | ...     |
++-----------------------+--------+----------------+-----------------+---------+
+```
 
+<br>
 
+서버는 플러그인 초기화와 동시에 `keyring_file_data` 시스템 변수의 경로에 빈 파일 생성  
+암호화 기능을 사용하는 테이블 생성하거나 마스터 로테이션 실행시 키링 파일의 마스터 키 초기화  
 
+```
+linux> ls -alh tde_master.key
+-r-w-r-----  1 matt  0B  7 27 14:24 tde_master.key
 
+mysql> ALTER INSTANCE ROTATE INNODB MASTER KEY;
 
+linux> ls -alh tde_master.key
+-r-w-r-----  1 matt 187B  7 27 14:24 tde_master.key
+```
 
+<br>
 
+## 테이블 암호화
+키링 플러그인은 마스터 키 생성 및 관리까지만 담당  
+어떤 플러그인을 사용하든 암호화된 테이블 생성하고 활용하는 방법은 모두 동일  
 
+<br>
 
+### 테이블 생성
+일반적인 테이블 생성 구문과 동일  
+`ENCRPTION='Y'` 옵션만 추가  
+모든 생성 테이블에 암호화를 적용하고자 한다면 `default_table_encryption` 시스템 변수값 ON 설정  
 
+```
+mysql> CREATE TABLE tab_encrypted (
+         id INT,
+         data VARCHAR(100),
+         PRIMARY KEY(id)
+       ) ENCRYPTION='Y';
 
+mysql> INSERT INTO tab_encrypted VALURES (1, 'test-data');
 
+mysql> SELECT * FROM tab_encrypted;
++----+-----------+
+| id | data      |
++----+-----------+
+|  1 | test-data |
++----+-----------+
+```
 
+<br>
 
+암호화된 테이블만 조회가능  
 
+```
+mysql> SELECT table_schema, table_name, create_options
+       FROM information_schema.tables
+       WHERE create_options LIKE '%ENCRYPTION='Y'%';
++--------------+---------------+----------------+
+| TABLE_SCHEMA | TABLE_NAME    | CREATE_OPTIONS |
++--------------+---------------+----------------+
+| test         | tab_encrypted | ENCRYPTION='Y' |
++--------------+---------------+----------------+
+```
 
+<br>
 
+### 테이블스페이스 이동
+테이블만 이동해야하는 경우 레코드 덤프/복구 방식보다 테이블스페이스 이동 기능이 효율적  
+이동 전후의 암호화 마스터 키가 다르기 때문에 주의 필요  
 
+<br>
+
+```sql
+FLUSH TABLES source_table FOR EXPORT;
+```
+
+- 암호화되지 않은 테이블 이동  
+  저장되지 않은 변경 사항을 모두 디스크로 기록하고 테이블 잠금 설정  
+  동시에 테이블의 구조를 `.cfg` 파일로 기록  
+  `.ibd` 파일과 `.cfg` 파일을 목적지 서버로 복사  
+  복사가 완료되면 잠금 해제  
+
+- 암호화 테이블 이동  
+  임시로 사용할 마스터 키 발급 후 `.cfp` 파일로 기록  
+  기존 마스터 키로 복호화 후, 임시 마스터 키로 다시 암호화해서 헤더에 임시 마스터 키 저장  
+  `.ibd` 파일, `.cfg` 파일, `.cfp` 파일을 목적지 서버로 복사  
+
+<br>
+
+## 언두 로그 및 리두 로그 암호화
+서버의 메모리에 존재하는 데이터는 복호화된 평문으로 관리  
+테이블 데이터 파일 이외의 디스크 파일로 기록되는 경우 여전히 평문으로 저장  
+8.0.16 버전부터 `innodb_undo_log_encrypt`, `innodb_redo_log_encrypt` 시스템 변수값을 이용해 암호화 가능  
+
+테이블 암호화와 달리 언두 로그, 리두 로그 암호화는 암호화 적용 시점부터만 암호화 상태로 저장  
+즉 암호화 비활성화 적용 후에도 테이블스페이스 키와 마스터 키가 필수  
+언두 로그, 리두 로그 모두 각각의 테이블스페이스 키로 암호화, 테이블스페이스 키는 마스터 키로 암호화  
+
+```
+mysql> INSERT INTO enc VALUES (2, 'test-data1');
+mysql> SET GLOBAL innodb_redo_log_encrypt=ON;
+mysql> INSERT INTO enc VALUES (2, 'test-data2');
+
+linux> grep 'test-data1' ib_logfile0 ib_logfile1
+Binary file ib_logfile0 matches
+linux> echo $?
+0
+
+linux> grep 'test-data2' ib_logfile0 ib_logfile1
+linux> echo $?
+1
+```
+
+<br>
+
+## 바이너리 로그 암호화
+테이블 암호화가 적용돼도 바이너리 로그와 릴레이 로그 파일 또한 평문으로 저장  
+바이너리 로그는 상대적으로 언두 로그와 리두 로그보다 상당히 긴 시간 동안 보관  
+바이너리 로그 파일의 암호화는 상황에 따라 중요도가 높음  
+
+<br>
+
+### 바이너리 로그 암호화 키 관리
+
+<img width="550" alt="binarylogencription" src="https://github.com/user-attachments/assets/5524ad48-0ea1-43b7-acc6-bef437c756f0" />
+
+바이너리 로그와 릴레이 로그 파일은 파일 키로 암호화  
+파일 키는 바이너리 로그 암호화 키로 암호화해서 각 파일 헤더에 저장  
+
+<br>
+
+### 바이너리 로그 암호화 키 변경
+
+```sql
+ALTER INSTANCE ROTATE BINLOG MASTER KEY;
+```
+
+1. 증가된 시퀀스 번호와 함께 새로운 바이너리 로그 암호화 키 발급 후 키링 파일에 저장  
+2. 바이너리 로그 파일과 릴레이 로그 파일 스위치  
+3. 새로 생성된 로그 파일에 파일 키를 생성  
+4. 기존 암호화된 로그 파일의 파일 키를 읽어서 새로운 바이너리 로그 암호화 키로 암호화해서 다시 저장  
+5. 기존 바이너리 로그 암호화 키 제거  
+
+```
+mysql> SHOW BINARY LOGS;
++------------------+-----------+-----------+
+| Log_name         | File_size | Encrypted |
++------------------+-----------+-----------+
+| mysql-bin.000010 |      2853 | No        |
+| mysql-bin.000011 |      1337 | Yes       |
++------------------+-----------+-----------+
+```
+
+<br>
