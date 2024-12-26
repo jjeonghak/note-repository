@@ -380,21 +380,98 @@ InnoDB 스토리지 엔진에서 정순/역순 스캔은 페이지 간의 양방
 <br>
 
 ### B-Tree 인덱스의 가용성과 효율성
+`WHERE`, `GROUP BY`, `ORDER BY` 절이 어떤 경우에 인덱스를 활용 가능한지 식별 가능  
 
+<br>
 
+### 비교 조건의 종류와 효울성
+다중 칼럼 인덱스에서 각 칼럼의 순서, 사용된 연산자에 따라 인덱스 칼럼 활용 형태가 상이  
 
+```sql
+SELECT * FROM dept_emp WHERE dept_no = 'd002' AND emp_no >= 10114;
+```
 
+순서만 다른 (`dept_no`, `emp_no`), (`emp_no`, `dept_no`) 인덱스 가정  
 
+<img width="500" alt="indexcalumnorder" src="https://github.com/user-attachments/assets/1895271e-e352-49fd-a38b-0b1f91d74937" />
 
+- (`dept_no`, `emp_no`) 인덱스  
+  우선 `dept_no = 'd002' AND emp_no >= 10144` 해당하는 레코드 탐색  
+  이후 `dept_no != 'd002'` 해당하는 레코드가 나올때까지 쭉 조회  
 
+- (`emp_no`, `dept_no`) 인덱스  
+  우선 `emp_no >= 10144 AND dept_no = 'd002'`에 해당하는 레코드 탐색  
+  이후 모든 레코드에 대해 `dept_no = 'd002'` 비교 과정 필수  
 
+<br>
 
+작업의 범위를 결정하는 조건을 `작업 범위 결정 조건`  
+비교 작업의 범위를 줄이지 못하고 단순히 거르는 조건을 `필터링 조건` 또는 `체크 조건`  
+인덱스를 가장 잘 적용하는 방법은 작업 범위 결정 조건으로 사용하는 것  
 
+<br>
 
+### 인덱스의 가용성
+B-Tree 인덱스의 특징은 왼쪽 값을 기준(`Left-most`)으로 오른쪽 값 정렬  
 
+```sql
+SELECT * FROM employees WHERE first_name LIKE '%mer';
+```
 
+해당 쿼리는 레인지 스캔 방식으로 인덱스 비교 불가  
+조건절 `'%mer'`에는 왼쪽 부분이 고정되지 않았기 때문  
+정렬 우선순위가 낮은 뒷부분의 값만으로 왼쪽 기준 정렬 기반 B-Tree에서는 인덱스 효과 없음  
 
+<br>
 
+### 가용성과 효율성 판단
+작업 범위 결정 조건으로 아래 조건은 사용 불가  
+체크 조건으로는 사용 가능  
 
+- `NOT-EQUAL` 비교  
+  ```sql
+  ... WHERE column <> 'N';
+  ... WHERE column NOT IN (10, 11, 12);
+  ... WHERE column IS NOT NULL;
+  ```
+  
+- `LIKE '%??'` 비교
+  ```sql
+  ... WHERE column LIKE '%column';
+  ```
+  
+- 스토어드 함수나 다른 연산자로 인덱스 칼럼이 변형된 후 비교
+  ```sql
+  ... WHERE SUBSTRING(column, 1, 1) = 'X'
+  ... WHERE DAYOFMONTH(column) = 1
+  ```
+  
+- `NOT-DETERMINISTIC` 속성의 스토어드 함수가 비교 조건에 사용
+  ```sql
+  ... WHERE column = deterministic_function();
+  ```
 
+- 데이터 타입이 서로 다른 비교(인덱스 칼럼의 타입 변환 필요한 경우)
+  ```sql
+  ... WHERE char_column = 10
+  ```
+  
+- 문자열 데이터 타입의 콜레이션이 다른 경우
+  ```sql
+  ... WHERE utf8_bin_char_column = euckr_bin_char_column;
+  ```
 
+<br>
+
+다중 칼럼으로 만들어진 인덱스도 판단 가능  
+아래 두가지 조건을 만족한다면 `1 ~ i`까지는 작업 범위 결정 조건, `i + 1 ~ n`은 체크 조건  
+
+- 작업 범위 결정 조건으로 인덱스를 사용하지 못하는 경우  
+  `1` 칼럼에 대한 조건이 없는 경우  
+  `1` 칼럼의 비교 조건이 위의 인덱스 사용 불가 조건 중 하나인 경우  
+
+- 작업 범위 결정 조건으로 인덱스를 사용하는 경우  
+  `i` 칼럼을 제외한 이전 칼럼들(`1 ~ i - 1`)은 동등 비교 형태(`=` 또는 `IN`)로 비교  
+  `i` 칼럼은 (`=` 또는 `IN`), 범위 형태(`>` 또는 `<`), 좌측 일치(`LIKE 'column%'`) 형태로 비교  
+
+<br>
