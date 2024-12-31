@@ -202,11 +202,11 @@ ORDER BY e.last_name;
 
 ```
 mysql> EXPLAIN
-       SELECT *
-       FROM employees e, salaries s
-       WHERE s.emp_no = e.emp_no
-         AND e.emp_no BETWEEN 100002 AND 100020
-       ORDER BY s.salary;
+         SELECT *
+         FROM employees e, salaries s
+         WHERE s.emp_no = e.emp_no
+           AND e.emp_no BETWEEN 100002 AND 100020
+         ORDER BY s.salary;
 
 +----+-------+-------+---------+----------------------------------------------+
 | id | table | type  | key     | Extra                                        |
