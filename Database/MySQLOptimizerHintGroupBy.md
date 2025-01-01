@@ -75,17 +75,20 @@ mysql> EXPLAIN
 8.0 버전 이전까지는 그루핑 쿼리에 암묵적인 정렬이 함께 수행(Using filesort)  
 8.0 버전부터 암묵적인 정렬이 더 이상 실행되지 않음  
 
+```
+mysql> EXPLAIN
+         SELECT e.last_name, AVG(s.salary)
+         FROM employees e, salaries s
+         WHERE s.emp_no = e.emp_no
+         GROUP BY e.last_name;
+         ORDER BY e.last_name;
 
++----+-------+------+---------+--------+---------------------------------+
+| id | table | type | key     | rows   | Extra                           |
++----+-------+------+---------+--------+---------------------------------+
+|  1 | e     | ALL  | NULL    | 300584 | Using temporary; Using filesort |
+|  1 | s     | ref  | PRIMARY | 10     | NULL                            |
++----+-------+------+---------+--------+---------------------------------+
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
