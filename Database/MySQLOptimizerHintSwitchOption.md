@@ -315,6 +315,151 @@ mysql> EXPLAIN
 <br>
 
 ### 세미 조인(semijoin)
+다른 테이블과 실제 조인을 수행하지 않고 단지 다른 테이블에서 조건 일치 레코드가 존재하는지 체크  
+세미 조인 최적화가 도입되기 전에 실행 계획은 불필요한 데이터 읽기가 필요  
+
+```
+mysql> SET SESSION optimizer_switch = 'semijoin=off';
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+         WHERE e.emp_no IN (SELECT de.emp_no FROM dept_emp de WHERE de.from_date = '1995-01-01');
+
++----+-------------+-------+------+-------------+--------+
+| id | select_type | table | type | key         | rows   |
++----+-------------+-------+------+-------------+--------+
+|  1 | PRIMARY     | e     | ALL  | NULL        | 300363 |
+|  2 | SUBQUERY    | de    | ref  | ix_formdate |     57 |
++----+-------------+-------+------+-------------+--------+
+```
+
+<br>
+
+`= (subquery)` 형태와 `IN (subquery)` 형태 최적화  
+- 세미 조인 최적화
+- IN-to_EXISTS 최적화
+- MATERIALIZATION 최적화
+
+`<> (subquery)` 형태와 `NOT IN (subquery)` 형태 최적화  
+- IN-to-EXISTS 최적화
+- MATERIALIZATION 최적화
+
+<br>
+
+서브쿼리 최적화 중에 가장 최근 도입된 세미 조인 최적화 종류
+- Table Pull-out
+- Duplicate Weed-out
+- First Match
+- Loose Scan
+- Materialization
+
+<br>
+
+Table pull-out 전략은 사용 가능하다면 항상 좋은 성능을 내기 때문에 별도로 제어 불가  
+First Match 전략과 Loose Scan 전략은 각각 `firstmatch`, `loosescan` 옵티마이저 옵션으로 제어  
+Duplicate Weed-out 전략과 Materialization 전략은 `materialization` 옵티마이저 옵션으로 제어  
+
+<br>
+
+### 테이블 풀-아웃(Table Pull-out)
+세미 조인의 서브쿼리에 사용된 테이블을 아우터 쿼리로 꺼낸 후에 쿼리를 조인 쿼리로 재작성  
+이는 서브쿼리 최적화가 도입되기 전에 수동으로 쿼리를 튜닝하던 대표적인 방법  
+별도로 실행 계획에 메시지가 표시되지 않고, 실행 계획에서 해당 테이블들의 `id 칼럼값`이 같은지 다른지 비교  
+더 정확하게는 실행 계획 명령을 실행한 수 옵티마이저가 재작성(`Re-Write`) 쿼리를 보는 것  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+         WHERE e.emp_no IN (SELECT de.emp_no FROM dept_emp de WHERE de.dept_no = 'd009');
+
++----+-------------+-------+--------+---------+-------+-------------+
+| id | select_type | table | type   | key     | rows  | Extra       | 
++----+-------------+-------+--------+---------+-------+-------------+
+|  1 | SIMPLE      | de    | ref    | PRIMARY | 46012 | Using index |
+|  1 | SIMPLE      | e     | eq_ref | PRIMARY |     1 | NULL        |
++----+-------------+-------+--------+---------+-------+-------------+
+
+mysql> SHOW WARNINGS \G
+*************************** 1. row ***************************
+  Level: Note
+   Code: 1003
+Message: /* select#1 */ SELECT employees.e.emp_no AS emp_no,
+                employees.e.birth_date AS birth_date,
+                employees.e.first_name AS first_name,
+                employees.e.last_name AS last_name,
+                employees.e.gender AS gender,
+                employees.e.hire_date AS hire_date
+         FROM employees.dept_emp de
+           JOIN employees.employees e
+         WHERE ((employees.e.emp_no = employees.de.emp_no) AND (employees.de.dept_no = 'd009'));
+```
+
+<br>
+
+- 세미 조인 서브쿼리에서만 사용 가능
+- 서브쿼리 부분이 UNIQUE 인덱스나 프라이머리 키 룩업으로 결과가 1건인 경우에만 사용
+- 해당 전략이 적용되더라도 기존 쿼리에서 가능했던 최적화 방법이 사용 불가능한 것은 아님
+- 만약 서브쿼리 모든 테이블이 아우터 쿼리로 꺼낼수 있다면 서브쿼리 자체 제거
+
+<br>
+
+### 퍼스트 매치(firstmatch)
+`IN(subquery)` 형태의 세미 조인을 `EXISTS(subquery)` 형태로 튜닝한 것과 비슷  
+실행 계획에서 해당 테이블들의 `id 칼럼값`이 모두 동일, `FirstMatch` 메시지 표시  
+드라이빙 테이블 레코드에 대해 드리븐 테이블에 일치하는 레코드 1건만 찾으면 더 이상 드리븐 테이블 검색하지 않음  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+         WHERE e.first_name = 'Matt'
+           AND e.emp_no IN(SELECT t.emp_no FROM titles t WHERE t.from_date BETWEEN '1995-01-01' AND '1995-01-30');
+
++----+-------+------+--------------+------+-----------------------------------------+
+| id | table | type | key          | rows | Extra                                   |
++----+-------+------+--------------+------+-----------------------------------------+
+|  1 | e     | ref  | ix_firstname |  233 | NULL                                    |
+|  1 | t     | ref  | PRIMARY      |    1 | Using where; Using Index; FirstMatch(e) |
++----+-------+------+--------------+------+-----------------------------------------+
+```
+
+<br>
+
+<img width="650" alt="firstmatch" src="https://github.com/user-attachments/assets/838a2fb4-977c-4f14-ad83-94bab4167c33" />
+
+5.5 버전에서 수행했던 IN-to-EXISTS 변환과 거의 비슷한 로직으로 수행  
+- 가끔 여러 테이블 조인시 원래 쿼리에 없던 동등 조건을 추가하는 형태로 최적화 실행  
+  기존 IN-to_EXISTS 최적화에서 이러한 동등 조건 전파(`Equality propagation`)가 서브쿼리 내에서만 가능  
+  하지만 FirstMatch 최적화에서는 조인 형태로 처리되기 때문에 아우터 쿼리까지 전파 가능  
+
+- FirstMatch 최적화는 서브쿼리의 모든 테이블에 대해 테이블 별로 수행 여부를 선택 가능  
+
+- 서브쿼리에서 하나의 레코드만 검색하면 더이상 검색을 하지 않는 단축 실행 경로(`Short-cut path`) 사용  
+  때문에 서브쿼리는 그 서브쿼리가 참조하는 모든 아우터 테이블이 먼저 조회된 후 실행  
+
+- 실행 계획의 Extra 칼럼에 `FirstMAtch(table-n)` 메시지 표시
+
+- 상관 서브쿼리(`Correlated subquery`)에서도 사용 가능  
+
+- `GROUP BY` 절이나 집합 함수가 사용된 서브쿼리에 사용 불가능
+
+
+<br>
+
+### 루스 스캔(loosescan)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
