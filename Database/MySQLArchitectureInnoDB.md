@@ -345,7 +345,7 @@ mysql> DROP UNDO TABLESPACE extra_undo_003;
 
 언두 테이블스페이스 공간을 필요한 만큼만 남기고 공간을 운영체제에 반납하는 것을 `undo tablespace truncate`  
 - 자동 모드  
-  퍼지 스레드(`purge thread`)는 주기적으로 언두 로그 공간의 불필요한 언두 로그 삭제(`undo purge`)
+  퍼지 스레드(`purge thread`)는 주기적으로 언두 로그 공간의 불필요한 언두 로그 삭제(`undo purge`)  
   `innodb_undo_log_truncate` 시스템 변수값이 ON인 경우  
   `innodb_purge_rseg_truncate_frequency` 시스템 변수값으로 발생 빈도 설정  
   
