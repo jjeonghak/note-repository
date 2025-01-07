@@ -707,11 +707,47 @@ WHERE birth_date >= '1965-02-01';
 
 <br>
 
+기본적으로 조인 조건 칼럼의 인덱스가 없거나, 조인 대상 테이블 중 일부의 레코드 건수가 매우 적은 경우에 해시 조인 알고리즘 사용하도록 설계  
+네스티드 루프 조인이 사용되기에 적합하지 않은 경우를 위한 차선책  
+8.0.17 버전까지는 조인 조건이 좋지 않은 경우 블록 네스티드 루프 조인 사용  
+8.0.20 버전부터 블록 네스티드 루프 조인은 더 이상 사용되지 않고 해시 조인 사용  
 
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e IGNORE INDEX(PRIMARY, ix_hiredate)
+           INNER JOIN dept_emp de IGNORE INDEX(ix_empno_fromdate, ix_fromdate)
+             ON de.emp_no = e.emp_no AND de.from_date = e.hire_date;
 
++----+-------------+-------+------+--------------------------------------------+
+| id | select_type | table | type | Extra                                      |
++----+-------------+-------+------+--------------------------------------------+
+|  1 | SIMPLE      | de    | ALL  | NULL                                       |
+|  1 | SIMPLE      | e     | ALL  | Using where; Using join buffer (hash join) |
++----+-------------+-------+------+--------------------------------------------+
+```
 
+<br>
 
+일반적으로 해시 조인은 빌드 단계와 프로브 단계로 나뉘어 처리  
+빌드 단계에서는 조인 대상 테이블 중 레코드 건수가 적어서 해시 테이블로 만들기에 용이한 테이블을 선택해서 메모리에 생성  
+해시 테이블을 만들때 사용되는 원본 테이블을 빌드 테이블이라고 표현  
+프로브 단계는 나머지 테이블의 레코드를 읽어서 해시 테이블의 일치 레코드를 탐색하는 과정  
+이때 읽는 테이블을 프로브 테이블이라고 표현  
 
+```
+mysql> EXPLAIN FOORMAT=TREE
+         SELECT *
+         FROM employees e IGNORE INDEX(PRIMARY, ix_hiredate)
+           INNER JOIN dept_emp de IGNORE INDEX(ix_empno_fromdate, ix_fromdate)
+             ON de.emp_no = e.emp_no AND de.from_date = e.hire_date \G
+
+-> Inner hash join (e.hire_date = de.from_date), (e.emp_no = de.emp_no)
+                   (cost=9942694661.05 rows=331143)
+    -> Table scan on e  (cost=0.08 rows=300252)
+    -> Hash
+        -> Table scan on de  (cost=33979.30 rows=331143)
+```
 
 
 
