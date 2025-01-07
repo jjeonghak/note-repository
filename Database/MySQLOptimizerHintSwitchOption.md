@@ -448,6 +448,271 @@ mysql> EXPLAIN
 <br>
 
 ### 루스 스캔(loosescan)
+`GROUP BY` 최적화의 `Using index for group-by` 루스 인덱스 스캔과 유사한 읽기 방식 사용  
+루스 인덱스 스캔으로 서브쿼리 테이블 조회, 이후 아우터 테이블을 드리븐으로 사용해서 조인 수행  
+서브쿼리는 루스 인덱스 스캔이 가능한 조건을 만족해야 사용 가능  
+
+<img width="500" alt="loosescanoptimizer" src="https://github.com/user-attachments/assets/a96b3ff9-a2af-4ac5-99c1-333e70780ae2" />
+
+```
+-- // 일시적으로 루스 스캔 실행 계획을 사용하도록 유도
+mysql> SET optimizer_switch = 'materialization=off';
+mysql> SET optimizer_switch = 'firstmatch=off';
+mysql> SET optimizer_switch = 'duplicateweedout=off';
+
+mysql> EXPLAIN
+         SELECT * FROM departments d WHERE d.dept_no IN
+           (SELECT de.dept_no FROM dept_emp de);
+
++----+-------+--------+---------+--------+------------------------+
+| id | table | type   | key     | rows   | Extra                  |
++----+-------+--------+---------+--------+------------------------+
+|  1 | de    | index  | PRIMARY | 331143 | Using index; LooseScan |
+|  1 | d     | eq_ref | PRIMARY |      1 | NULL                   |
++----+-------+--------+---------+--------+------------------------+
+```
+
+<br>
+
+### 구체화(Materialization)
+세미 조인에 사용된 서브쿼리를 구체화해서 쿼리를 최적화  
+구체화란 내부 임시 테이블을 생성한다는 것을 의미  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+         WHERE e.emp_no IN
+           (SELECT de.emp_no FROM dept_emp de
+           WHERE de.from_date = '1995-01-01');
+
++----+--------------+-------------+--------+-------------+--------------------+
+| id | select_type  | table       | type   | key         | ref                |
++----+--------------+-------------+--------+-------------+--------------------+
+|  1 | SIMPLE       | <subquery2> | ALL    | NULL        | NULL               |
+|  1 | SIMPLE       | e           | eq_ref | PRIMARY     | <subquery2>.emp_no |
+|  2 | MATERIALIZED | de          | ref    | ix_fromdate | const              |
++----+--------------+-------------+--------+-------------+--------------------+
+```
+
+<br>
+
+해당 최적화는 아래 제한 사항 존재
+- `IN(subquery)`에서 서브쿼리는 상관 서브쿼리가 아니어야함
+- 서브쿼리는 `GROUP BY` 또는 집합 함수들이 사용돼도 구체화 사용 가능해야함
+- 구체화가 사용된 경우에는 내부 임시 테이블이 사용
+
+<br>
+
+### 중복 제거(Duplicated Weed-out)
+세미 조인 서브쿼리를 일반적인 `INNER JOIN` 쿼리로 실행하고 마지막에 중복된 레코드 제거  
+
+<img width="600" alt="duplicateweedout" src="https://github.com/user-attachments/assets/db37da33-c0a3-48c5-825d-2052dd36e6da" />
+
+```
+-- // 일시적으로 중복 제거 실행 계획을 사용하도록 유도
+mysql> SET optimizer_switch = 'materialization=off';
+mysql> SET optimizer_switch = 'firstmatch=off';
+mysql> SET optimizer_switch = 'loosescan=off';
+mysql> SET optimizer_switch = 'duplicateweedout=on';
+
+mysql> EXPLAIN
+         SELECT * FROM employees e
+         WHERE e.emp_no IN (SELECT s.emp_no FROM salaries s WHERE s.salary > 150000);
+
++----+-------------+-------+--------+-----------+-------------------------------------------+
+| id | select_type | table | type   | key       | Extra                                     |
++----+-------------+-------+--------+-----------+-------------------------------------------+
+|  1 | SIMPLE      | s     | range  | ix_salary | Using where; Using index; Start temporary |
+|  1 | SIMPLE      | e     | eq_ref | PRIMARY   | End temporary                             |
++----+-------------+-------+--------+-----------+-------------------------------------------+
+```
+
+<br>
+
+### 컨디션 팬아웃(condition_fanout_filter)
+조인을 실행할 때 테이블의 순서는 쿼리 성능에 매우 큰 영향  
+해당 최적화는 옵티마이저가 더 정교한 계산을 거쳐서 실행 계획을 수립하기 때문에 더 많은 시간과 컴퓨팅 자원 사용  
+쿼리 실행 계획이 잘못된 선택을 별로 안한다면 해당 최적화 방법은 사용하지 않는 것 권장  
+
+```
+mysql> SET oprimizer_switch = 'condition_fanout_filter=off';
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+           INNER JOIN salaries s ON s.emp_no = e.emp_no
+         WHERE e.first_name = 'Matt'
+           AND e.hire_date BETWEEN '1985-11-21' AND '1986-11-21';
+
++----+-------+--------------+------+----------+-------------+
+| id | table | key          | rows | filtered | Extra       |
++----+-------+--------------+------+----------+-------------+
+|  1 | e     | ix_firstname |  233 |   100.00 | Using where |
+|  1 | s     | PRIMARY      |   10 |   100.00 | NULL        |
++----+-------+--------------+------+----------+-------------+
+
+mysql> SET oprimizer_switch = 'condition_fanout_filter=on';
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+           INNER JOIN salaries s ON s.emp_no = e.emp_no
+         WHERE e.first_name = 'Matt'
+           AND e.hire_date BETWEEN '1985-11-21' AND '1986-11-21';
+
++----+-------+------+--------------+------+----------+-------------+
+| id | table | type | key          | rows | filtered | Extra       |
++----+-------+------+--------------+------+----------+-------------+
+|  1 | e     | ref  | ix_firstname |  233 |    23.20 | Using where |
+|  1 | s     | ref  | PRIMARY      |   10 |   100.00 | NULL        |
++----+-------+------+--------------+------+----------+-------------+
+```
+
+<br>
+
+아래 조건에서 `filtered` 칼럼의 값 예측 가능  
+1. 조건절에 사용된 칼럼에 대해 인덱스가 있는 경우  
+2. 조건절에 사용된 칼럼에 대해 히스토그램이 존재하는 경우  
+
+<br>
+
+### 파생 테이블 머지(derived_merge)
+이전 버전에서는 `FROM` 절에 사용된 서브쿼리를 먼저 실행한 후 그 결과로 임시 테이블 생성  
+이때 사용된 서브쿼리를 파생 테이블(`Derived Table`)이라고 표현  
+
+```
+mysql> EXPLAIN
+         SELECT * FROM
+           (SELECT * FROM employees WHERE first_name = 'Matt') derived_table
+         WHERE derived_table.hire_date = '1986-04-03';
+
++----+-------------+------------+------+--------------+
+| id | select_type | table      | type | key          |
++----+-------------+------------+------+--------------+
+|  1 | PRIMARY     | <derived2> | ref  | <auto_key0>  |
+|  2 | DERIVED     | employees  | ref  | ix_firstname |
++----+-------------+------------+------+--------------+
+```
+
+<br>
+
+해당 최적화는 파생 테이블로 만들어지는 서브쿼리를 외부 쿼리와 병합해서 서브쿼리 부분을 제거  
+
+```
+mysql> EXPLAIN
+         SELECT * FROM
+           (SELECT * FROM employees WHERE first_name = 'Matt') derived_table
+         WHERE derived_table.hire_date = '1986-04-03';
+
++----+-------------+-----------+-------------+---------------------------+
+| id | select_type | table     | type        | key                       |
++----+-------------+-----------+-------------+---------------------------+
+|  1 | SIMPLE      | employees | index_merge | ix_hiredate, ix_firstname |
++----+-------------+-----------+-------------+---------------------------+
+
+mysql> SHOW WARNINGS \G
+*************************** 1. row ***************************
+  Level: Note
+   Code: 1003
+Message: /* select#1 */ SELECT employees.employees.emp_no AS emp_no
+       employees.employees.birth_date AS birth_date,
+       employees.employees.first_name AS first_name,
+       employees.employees.last_name AS last_name,
+       employees.employees.gender AS gender,
+       employees.employees.hire_date AS hire_date
+FROM employees.employees
+WHERE ((employees.employees.hire_date = DATE '1986-04-03')
+       AND (employees.employees.first_name = 'Matt'))
+```
+
+<br>
+
+아래 경우의 서브쿼리는 외부 쿼리로 수동 병합 작성 권장  
+- `SUM()` 또는 `MIN()`, `MAX()` 같은 집계 함수와 윈도우 함수가 사용된 서브쿼리
+- `DISTINCT` 사용된 서브쿼리
+- `GROUP BY` 또는 `HAVING` 사용된 서브쿼리
+- `LIMIT` 사용된 서브쿼리
+- `UNION` 또는 `UNION ALL` 포함하는 서브쿼리
+- `SELECT` 절에 사용된 서브쿼리
+- 값이 변경되는 사용자 변수가 사용된 서브쿼리
+
+<br>
+
+### 인비저블 인덱스(use_invisible_indexes)
+8.0 버전부터 인덱스 가용 상태 제어 가능  
+인덱스를 삭제하지 않고 해당 인덱스를 사용하지 못하도록 제어 가능  
+
+```sql
+## 옵티마이저가 인덱스를 사용하지 못하도록 변경
+ALTER TABLE employees ALTER INDEX ix_hiredate INVISIBLE;
+
+## 옵티마이저가 인덱스를 사용할 수 있도록 변경
+ALTER TABLE employees ALTER INDEX ix_hiredate VISIBLE;
+```
+
+<br>
+
+`use_invisible_indexes` 옵티아미어 옵션을 사용하면 `INVISIBLE` 설정된 인덱스도 옵티마이저가 사용 가능  
+
+```sql
+SET optimizer_switch = 'use_invisible_indexes=on';
+```
+
+<br>
+
+### 스킵 스캔(skip_scan)
+인덱스는 기본적으로 값이 정렬된 상태  
+
+```sql
+ALTER TABLE employees ADD INDEX ix_gender_birthdate (gender, birth_date);
+
+## 인덱스 사용 불가 쿼리
+SELECT * FROM employees WHERE birth_date >= '1965-02-01';
+
+## 인덱스 사용 가능 쿼리
+SELECT * FROM employees WHERE gender = 'M' AND birth_date >= '1965-02-01';
+```
+
+<br>
+
+다중 칼럼 인덱스에서 선행 칼럼이 조건절에 사용되지 않더라도 후행 칼럼의 조건만으로 인덱스를 이용한 쿼리 성능 개선이 가능  
+
+```sql
+SET optimizer_switch = 'skip_scan=on';
+
+## 특정 테이블에 대해 인덱스 스킵 스캔 사용하도록 힌트 사용
+SELECT /*+ SKIP_SCAN(employees)*/ COUNT(*)
+FROM employees
+WHERE birth_date >= '1965-02-01';
+
+## 특정 테이블과 인덱스에 대해 인덱스 스킵 스캔 사용하도록 힌트 사용
+SELECT /*+ SKIP_SCAN(employees ix_gender_birthdate)*/ COUNT(*)
+FROM employees
+WHERE birth_date >= '1965-02-01';
+
+## 특정 테이블에 대해 인덱스 스킵 스캔 사용하지 않도록 힌트 사용
+SELECT /*+ NO_SKIP_SCAN(employees)*/ COUNT(*)
+FROM employees
+WHERE birth_date >= '1965-02-01';
+```
+
+<br>
+
+### 해시 조인(hash_join)
+8.0.18 버전부터 해시 조인이 추가로 지원  
+
+<img width="450" alt="hashjoin" src="https://github.com/user-attachments/assets/be6f0deb-c86d-49e3-ba13-2ddbde85502d" />
+
+해시 조인은 첫번째 레코드를 탐색하는데 많은 시간이 걸리지만 최종 레코드 탐색이 빠름(`Best Throughput` 전략 적합)  
+네스티드 루프 조인은 최종 레코드를 탐색하는데 많은 시간이 걸리지만 첫번째 레코드 탐색이 빠름(`Best Response-time` 전략 적합)  
+
+<br>
+
+
+
+
+
+
+
 
 
 
