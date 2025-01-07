@@ -177,7 +177,7 @@ MySQL에서 제공하는 잠금과는 별개로 스토리지 엔진 내부에서
 <br>
 
 ### 넥스트 키 락
-레코드 락과 갭 락을 합쳐 놓은 횽태  
+레코드 락과 갭 락을 합쳐 놓은 형태  
 `STATEMENT` 포맷의 바이너리 로그를 사용하는 서버에서는 `REPEATABLE READ` 격리 수준 사용  
 `innodb_locks_unsafe_for_binlog` 시스템 변수값이 비활성화된 상태라면 변경을 위해 검색하는 레코드에는 넥스트 키 락 방식으로 잠금  
 바이너리 로그에 기록된 쿼리가 레플리카 서버에서 실행될 때 소스 서버 결과와 동일한 결과를 만들어내도록 보장  
@@ -222,7 +222,7 @@ InnoDB 잠금은 레코드를 잠그는 것이 아닌 인덱스를 잠그는 방
 
 ```
 ## first_name 칼럼에 ix_firstname 인덱스 존재
-mysql> SELECT COUNT(*) FRO employees WHERE first_name='Georgi';
+mysql> SELECT COUNT(*) FROM employees WHERE first_name='Georgi';
 +-------+
 | count |
 +-------+
