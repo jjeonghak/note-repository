@@ -735,6 +735,8 @@ mysql> EXPLAIN
 프로브 단계는 나머지 테이블의 레코드를 읽어서 해시 테이블의 일치 레코드를 탐색하는 과정  
 이때 읽는 테이블을 프로브 테이블이라고 표현  
 
+<br>
+
 ```
 mysql> EXPLAIN FOORMAT=TREE
          SELECT *
@@ -749,19 +751,153 @@ mysql> EXPLAIN FOORMAT=TREE
         -> Table scan on de  (cost=33979.30 rows=331143)
 ```
 
+<img width="550" alt="hashjoin" src="https://github.com/user-attachments/assets/b3334c96-9923-421d-b1a7-0ffc1f28bbf7" />
 
+`Tree` 실행 계획에서 가장 최하단 제일 안쪽(들여쓰기가 가장 많이 된) 테이블이 빌드 테이블로 선정  
+해당 빌드 테이블을 이용해서 해시 테이블을 생성  
+이후 프로브 테이블을 스캔하면서 해시 테이블의 레코드를 찾아 결과를 반환  
 
+<br>
 
+<img width="600" alt="hashjoinwithchunk" src="https://github.com/user-attachments/assets/d0cae33f-c5ff-41e6-a0a8-dd71c1707f03" />
 
+해시 테이블을 메모리에 저장할 때 조인 버퍼를 사용  
+만약 조인 버퍼 공간이 부족할 경우 빌드 테이블과 프로브 테이블을 청크로 분리한 후 청크 별로 해시 조인 처리  
+생성된 해시 테이블이 조인 버퍼보다 큰지 알 수 없기 때문에 우선 1차 처리 필수  
+빌드 테이블을 순회하면서 조인 버퍼 공간을 넘은 경우 나머지 레코드를 청크로 구분해서 저장  
 
+<br>
 
+<img width="600" alt="hashjoinwithchunk2" src="https://github.com/user-attachments/assets/8dc02ddc-df39-4cf7-b361-bb75eb11acd8" />
 
+1차 조인이 완료된 후 디스크에 저장된 빌드 테이블 청크에서 첫번째 청크를 읽어서 다시 메모리 해시 테이블을 구축  
+이후 프로브 테이블 청크에서 첫번째 청크를 읽으면서 새로 구축된 메모리 해시 테이블과 조인 수행  
+디스크에 저장된 청크 개수만큼 이 과정을 반복  
+2차 해시 함수를 이용해서 빌드 테이블과 프로브 테이블을 동일 개수의 청크로 분리 필수  
 
+<br>
 
+### 인덱스 정렬 선호(prefer_ordering_index)
+옵티마이저는 `ORDER BY` 또는 `GROUP BY` 구문을 인덱스로 처리 가능한 경우, 실행 계뢱에서 이 인덱스 가중치를 높이 설정  
 
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees
+         WHERE hire_date BETWEEN '1985-01-01' AND '1985-02-01'
+         ORDER BY emp_no;
 
++----+-----------+-------+---------+--------+-------------+
+| id | table     | type  | key     | rows   | Extra       |
++----+-----------+-------+---------+--------+-------------+
+|  1 | employees | index | PRIMARY | 300252 | Using where |
++----+-----------+-------+---------+--------+-------------+
+```
 
+해당 쿼리는 두가지 실행 계획 선택 가능  
+1. `ix_hiredate` 인덱스를 이용해서 조건에 일치하는 레코드를 탐색한 후 `emp_no` 정렬  
+2. 프라이머리 키 `emp_no` 정순으로 읽으면서 레코드 별 조건 비교  
 
+조건절에 맞는 레코드가 적은 경우는 1번 방법이 효율적  
+하지만 옵티마이저는 가끔 이러한 상황에서도 2번 방법을 선택하는 경우 존재  
+비효율적으로 프라이머리 키를 이용한 인덱스 풀 스캔이 발생  
 
+<br>
 
+```sql
+## 현재 커넥션에 대해서만 prefer_ordering_index 옵션 비활성화
+SET SESSION optimizer_switch = 'prefer_ordering_index=OFF';
 
+## 현재 쿼리에 대해서만 prefer_ordering_index 옵션 비활성화
+SELECT /*+ SET_VAR(optimizer_switch = 'prefer_ordering_index=OFF') */ ... FROM ...
+```
+
+옵티마이저가 이러한 실수를 자주한다면 `prefer_ordering_index` 비활성화 권장  
+
+<br>
+
+### 조인 최적화 알고리즘
+조인 쿼리의 실행 계획 최적화를 Exhaustive 검색 알고리즘과 Greedy 검색 알고리즘 존재  
+하나의 쿼리에서 조인되는 테이블의 개수가 많아지면 실행 계획을 수립하는데 많은 시간 소요  
+
+<br>
+
+### Exhaustive 검색 알고리즘
+
+```sql
+SELECT * FROM t1, t2, t3, t4 WHERE ...
+```
+
+<img width="550" alt="exhaustive" src="https://github.com/user-attachments/assets/60fbed04-ccc4-40e2-aac1-8647f205d216" />
+
+5.0 이전 버전에서 사용되던 조인 최적화 기법  
+FROM 절에 명시된 모든 테이블의 조합에 대해 실행 계획 비용을 계산해서 최적의 조합 하나를 찾는 방법  
+테이블이 n개라면 가능한 조인 조합은 모두 n!  
+
+<br>
+
+### Greedy 검색 알고리즘
+
+<img width="600" alt="greedy" src="https://github.com/user-attachments/assets/2f1c737f-c0cb-4381-baff-c8962dd949e1" />
+
+Exhaustive 알고리즘의 시간 소모적인 문제점을 해결하기 위해 5.0 버전부터 도입된 조인 최적화 기법  
+
+1. 전체 n개의 테이블 중에서 `optimizer_search_depth` 시스템 설정 변수에 정의된 개수의 테이블로 가능한 조인 조합 생성
+2. 1번에서 생성된 조인 조합 중 최소 비용 실행 계획 하나 선정
+3. 2번에서 선정된 실행 계획의 첫번째 테이블을 부분 실행 계획의 첫번쨰 테이블로 선정
+4. 전체 n - 1개 테이블 중 `optimizer_search_depth` 시스템 설정 변수에 정의된 개수의 테이블로 가능한 조인 조합 생성
+5. 4번에서 생성된 조인 조합들을 하나씩 3번에서 생성된 부분 실행 계획에 대입해 실행 비용 계산
+6. 5번의 비용 계산 결과, 최적의 실행 계획에서 두번째 테이블을 3번에서 생성된 부분 실행 계획의 두번째 테이블로 선정
+7. 남은 테이블이 모두 없어질 때까지 4 ~ 6번 과정을 반복 실행
+8. 최종적으로 부분 실행 계획이 테이블의 조인 순서로 결정
+
+<br>
+
+`optimizer_search_depth` 시스템 변수에 설정된 값에 따라 조인 최적화 비용이 감소, 기본값 62  
+이외에도 조인 최적화를 위해 `optimizer_prune_level` 시스템 변수 제공  
+
+- `optimizer_search_depth` 시스템 변수는 Greedy 알고리즘과 Exhaustive 검색 알고리즘 중 어떤 알고리즘을 사용할지 결정  
+  `0 ~ 62`까지 정수값을 설정가능, 설정된 개수로 한정해서 최적의 실행 계획 산출  
+  0으로 설정한 경우 옵티마이저가 자동으로 결정  
+  조인에 사용된 테이블의 개수가 설정값보다 크면 설정된 개수만큼의 테이블은 Exhaustive 검색이 사용, 나머지만 Greedy 처리  
+  조인에 사용된 테이블의 개수가 설정값보다 작으면 Exhaustive 검색만 사용  
+  만약 `optimizer_prune_level` 시스템 변수값이 0인 경우, `optimizer_search_depth` 값을 `4 ~ 5`로 설정  
+
+- `optimizer_prune_level` 시스템 변수는 5.0 버전부터 추가된 Heuristic 검색이 작동하는 방식 제어  
+  다양한 조인 순서의 비용을 계산하는 도중 이미 계산했던 조인 순서 비용보다 큰 경우 언제든지 중간에 포기 가능  
+  `1`로 설정한 경우 Heuristic 최적화 적용, `0`인 경우 적용하지 않음  
+  해당 값은 1로 설정하는 것을 권장  
+
+<br>
+
+```sql
+SET SESSION optimizer_prune_level = { 0 | 1 };
+SET SESSION optimizer_search_depth = { 1 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 62 };
+
+EXPLAIN
+  SELECT *
+  FROM tab01, tab02, tab03, tab04, tab05, tab06, tab07, tab08, tab09, tab010,
+       tab011, tab012, tab013, tab014, tab015, tab016, tab017, tab018, tab019, tab020,
+       tab021, tab022, tab023, tab024, tab025, tab026, tab027, tab028, tab029, tab030
+  WHERE tab01.fd1 = tab02.fd1
+    AND tab02.fd1 = tab03.fd2 AND tab03.fd1 = tab04.fd2 AND tab04.fd2 = tab05.fd1
+    AND tab05.fd2 = tab06.fd1 AND tab06.fd2 = tab07.fd2 AND tab07.fd1 = tab08.fd1
+    AND tab08.fd2 = tab09.fd1 AND tab09.fd1 = tab10.fd2 AND tab10.fd1 = tab11.fd2
+    AND tab11.fd2 = tab12.fd1 AND tab12.fd2 = tab13.fd2 AND tab13.fd1 = tab14.fd1
+    AND tab14.fd2 = tab15.fd1 AND tab15.fd1 = tab16.fd2 AND tab16.fd1 = tab17.fd1
+    AND tab17.fd2 = tab18.fd2 AND tab18.fd1 = tab19.fd1 AND tab19.fd2 = tab20.fd2
+    AND tab20.fd1 = tab21.fd1 AND tab21.fd2 = tab22.fd2 AND tab22.fd1 = tab23.fd1
+    AND tab23.fd2 = tab24.fd2 AND tab24.fd1 = tab25.fd2 AND tab25.fd1 = tab26.fd2
+    AND tab26.fd1 = tab27.fd2 AND tab27.fd1 = tab28.fd1 AND tab28.fd2 = tab29.fd1
+    AND tab29.fd2 = tab30.fd2;
+```
+
+- `optimizer_prune_level` 시스템 변수값이 1인 경우  
+  `optimizer_search_depth` 시스템 변수값을 변화시키면서 쿼리의 실행 계획 수립 시간 확인 결과는 거의 차이없이 0.01초 이내 완료  
+  
+- `optimizer_prune_level` 시스템 변수값이 0인 경우  
+  `optimizer_search_depth` 시스템 변수값 15 이상부터 실행 계획 수립에만 너무 많은 시간이 소요  
+
+  <img width="450" alt="heuristic" src="https://github.com/user-attachments/assets/41f4fceb-81d1-4fdc-beed-39b88e45fea7" />
+
+<br>
