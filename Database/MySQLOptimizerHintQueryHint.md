@@ -240,6 +240,169 @@ ERROR 3024 (HY000): Query execution was interrupted, maximum statement execution
 <br>
 
 ### SET_VAR
+옵티마이저 힌트뿐만 아니라 MySQL 서버 시스템 변수도 쿼리 실행 계획에 많은 영향  
+대표적으로 `join_buffer_size` 시스템 변수값에 따라 조인 버퍼 활용 실행 계획 선택  
+다양한 형태의 시스템 변수 조정이 필요한 경우 사용  
+
+```sql
+EXPLAIN
+  SELECT /*+ SET_VAR(optimizer_switch='index_merge_intersection=off') */ *
+  FROM employees
+  WHERE first_name='Georgi' AND emp_no BETWEEN 10000 AND 20000;
+```
+
+<br>
+
+### SEMIJOIN & NO_SEMIJOIN
+| 최적화 전략 | 힌트 |
+|--|--|
+| Duplicate Weed-out | SEMIJOIN(DUPSWEEDOUT) |
+| First Match | SEMIJOIN(FIRSTMATCH) |
+| Loose Scan | SEMIJOIN(LOOSESCAN) |
+| Materialization | SEMIJOIN(MATERIALIZATION) |
+| Table Pull-out | 없음 |
+
+<br>
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM departments d
+         WHERE d.dept_no IN
+           (SELECT de.dept_no FROM dept_emp de);
+
++----+-------------+-------+-------+-------------+----------------------------+
+| id | select_type | table | type  | key         | Extra                      |
++----+-------------+-------+-------+-------------+----------------------------+
+|  1 | SIMPLE      | d     | index | ux_deptname | Using index                |
+|  1 | SIMPLE      | de    | ref   | PRIMARY     | Using index; FirstMatch(d) |
++----+-------------+-------+-------+-------------+----------------------------+
+
+mysql> EXPLAIN
+         SELECT *
+         FROM departments d
+         WHERE d.dept_no IN
+           (SELECT /*+ SEMIJOIN(MATERIALIZATION) */ de.dept_no FROM dept_emp de);
+
++----+--------------+-------------+--------+---------------------+--------------------------+
+| id | select_type  | table       | type   | key                 | Extra                    |
++----+--------------+-------------+--------+---------------------+--------------------------+
+|  1 | SIMPLE       | d           | index  | ux_deptname         | Using where; Using index |
+|  1 | SIMPLE       | <subquery2> | eq_ref | <auto_distinct_key> | NULL                     |
+|  2 | MATERIALIZED | de          | index  | ix_fromdate         | Using index              |
++----+--------------+-------------+--------+---------------------+--------------------------+
+```
+
+<br>
+
+```sql
+EXPLAIN
+  SELECT /*+ SEMIJOIN(@sub1 MATERIALIZATION) */ *
+  FROM departments d
+  WHERE d.dept_no IN
+    (SELECT /*+ QB_NAME(sub1) */ de.dept_no FROM dept_emp de);
+
+EXPLAIN
+  SELECT *
+  FROM departments d
+  WHERE d.dept_no IN
+    (SELECT /*+ NO_SEMIJOIN(DUPSWEEDOUT, FIRSTMATCH) */ de.dept_no FROM dept_emp de);
+```
+
+서브쿼리에 블록 이름을 지정하고 외부 블록에서 명시 가능  
+특정 세미 조인 최적화 전략을 사용하지 않도록 제어 가능  
+
+<br>
+
+### SUBQUERY
+서브쿼리 최적화는 세미 조인 최적화가 사용되지 못하는 경우 사용  
+
+| 최적화 방법 | 힌트 |
+|--|--|
+| IN-to-EXISTS | SUBQUERY(INTOEXISTS) |
+| Materialization | SUBQUERY(MATERIALIZATION) |
+
+<br>
+
+세미 조인 최적화는 주로 `IN(subquery)` 형태의 쿼리에 사용 가능  
+안티 세미 조인 최적화에는 사용 불가  
+
+<br>
+
+### BNL & NO_BNL & HASHJOIN & NO_HASHJOIN
+8.0.19 버전까지는 블록 네스티드 루프 조인 사용  
+8.0.20 버전부터는 블록 네스티드 루프 조인이 아닌 해시 조인 사용  
+8.0.20 버전부터 BNL 힌트 유효, 그 이전버전에서만 HASH 힌트 유효  
+또한 조인 조건에 사용되는 칼럼 인덱스가 적절히 준비된 경우 해시 조인은 거의 사용되지 않음  
+
+```sql
+EXPLAIN
+  SELECT /*+ BNL(e, de) */ *
+  FROM employees e
+    INNER JOIN dept_emp de ON de.emp_no = e.emp_no;
+```
+
+<br>
+
+### JOIN_FIXED_ORDER & JOIN_ORDER & JOIN_PREFIX & JOIN_SUFFIX
+조인 순서를 결정하기 위해 전통적으로 `STRAIGHT_JOIN` 힌트 사용  
+하지만 FROM 절에 사용된 모든 테이블 순서를 강제하기 때문에 일부분만 강제 불가능  
+이를 보완하기 위해 아래 힌트 제공  
+- `JOIN_FIXED_ORDER`: `STRAIGHT_JOIN` 힌트와 동일  
+- `JOIN_ORDER`:  힌트에 명시된 테이블 순서대로 조인 실행  
+- `JOIN_PREFIX`: 드라이빙 테이블만 강제  
+- `JOIN_SUFFIX`: 드리븐 테이블만 강제  
+
+```sql
+## FROM 절에 나열된 모든 테이블 순서 강제
+SELECT /*+ JOIN_FIXED_ORDER() */ *
+  FROM employees e
+    INNER JOIN dept_emp de ON de.emp_no = e.emp_no
+    INNER JOIN departments d ON d.dept_no = de.dept_no;
+
+## 일부 테이블 순서 강제
+SELECT /*+ JOIN_ORDER(d, de) */ *
+  FROM employees e
+    INNER JOIN dept_emp de ON de.emp_no = e.emp_no
+    INNER JOIN departments d ON d.dept_no = de.dept_no;
+
+## 드라이빙 테이블 순서 강제
+SELECT /*+ JOIN_PREFIX(e, de) */ *
+  FROM employees e
+    INNER JOIN dept_emp de ON de.emp_no = e.emp_no
+    INNER JOIN departments d ON d.dept_no = de.dept_no;
+
+## 드리븐 테이블 순서 강제
+SELECT /*+ JOIN_SUFFIX(de, e) */ *
+  FROM employees e
+    INNER JOIN dept_emp de ON de.emp_no = e.emp_no
+    INNER JOIN departments d ON d.dept_no = de.dept_no;
+```
+
+<br>
+
+### MERGE & NO_MERGE
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
