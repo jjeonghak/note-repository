@@ -382,15 +382,110 @@ SELECT /*+ JOIN_SUFFIX(de, e) */ *
 <br>
 
 ### MERGE & NO_MERGE
+예전 버전의 MySQL 서버는 FROM 절에 사용된 서브쿼리를 항상 내부 임시 테이블로 파생 테이블 생성  
+8.0 버전부터는 서브쿼리와 외부쿼리를 병합할 수 있도록 최적화 도입  
 
+```
+mysql> EXPLAIN
+         SELECT /*+ MERGE(dub) */ *
+         FROM ( SELECT *
+           FROM employees
+           WHERE first_name = 'Matt') sub LIMIT 10;
 
++----+-------------+-----------+------+--------------+-------+
+| id | select_type | table     | type | key          | Extra |
++----+-------------+-----------+------+--------------+-------+
+|  1 | SIMPLE      | employees | ref  | ix_firstname | NULL  |
++----+-------------+-----------+------+--------------+-------+
 
+mysql> EXPLAIN
+         SELECT /*+ NO_MERGE(sub) */ *
+         FROM (SELECT *
+           FROM employees
+           WHERE first_name = 'Matt') sub LIMIT 10;
 
++----+-------------+------------+------+--------------+-------+
+| id | select_type | table      | type | key          | Extra |
++----+-------------+------------+------+--------------+-------+
+|  1 | PRIMARY     | <derived2> | ALL  | NULL         | NULL  |
+|  2 | DERIVED     | employees  | ref  | ix_firstname | NULL  |
++----+-------------+------------+------+--------------+-------+
+```
 
+<br>
 
+### INDEX_MERGE & NO_INDEX_MERGE
+테이블 당 하나의 인덱스만 이용해 쿼리를 처리하려는 경향 존재  
+여러 인덱스를 통해 검색된 레코드로부터 교집합, 합집합으로 결과 반환 가능  
 
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees
+         WHERE first_name = 'Georgi' AND emp_no BETWEEN 10000 AND 20000;
 
++-------------+-----------------------+-----------------------------------------------------+
+| type        | key                   | Extra                                               |
++-------------+-----------------------+-----------------------------------------------------+
+| index_merge | ix_firstname, PRIMARY | Using intersect(ix_firstname, PRIMARY); Using where |
++-------------+-----------------------+-----------------------------------------------------+
 
+mysql> EXPLAIN
+         SELECT /*+ NO_INDEX_MERGE(employees PRIMARY) */ *
+         FROM employees
+         WHERE first_name = 'Georgi' AND emp_no BETWEEN 10000 AND 20000;
+
++-----------+-------+--------------+-----------------------+
+| table     | type  | key          | Extra                 |
++-----------+-------+--------------+-----------------------+
+| employees | range | ix_firstname | Using index condition |
++-----------+-------+--------------+-----------------------+
+
+mysql> EXPLAIN
+         SELECT /*+ INDEX_MERGE(employees ix_firstname, PRIMARY) */ *
+         FROM employees
+         WHERE first_name = 'Georgi' AND emp_no BETWEEN 10000 AND 20000;
+
++-----------+-------------+-----------------------+----------------------------------------+
+| table     | type        | key                   | Extra                                  |
++-----------+-------------+-----------------------+----------------------------------------+
+| employees | index_merge | ix_firstname, PRIMARY | Using intersect(ix_firstname, PRIMARY) |
++-----------+-------------+-----------------------+----------------------------------------+
+```
+
+<br>
+
+### NO_ICP
+인덱스 컨디션 푸시다운 최적화는 사용 가능하다면 항상 성능 향상에 영향  
+최대한 사용하는 방향으로 실행 계획을 수립  
+그렇기 때문에 컨디션 푸시다운 최적화를 사용하도록 유도하는 힌트는 제공하지 않음  
+
+```
+mysql> ALTER TABLE employees ADD INDEX ix_lastname_firstname (last_name, first_name);
+mysql> EXPLAIN
+         SELECT *
+         FROM employees
+         WHERE last_name = 'Acton' AND first_name LIKE '%sal';
+
++-----------+------+-----------------------+---------+-----------------------+
+| table     | type | key                   | key_len | Extra                 |
++-----------+------+-----------------------+---------+-----------------------+
+| employees | ref  | ix_lastname_firstname | 66      | Using index condition |
++-----------+------+-----------------------+---------+-----------------------+
+
+mysql> EXPLAIN
+         SELECT /*+ NO_ICP(employees ix_lastname_firstname) */ *
+         FROM employees
+         WHERE last_name = 'Acton' AND first_name LIKE '%sal';
+
++-----------+------+-----------------------+---------+-------------+
+| table     | type | key                   | key_len | Extra       |
++-----------+------+-----------------------+---------+-------------+
+| employees | ref  | ix_lastname_firstname | 66      | Using where |
++-----------+------+-----------------------+---------+-------------+
+```
+
+<br>
 
 
 
