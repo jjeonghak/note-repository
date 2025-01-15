@@ -487,38 +487,66 @@ mysql> EXPLAIN
 
 <br>
 
+### SKIP_SCAN & NO_SKIP_SCAN
+인덱스 스킵 스캔은 인덱스 선행 칼럼에 대한 조건이 없어도 해당 인덱스를 사용할 수 있도록 최적화  
+하지만 조건이 누락된 선행 칼럼이 가지는 유니크 값이 많아질수록 성능이 오히려 감소  
 
+```
+mysql> ALTER TABLE employees
+         ADD INDEX ix_gender_birthdate (gender, birth_date);
 
+mysql> EXPLAIN
+         SELECT gender, birth_date
+         FROM employees
+         WHERE birth_date >= '1965-02-01';
 
++-----------+-------+---------------------+---------+----------------------------------------+
+| table     | type  | key                 | key_len | Extra                                  |
++-----------+-------+---------------------+---------+----------------------------------------+
+| employees | range | ix_gender_birthdate | 4       | Using where; Using index for skip scan |
++-----------+-------+---------------------+---------+----------------------------------------+
 
+mysql> EXPLAIN
+         SELECT /*+ NO_SKIP_SCAN(employees ix_gender_birthdaate) */ gender, birth_date
+         FROM employees
+         WHERE birth_date >= '1965-02-01';
 
++-----------+-------+---------------------+---------+--------------------------+
+| table     | type  | key                 | key_len | Extra                    |
++-----------+-------+---------------------+---------+--------------------------+
+| employees | range | ix_gender_birthdate | 4       | Using where; Using index |
++-----------+-------+---------------------+---------+--------------------------+
+```
 
+<br>
 
+### INDEX & NO_INDEX
+이전에 사용되던 인덱스 힌트를 대체하는 용도로 사용
 
+| 인덱스 힌트 | 옵티마이저 힌트 |
+|--|--|
+| USE INDEX | INDEX |
+| USE INDEX FOR GROUP BY | GROUP_INDEX |
+| USE INDEX FOR ORDER BY | ORDER_INDEX |
+| IGNORE INDEX | NO_INDEX |
+| IGNORE INDEX FOR GROUP BY | NO_GROUP_INDEX |
+| IGNORE INDEX FOR ORDER BY | NO_ORDER_INDEX |
 
+<br>
 
+인덱스 힌트는 특정 테이블 뒤에 사용했기 때문에 별도로 힌트 내에 테이블명 명시 없음  
+하지만 옵티마이저 힌트는 테이블명과 인덱스 이름을 필수로 명시
 
+```sql
+EXPLAIN
+  SELECT *
+  FROM employees USE INDEX(ix_firstname)
+  WHERE first_name = 'Matt';
 
+EXPLAIN
+  SELECT /*+ INDEX(employees ix_firstname) */ *
+  FROM employees
+  WHERE first_name = 'Matt';
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
