@@ -76,12 +76,13 @@ link.size();         // 리스트 크기 반환
 키-값 쌍을 저장하는 해시맵
 
 ````java
-map.put(k, v);           // 주어진 키에 값 저장
-map.get(k);              // 주어진 키에 해당하는 값 반환
-map.remove(k);           // 주어진 키와 값 제거
-map.containsKey(k);      // 키 존재 여부 확인
-map.containsValue(v);    // 값 존재 여부 확인
-map.size();              // 엔트리 갯수 반환
+map.put(k, v);                                             // 주어진 키에 값 저장
+map.get(k);                                                // 주어진 키에 해당하는 값 반환
+map.remove(k);                                             // 주어진 키와 값 제거
+map.containsKey(k);                                        // 키 존재 여부 확인
+map.containsValue(v);                                      // 값 존재 여부 확인
+map.size();                                                // 엔트리 갯수 반환
+map.computeIfAbsent(k, k -> new ArrayList<>()).add(v));    // 키 값이 있는지 조회, 키 없는 경우 콜백 실행
 ````
 
 ````java
