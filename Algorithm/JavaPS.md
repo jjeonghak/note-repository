@@ -19,6 +19,7 @@ arr.length;              // 배열 길이 반환
 Arrays.toString(arr);    // 배열 요소를 문자열로 출력
 Arrays.sort(arr);        // 배열 오름차순 정렬
 Arrays.fill(arr, 1);     // 배열 초기화
+Arrays.stream(arr);      // 배열 스트림 변환
 ````
 
 ````java
