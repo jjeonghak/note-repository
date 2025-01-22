@@ -27,6 +27,10 @@ Arrays.sort(arr);                               // 오름차순 정렬
 Arrays.sort(arr, Comparator.reverseOrder());    // 내림차순 정렬
 ````
 
+```java
+Sting[] list = Arrays.stream(arr).toArray(String[]::new);    // 리스트로 변환
+```
+
 <br>
 
 ## ArrayList
