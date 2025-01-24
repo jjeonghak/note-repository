@@ -76,7 +76,7 @@ mysql> SELECT * FROM INFORMATION_SCHEMA.OPTIMITZER_TRACE \G
 ...
 ```
 
-`filesort-summary` 섹션의 `sort_algorithm` 필드에 정렬 알고리즘 표시  
+`filesort_summary` 섹션의 `sort_algorithm` 필드에 정렬 알고리즘 표시  
 `sort_mode` 필드에 정렬 방식 표시  
 
 - `<sort_key, rowid>`: 정렬 키와 레코드의 로우 아이디만 가져와서 정렬(투 패스)  
