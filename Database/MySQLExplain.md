@@ -531,7 +531,143 @@ mysql> EXPLAIN
 ### selecct_type 칼럼
 각 단위 SELECT 쿼리가 어떤 타입의 쿼리인지 표시  
 
+<br>
 
+### SIMPLE
+단순한 조회 쿼리인 경우  
+쿼리 문장이 복잡하더라도 실행 계획에서 SIMPLE인 단위 쿼리는 하나만 존재  
+일반적으로 제일 바깥 조회 쿼리가 SIMPLE로 표시  
+
+
+<br>
+
+### PRIMARY
+UNION이나 서브쿼리를 가지는 조회 쿼리의 실행 계획에서 가장 바깥쪽에 있는 단위 쿼리가 PRIMARY로 표시  
+SIMPLE과 마찬가지로 PRIMARY 단위 조회 쿼리는 하나만 존재  
+
+<br>
+
+### UNION
+UNION으로 결합하는 단위 조회 쿼리 가운데 첫 번째를 제외한 두번째 이후 단위 조회 쿼리는 UNION으로 표시  
+첫번째 단위 조회는 UNION되는 쿼리 결과를 모아서 저장하는 임시 테이블(DERIVED)로 표시  
+
+```
+mysql> EXPLAIN
+         SELECT * FROM
+           (SELECT emp_no FROM employees e1 LIMIT 10) UNION ALL
+           (SELECT emp_no FROM employees e2 LIMIT 10) UNION ALL
+           (SELECT emp_no FROM employees e3 LIMIT 10) tb;
+
++----+-------------+------------+-------+-------------+------+--------+-------------+
+| id | select_type | table      | type  | key         | rdf  | rows   | Extra       |
++----+-------------+------------+-------+-------------+------+--------+-------------+
+|  1 | PRIMARY     | <derived2> | ALL   | NULL        | NULL |     30 | NULL        |
+|  2 | DERIVED     | e1         | index | ix_hiredate | NULL | 300252 | Using index |
+|  3 | UNION       | e2         | index | ix_hiredate | NULL | 300252 | Using index |
+|  4 | UNION       | e3         | index | ix_hiredate | NULL | 300252 | Using index |
++----+-------------+------------+-------+-------------+------+--------+-------------+
+```
+
+<br>
+
+### DEPENDENT UNION
+UNION ALL로 집합을 결합하는 쿼리에서 표시  
+결합된 단위 쿼리가 외부 쿼리에 의해 영향을 받는 것을 의미  
+내부 쿼리가 외부의 값을 참조해서 처리되는 경우  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e1
+         WHERE e1.emp_no IN (
+           SELECT e2.emp_no FROM employees e2 WHERE e2.first_name = 'Matt'
+           UNION
+           SELECT e3.emp_no FROM employees e3 WHERE e3.last_name = 'Matt'
+         );
+
++----+--------------------+------------+--------+---------+------+--------+-----------------+
+| id | select_type        | table      | type   | key     | ref  | rows   | Extra           |
++----+--------------------+------------+--------+---------+------+--------+-----------------+
+|  1 | PRIMARY            | e1         | ALL    | NULL    | NULL | 300252 | Using where     |
+|  2 | DEPENDENT SUBQUERY | e2         | eq_ref | PRIMARY | func |      1 | Using where     |
+|  3 | DEPENDENT UNION    | e3         | eq_ref | PRIMARY | func |      1 | Using where     |
+|NULL| UNION RESULT       | <union2,3> | ALL    | NULL    | NULL |   NULL | Using tempoaray |
++----+--------------------+------------+--------+---------+------+--------+-----------------+
+```
+
+<br>
+
+### UNION RESULT
+UNION 결과를 담아두는 테이블을 의미  
+8.0 버전부터 UNION ALL의 경우 임시 테이블을 사용하지 않도록 기능 개선  
+하지만 UNION은 여전히 임시 테이블에 결과를 버퍼링  
+실제 쿼리에서 단위 쿼리가 아니기 때문에 별도의 id 값은 부여되지 않음  
+
+```
+mysql> EXPLAIN
+         SELECT emp_no FROM salaries WHERE salary > 100000
+         UNION DISTINT
+         SELECT emp_no FROM dept_emp WHERE from_date > '2001-01-01';
+
++----+--------------+------------+-------+-------------+--------+--------------------------+
+| id | select_type  | table      | type  | key         | rows   | Extra                    |
++----+--------------+------------+-------+-------------+--------+--------------------------+
+|  1 | PRIMARY      | salaries   | range | ix_salary   | 191348 | Using where; Using index |
+|  2 | UNION        | dept_emp   | range | ix_fromdate |   5325 | Using where; Using index |
+|NULL| UNION RESULT | <union1,2> | ALL   | NULL        |   NULL | Using temporary          |
++----+--------------+------------+-------+-------------+--------+--------------------------+
+
+mysql> EXPLAIN
+         SELECT emp_no FROM salaries WHERE salary > 100000
+         UNION ALL
+         SELECT emp_no FROM dept_emp WHERE from_date > '2001-01-01';
+
++----+-------------+----------+-------+-------------+--------+--------------------------+
+| id | select_type | table    | type  | key         | rows   | Extra                    |
++----+-------------+----------+-------+-------------+--------+--------------------------+
+|  1 | PRIMARY     | salaries | range | ix_salary   | 191348 | Using where; Using index |
+|  2 | UNION       | dept_emp | range | ix_fromdate |   5325 | Using where; Using index |
++----+-------------+----------+-------+-------------+--------+--------------------------+
+```
+
+<br>
+
+### SUBQUERY
+FROM 절 이외에서 사용되는 서브쿼리만을 의미  
+FROM 절에 사용되는 서브쿼리는 DERIVE로 표시  
+
+서브쿼리는 사용하는 위치에 따라 각각 다른 이름 보유  
+- 중첩된 쿼리(`nested query`): SELECT되는 칼럼에 사용된 경우
+- 서브쿼리(`subquery`): WHERE 절에 사용된 경우
+- 파생 테이블(`derived table`): FROM 절에 사용된 경우
+
+서브쿼리가 반환하는 값의 특성에 따라서도 구분 가능
+- 스칼라 서브쿼리(`scalar subquery`): 하나의 값만 반환하는 쿼리
+- 로우 서브쿼리(`row subquery`): 칼럼의 개수와 관계없이 하나의 레코드만 반환하는 쿼리
+
+<br>
+
+### DEPENDENT SUBQUERY
+서브쿼리가 바깥쪽 조회 쿼리에서 정의된 칼럼을 사용하는 경우  
+안쪽 서브쿼리 결과가 바깥쪽 조회 쿼리 칼럼에 의존적  
+
+```
+mysql> EXPLAIN
+         SELECT e.first_name,
+           (SELECT COUNT(*)
+           FROM dept_emp de, dept_manager dm
+           WHERE dm.dept_no = dept_no AND dde.emp_no = e.emp_no) AS cnt
+         FROM employees e
+         WHERE e.first_name = 'Matt';
+
++----+--------------------+-------+------+-------------------+------+-------------+
+| id | select_type        | table | type | key               | rows | Extra       |
++----+--------------------+-------+------+-------------------+------+-------------+
+|  1 | PRIMARY            | e     | ref  | ix_firstname      |  233 | Using index |
+|  2 | DEPENDNET SUBQUERY | de    | ref  | ix_empno_fromdate |    1 | Using index |
+|  2 | DEPENDNET SUBQUERY | dm    | ref  | PRIMARY           |    2 | Using index |
++----+--------------------+-------+------+-------------------+------+-------------+
+```
 
 
 
