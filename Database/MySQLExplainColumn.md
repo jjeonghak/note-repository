@@ -733,10 +733,23 @@ mysql> EXPLAIN
 +----+-------------+----------+-------+-------------+---------+------+
 ```
 
+<br>
+
+## filtered 칼럼
+조건에 맞는 레코드 건수를 예측해서 표시  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e, salaries s
+         WHERE e.first_name = 'Matt'
+           AND e.hire_date BETWEEN '1990-01-01' AND '1991-01-01'
+           AND s.emp_no = e.emp_no
+           AND s.from_date BETWEEN '1990-01-01' AND '1991-01-01'
+           AND s.salary BETWEEN 50000 AND 60000;
 
 
-
-
+```
 
 
 
