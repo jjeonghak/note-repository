@@ -737,6 +737,7 @@ mysql> EXPLAIN
 
 ## filtered 칼럼
 조건에 맞는 레코드 건수를 예측해서 표시  
+해당 값을 얼마나 정확히 예측하는지에 따라 조인의 성능 차이 발생  
 
 ```
 mysql> EXPLAIN
@@ -747,9 +748,133 @@ mysql> EXPLAIN
            AND s.emp_no = e.emp_no
            AND s.from_date BETWEEN '1990-01-01' AND '1991-01-01'
            AND s.salary BETWEEN 50000 AND 60000;
++----+-------------+-------+------+--------------+------+----------+
+| id | select_type | table | type | key          | rows | filtered |
++----+-------------+-------+------+--------------+------+----------+
+|  1 | SIMPLE      | e     | ref  | ix_firstname |  233 |    16.03 |
+|  1 | SIMPLE      | s     | ref  | PRIMARY      |   10 |     0.48 |
++----+-------------+-------+------+--------------+------+----------+
 
+mysql> EXPLAIN
+         SELECT /*+ JOIN_ORDER(s, e) */ *
+         FROM employees e, salaries s
+         WHERE e.first_name = 'Matt'
+           AND e.hire_date BETWEEN '1990-01-01' AND '1991-01-01'
+           AND s.emp_no = e.emp_no
+           AND s.from_date BETWEEN '1990-01-01' AND '1991-01-01'
+           AND s.salary BETWEEN 50000 AND 60000;
++----+-------------+-------+--------+-----------+------+----------+
+| id | select_type | table | type   | key       | rows | filtered |
++----+-------------+-------+--------+-----------+------+----------+
+|  1 | SIMPLE      | s     | range  | ix_salary | 3314 |    11.11 |
+|  1 | SIMPLE      | e     | eq_ref | PRIMARY   |    1 |     5.00 |
++----+-------------+-------+--------+-----------+------+----------+
+```
+
+<br>
+
+## Extra 칼럼
+주로 내부적인 처리 알고리즘에 대해 깊이있는 내용을 표시  
+MySQL 서버 버전이 업그레이드되고 최적화 기능이 도일될수록 새로운 내용 추가 예정  
+
+<br>
+
+### const row not found
+쿼리 실행 계획에서 const 접근 방식으로 테이블을 읽었지만 레코드가 1건도 존재하지 않는 경우  
+
+<br>
+
+### Deleting all rows
+MyISAM 스토리지 엔진과 같이 스토리지 엔진 핸들러 차원에서 테이블의 모든 레코드를 삭제하는 기능을 제공하는 경우  
+8.0 버전부터 InnoDB, MyISAM 모두 더 이상 표시되지 않음  
+조건절 없는 DELETE 쿼리보단 `TRUNCATE TABLE` 명령 권장  
+
+<br>
+
+### Distinct
+중복처리를 위해 조인하지 않아도 되는 항목은 모두 무시  
+
+<img width="650" alt="distinct" src="https://github.com/user-attachments/assets/2ecd40e5-3a31-4b21-9e89-503993ecedb1" />
 
 ```
+mysql> EXPLAIN
+         SELECT DISTINCT d.dept_no
+         FROM departments d, dept_emp de
+         WHERE de.dept_no = d.dept_no;
++----+-------------+-------+-------+-------------+------------------------------+
+| id | select_type | table | type  | key         | Extra                        |
++----+-------------+-------+-------+-------------+------------------------------+
+|  1 | SIMPLE      | d     | index | ux_deptname | Using index; Using temporary |
+|  1 | SIMPLE      | de    | ref   | PRIMARY     | Using index; Distinct        |
++----+-------------+-------+-------+-------------+------------------------------+
+```
+
+<br>
+
+### FirstMatch
+세미 조인 최적화 중 FirstMatch 전략이 사용된 경우  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+         WHERE e.first_name = 'Matt'
+           AND e.emp_no IN (
+             SELECT t.emp_no FROM titles t
+             WHERE t.from_date BETWEEN '1995-01-01' AND '1995-01-30'
+           );
++----+-------+------+--------------+------+-----------------------------------------+
+| id | table | type | key          | rows | Extra                                   |
++----+-------+------+--------------+------+-----------------------------------------+
+|  1 | e     | ref  | ix_firstname |  233 | NULL                                    |
+|  1 | t     | ref  | PRIMARY      |    1 | Using where; Using index; FirstMatch(e) |
++----+-------+------+--------------+------+-----------------------------------------+
+```
+
+<br>
+
+### Full scan on NULL key
+`col1 IN (SELECT col2 FROM ...)` 같은 조건을 가진 쿼리에서 자주 발생  
+`col1` 값이 NULL인 경우 `NULL IN (SELECT col2 FROM ,,,)` 형태로 변경  
+- 서브쿼리가 1건이라도 결과 레코드를 가진다면 최종 비교 결과는 NULL
+- 서브쿼리가 1건도 결과 레코드를 가지지 않는다면 최종 비교 결과는 FALSE
+
+해당 비교 과정에서 `col1` 값이 NULL인 경우 서브쿼리에 사용된 테이블에 대한 풀 테이블 스캔 필수  
+만약 `col1` 칼럼이 NOT NULL 조건이 정의된 경우 이러한 차선책을 사용하지 않음  
+
+```
+mysql> EXPLAIN
+         SELECT d.dept_no, NULL IN (SELECT id.dept_name FROM departments d2) FROM departments d1;
++----+-------------+-------+----------------+-------------------------------------------------+
+| id | select_type | table | type           | Extra                                           |
++----+-------------+-------+----------------+-------------------------------------------------+
+|  1 | PRIMARY     | d1    | index          | Using index                                     |
+|  2 | SUBQUERY    | d2    | index_subquery | Using where; Using index; Full scan on NULL key |
++----+-------------+-------+----------------+-------------------------------------------------+
+```
+
+<br>
+
+### Impossible HAVING
+쿼리에 사용된 HAVING 조건에 만족하는 레코드가 없는 경우  
+
+```
+mysql> EXPLAIN
+         SELECT e.emp_no, COUNT(*) AS cnt
+         FROM employees e
+         WHERE e.emp_no = 10001
+         GROUP BY e.emp_no
+         HAVING e.emp_no IS NULL;
++----+-------------+-------+------+------+-------------------+
+| id | select_type | table | type | key  | Extra             |
++----+-------------+-------+------+------+-------------------+
+|  1 | SIMPLE      | NULL  | NULL | NULL | Impossible HAVING |
++----+-------------+-------+------+------+-------------------+
+```
+
+
+
+
 
 
 
