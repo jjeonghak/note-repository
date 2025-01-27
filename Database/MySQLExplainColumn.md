@@ -857,6 +857,7 @@ mysql> EXPLAIN
 
 ### Impossible HAVING
 쿼리에 사용된 HAVING 조건에 만족하는 레코드가 없는 경우  
+해당 메시지가 출력됐다면 쿼리가 제대로 작성되지 못한 경우가 대부분  
 
 ```
 mysql> EXPLAIN
@@ -872,19 +873,303 @@ mysql> EXPLAIN
 +----+-------------+-------+------+------+-------------------+
 ```
 
+<br>
 
+### Impossible WHERE
+WHERE 조건절이 항상 FALSE가 될 수 밖에 없는 경우  
 
+```
+mysql> EXPLAIN
+         SELECT * FROM employees WHERE emp_no IS NULL;
++----+-------------+-------+------+------------------+
+| id | select_type | table | type | Extra            |
++----+-------------+-------+------+------------------+
+|  1 | SIMPLE      | NULL  | NULL | Impossible WHERE |
++----+-------------+-------+------+------------------+
+```
 
+<br>
 
+### LooseScan
+세미 조인 최적화 중에서 LooseScan 최적화 전략 사용시 표시  
 
+```
+mysql> EXPLAIN
+         SELECT * FROM departments d WHERE d.dept_no IN (
+           SELECT de.dept_no FROM dept_emp de);
++----+-------+--------+---------+--------+------------------------+
+| id | table | type   | key     | rows   | Extra                  |
++----+-------+--------+---------+--------+------------------------+
+|  1 | de    | index  | PRIMARY | 331143 | Using index; LooseScan |
+|  1 | d     | eq_ref | PRIMARY |      1 | NULL                   |
++----+-------+--------+---------+--------+------------------------+
+```
 
+<br>
 
+### No matching min/max row
+`MIN()` 또는 `MAX()` 같은 집합 함수가 있는 쿼리의 조건절에 일치하는 레코드가 한 건도 없는 경우  
 
+```
+mysql> EXPLAIN
+         SELECT MIN(dept_no), MAX(dept_no)
+         FROM dept_emp WHERE dept_no = '';
++----+-------------+-------+------+------+-------------------------+
+| id | select_type | table | type | key  | Extra                   |
++----+-------------+-------+------+------+-------------------------+
+|  1 | SIMPLE      | NULL  | NULL | NULL | No matching min/max row |
++----+-------------+-------+------+------+-------------------------+
+```
 
+<br>
 
+### no matching row in const table
+const 방식으로 접근할 때 일치하는 레코드가 없는 경우  
 
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM dept_emp de,
+           (SELECT emp_no FROM employees WHERE emp_no = 0) tb1
+         WHERE tb1.emp_no = de.emp_no AND de.dept_no = 'd005';
++----+-------------+-------+------+------+--------------------------------+
+| id | select_type | table | type | key  | Extra                          |
++----+-------------+-------+------+------+--------------------------------+
+|  1 | SIMPLE      | NULL  | NULL | NULL | no matching row in const table |
++----+-------------+-------+------+------+--------------------------------+
+```
 
+<br>
 
+### No matching rows after partition pruning
+파티션된 테이블에 대한 UPDATE, DELETE 명령 실행 계획에서 대상 파티션이 없는 경우 표시  
+
+```
+mysql> EXPLAIN DELETE FROM employees_parted WHERE hire_date >= '2020-01-01';
++----+-------------+-------+------------+------+------------------------------------------+
+| id | select_type | table | partitions | type | Extra                                    |
++----+-------------+-------+------------+------+------------------------------------------+
+|  1 | DELETE      | NULL  | NULL       | NULL | No matching rows after partition pruning |
++----+-------------+-------+------------+------+------------------------------------------+
+```
+
+<br>
+
+### No tables used
+FROM 절이 없는 쿼리나 FROM DUAL 형태의 쿼리 실행 계획에서 표시  
+
+```
+mysql> EXPLAIN SELECT 1;
+mysql> EXPLAIN SELECT 1 FROM dual;
++----+-------------+-------+------+------+----------------+
+| id | select_type | table | type | key  | Extra          |
++----+-------------+-------+------+------+----------------+
+|  1 | SIMPLE      | NULL  | NULL | NULL | No tables used |
++----+-------------+-------+------+------+----------------+
+```
+
+<br>
+
+### Not exists
+안티 조인(`Anti-JOIN`) 형식인 `NOT IN(subquery)` 또는 `NOT EXISTS` 연산자로 처리하는 경우  
+주로 아우터 조인을 이용해 안티 조인을 수행하는 쿼리에서 표시  
+조인 조건에 일치하는 레코드가 여러 건 있다고 하더라도 딱 1건만 조회하고 처리를 완료하는 최적화 의미  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM dept_emp de
+           LEFT JOIN departments d ON de.dept_no = d.dept_no
+         WHERE d.dept_no IS NULL;
++----+-------------+-------+--------+---------+-------------------------+
+| id | select_type | table | type   | key     | Extra                   |
++----+-------------+-------+--------+---------+-------------------------+
+|  1 | SIMPLE      | de    | ALL    | NULL    | NULL                    |
+|  1 | SIMPLE      | d     | eq_ref | PRIMARY | Using where; Not exists |
++----+-------------+-------+--------+---------+-------------------------+
+```
+
+<br>
+
+### Plan isn't ready yet
+8.0 버전부터 다른 커넥션의 실행 중인 쿼리의 실행 계획 조회 가능  
+다른 커넥션에서 아직 쿼리 실행 계획을 수립하지 못한 상태인 경우  
+해당 메시지가 출력된 경우 여유 시간을 더 주고, 다시 `EXPLAIN FOR CONNECTION` 명령을 실행하면 해결  
+
+```
+mysql> SHOW PROCESSLIST;
++----+------+---------+-------+------------+----------------------------------------+
+| Id | User | Command | Time  | State      | Info                                   |
++----+------+---------+-------+------------+----------------------------------------+
+|  8 | root | Query   |     7 | User sleep | SELECT * FROM employees WHERE SLEEP(1) |
+|  9 | root | Query   |     0 | starting   | SHOW PROCESSLIST                       |
++----+------+---------+-------+------------+----------------------------------------+
+
+mysql> EXPLAIN FOR CONNECTION 8;
++----+-------------+-----------+------+--------+-------------+
+| id | select_type | table     | type | rows   | Extra       |
++----+-------------+-----------+------+--------+-------------+
+|  1 | SIMPLE      | employees | ALL  | 300473 | Using where |
++----+-------------+-----------+------+--------+-------------+
+```
+
+<br>
+
+### Range checked for each record(index map: N)
+레코드마다 인덱스 레인지 스캔을 체크  
+각 레코드마다 풀 스캔과 인덱스 레인지 스캔 중 하나를 골라야하는 경우  
+type 칼럼은 ALL로 표시되지만 `index map`에 표시된 후보 인덱스를 사용할지 여부를 항상 검토  
+후보 인덱스값은 16진수로 표시되며, 해당 값을 이진수로 변경해서 `SHOW CREATE TABLE` 명령으로 나오는 인덱스 순번으로 배치  
+각 자리가 1인 경우에 후보 인덱스  
+
+<img width="450" alt="rangecheckedforeachrecord" src="https://github.com/user-attachments/assets/ba41d7f6-4ca0-4aff-a0b3-5d73157ddfa4" />
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e1, employees e2
+         WHERE e2.emp_no >= e1.emp_no;
++----+-------------+-------+------+------------------------------------------------+
+| id | select_type | table | type | Extra                                          |
++----+-------------+-------+------+------------------------------------------------+
+|  1 | SIMPLE      | e1    | ALL  | NULL                                           |
+|  1 | SIMPLE      | e2    | ALL  | Range checked for each record (index map: 0x1) |
++----+-------------+-------+------+------------------------------------------------+
+```
+
+<br>
+
+### Recursive
+8.0 버전부터 CTE(`Common Table Expression`)를 이용한 재귀 쿼리 작성 가능  
+WITH 구문을 이용한 CTE가 사용됐다고 무조건 표시되지 않고 꼭 구문 안에 CTE가 재귀적으로 사용되야 표시  
+
+```
+mysql> EXPLAIN
+         WITH RECURSIVE cte (n) AS
+         (
+           SELECT 1
+           UNION ALL
+           SELECT n + 1 FROM cte WHERE n < 5
+         )
+         SELECT * FROM cte;
++----+-------------+------------+------+------+------------------------+
+| id | select_type | table      | type | key  | Extra                  |
++----+-------------+------------+------+------+------------------------+
+|  1 | PRIMARY     | <derived2> | ALL  | NULL | NULL                   |
+|  2 | DERIVED     | NULL       | NULL | NULL | No tables used         |
+|  3 | UNION       | cte        | ALL  | NULL | Recursive; Using where |
++----+-------------+------------+------+------+------------------------+
+```
+
+### Rematerialize
+8.0 버전부터 래터럴 조인 기능 추가  
+선행 테이블의 레코드 별로 서브쿼리를 실행해서 그 결과를 매번 임시 테이블에 저장  
+
+```
+mysql> EXPLAIN
+         SELECT * FROM employees e
+         LEFT JOIN LATERAL (
+           SELECT *
+           FROM salaries s
+           WHERE s.emp_no = e.emp_no
+           ORDER BY s.from_date DESC LIMIT 2) s2 ON s2.emp_no = e.emp_no
+         WHERE e.first_name = 'Matt';
++----+-------------------+------------+------+--------------+----------------------------+
+| id | select_type       | table      | type | key          | Extra                      |
++----+-------------------+------------+------+--------------+----------------------------+
+|  1 | PRIMARY           | e          | ref  | ix_firstname | Rematerialize (<derived2>) |
+|  1 | PRIMARY           | <derived2> | ref  | <auto_key0>  | NULL                       |
+|  2 | DEPENDENT DERIVED | s          | ref  | PRIMARY      | Using filesort             |
++----+-------------------+------------+------+--------------+----------------------------+
+```
+
+<br>
+
+### Select tables optimized away
+인덱스를 오름차순 또는 내림차순으로 1건만 읽는 형태 최적화가 적용된 경우  
+
+```
+mysql> EXPLAIN
+         SELECT MAX(emp_no), MIN(emp_no) FROM employees;
+
+mysql> EXPLAIN
+         SELECT MAX(from_date), MIN(from_date) FROM salaries WHERE emp_no = 10002;
++----+-------------+-------+------+------+------------------------------+
+| id | select_type | table | type | key  | Extra                        |
++----+-------------+-------+------+------+------------------------------+
+|  1 | SIMPLE      | NULL  | NULL | NULL | Select tables optimized away |
++----+-------------+-------+------+------+------------------------------+
+```
+
+<br>
+
+### Start temporary, End temporary
+세미 조인 최적화 중 Duplicate Weed-out 최적화 전략이 사용된 경우  
+중복 건을 제거하기 위해 내부 임시 테이블을 사용할때 첫번째 테이블은 Start temporary, 마지막 테이블은 End temporary 표시  
+
+```
+mysql> EXPLAIN
+         SELECT * FORM employees e
+         WHERE e.emp_no IN (SELECT s.emp_no FROM salaries s WHERE s.salary > 150000);
++----+-------------+-------+--------+-----------+-------------------------------------------+
+| id | select_type | table | type   | key       | Extra                                     |
++----+-------------+-------+--------+-----------+-------------------------------------------+
+|  1 | SIMPLE      | s     | range  | ix_salary | Using where; Using index; Start temporary |
+|  1 | SIMPLE      | e     | eq_ref | PRIMARY   | End temporary                             |
++----+-------------+-------+--------+-----------+-------------------------------------------+
+```
+
+<br>
+
+### unique row not found
+각각 유니크 칼럼으로 아우터 조인을 수행하는 쿼리에서 아우터 테이블에 일치하는 레코드가 없는 경우  
+
+```
+mysql> EXPLAIN
+         SELECT t1.fdpk
+         FROM tb_test1 t1
+         LEFT JOIN tb_test2 t2 ON t2.fdpk = t1.fdpk WHERE t1.fdpk = 2;
++----+-------------+-------+-------+---------+------+----------------------+
+| id | select_type | table | type  | key     | rows | Extra                |
++----+-------------+-------+-------+---------+------+----------------------+
+|  1 | SIMPLE      | t1    | const | PRIMARY |    1 | Using index          |
+|  1 | SIMPLE      | t2    | const | PRIMARY |    0 | unique row not found |
++----+-------------+-------+-------+---------+------+----------------------+
+```
+
+<br>
+
+### Using filesort
+인덱스를 사용하지 못하고 정렬을 수행하는 경우  
+
+```
+mysql> EXPLAIN
+         SELECT * FROM employees
+         ORDER BY last_name DESC;
++----+-------------+-----------+------+------+--------+----------+----------------+
+| id | select_type | table     | type | key  | rows   | filtered | Extra          |
++----+-------------+-----------+------+------+--------+----------+----------------+
+|  1 | SIMPLE      | employees | ALL  | NULL | 300363 |   100.00 | Using filesort |
++----+-------------+-----------+------+------+--------+----------+----------------+
+```
+
+<br>
+
+### Using index(커버링 인덱스)
+인덱스만 읽어서 처리할 수 있는 경우  
+type 칼럼의 index 표기와는 반대되는 개념(인덱스 풀 스캔)  
+
+```
+mysql> EXPLAIN
+         SELECT emp_no, first_name
+         FROM employees
+         WHERE first_name BETWEEN 'Babette' AND 'Gad';
++----+-------------+-----------+-------+--------------+-------+--------------------------+
+| id | select_type | table     | type  | key          | rows  | Extra                    |
++----+-------------+-----------+-------+--------------+-------+--------------------------+
+|  1 | SIMPLE      | employees | range | ix_firstname | 93802 | Using where; Using index |
++----+-------------+-----------+-------+--------------+-------+--------------------------+
+```
 
 
 
