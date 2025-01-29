@@ -1158,6 +1158,8 @@ mysql> EXPLAIN
 ### Using index(커버링 인덱스)
 인덱스만 읽어서 처리할 수 있는 경우  
 type 칼럼의 index 표기와는 반대되는 개념(인덱스 풀 스캔)  
+커버링 인덱스로 처리 가능한 경우 많은 성능 차이 발생  
+하지만 무조건 커버링 인덱스를 위해 많은 칼럼을 추가하면 인덱스 크기가 커지고 변경 작업이 매우 느려질 가능성 존재  
 
 ```
 mysql> EXPLAIN
@@ -1171,18 +1173,204 @@ mysql> EXPLAIN
 +----+-------------+-----------+-------+--------------+-------+--------------------------+
 ```
 
+<br>
 
+### Using index condition
+인덱스 컨디션 푸시 다운 최적화를 사용한 경우  
 
+```
+mysql> EXPLAIN
+         SELECT * FROM employees WHERE last_name = 'Acton' AND first_name LIKE '%sal';
++----+-------------+-----------+------+-----------------------+---------+-----------------------+
+| id | select_type | table     | type | key                   | key_len | Extra                 |
++----+-------------+-----------+------+-----------------------+---------+-----------------------+
+|  1 | SIMPLE      | employees | ref  | ix_lastname_firstname | 66      | Using index condition |
++----+-------------+-----------+------+-----------------------+---------+-----------------------+
+```
 
+<br>
 
+### Using index for group-by
+그루핑 작업은 기준 칼럼을 이용해 정렬 작업을 수행하고 다시 정렬된 결과로 묶는 작업 필요  
+인덱스를 사용한다면 별도의 정렬 작업이 필요없음  
+그루핑을 위해 인덱스를 읽는 방법은 루스 인덱스 스캔  
 
+<br>
 
+### 타이트 인덱스 스캔(인덱스 스캔)을 통한 GROUP BY 처리
+인덱스를 이용할수 있더라도 집계함수처럼 모든 인덱스를 읽어야하는 경우 필요한 레코드만 읽을 수 없음  
+이때는 루스 인덱스 스캔이 아니기 때문에 `Using index for group-by` 메시지 출력 안함  
 
+```
+mysql> EXPLAIN
+         SELECT first_name, COUNT(*) AS counter
+         FROM employees GROUP BY first_anme;
++----+-------------+-----------+-------+--------------+---------+-------------+
+| id | select_type | table     | type  | key          | key_len | Extra       |
++----+-------------+-----------+-------+--------------+---------+-------------+
+|  1 | SIMPLE      | employees | index | ix_firstname | 58      | Using index |
++----+-------------+-----------+-------+--------------+---------+-------------+
+```
 
+<br>
 
+### 루스 인덱스 스캔을 통한 GROUP BY 처리
+단일 칼럼으로 구성된 인덱스에서는 그루핑 칼럼말고 아무것도 조회하지 않는 쿼리라면 루스 인덱스 스캔 가능  
+조건절과 그루핑이 같은 인덱스를 사용하더라도 조건절에 의해 검색된 레코드 건수가 적은 경우 인덱스 루스 스캔 사용 안함  
+- WHERE 조건절이 없는 경우  
+WHERE 절의 조건이 없는 쿼리는 루스 인덱스 스캔이 가능  
+그렇지 못한 경우 타이트 인덱스 스캔이나 별도의 정렬 과정 필수  
 
+- WHERE 조건절이 있지만 검색을 위해 인덱스를 사용하지 못하는 경우  
+WHERE 조건절이 인덱스를 사용하지 못하는 경우 먼저 그루핑을 위해 인덱스를 읽고 조건절 처리를 위한 추가 읽기 필수  
+이 경우도 루스 인덱스 스캔을 이용할 수 없고 타이트 인덱스 스캔 과정 필수  
 
+- WHERE 절의 조건이 있고, 검색을 위해 인덱스를 사용하는 경우  
+index_merge 접근 방식이 아닌 경우 하나의 인덱스만 사용 가능  
+그루핑을 위한 인덱스와 조건절 인덱스가 다른 경우 옵티마이저는 보통 조건절 인덱스를 이용  
 
+```
+mysql> EXPLAIN
+         SELECT emp_no, MIN(from_date) AS first_changed_date, MAX(from_date) AS last_changed_date
+         FROM salaries GROUP BY emp_no;
++----+-------------+----------+-------+---------+---------+--------------------------+
+| id | select_type | table    | type  | key     | key_len | Extra                    |
++----+-------------+----------+-------+---------+---------+--------------------------+
+|  1 | SIMPLE      | salaries | range | PRIMARY | 4       | Using index for group-by |
++----+-------------+----------+-------+---------+---------+--------------------------+
 
+mysql> EXPLAIN
+         SELECT emp_no, MIN(from_date) AS first_changed_date, MAX(from_date) AS last_changed_date
+         FROM salaries
+         WHERE emp_no BETWEEN 10001 AND 10099
+         GROUP BY emp_no;
++----+-------------+----------+-------+---------+---------+--------------------------+
+| id | select_type | table    | type  | key     | key_len | Extra                    |
++----+-------------+----------+-------+---------+---------+--------------------------+
+|  1 | SIMPLE      | salaries | range | PRIMARY | 4       | Using where; Using index |
++----+-------------+----------+-------+---------+---------+--------------------------+
+```
 
+<br>
 
+### Using index for skip scan
+인덱스 스킵 스캔 최적화를 사용하는 경우  
+
+```
+mysql> ALTER TABLE employees ADD INDEX ix_gender_birthdate (gender, birth_date);
+mysql> EXPLAIN
+         SELECT gender, birth_date
+         FROM employees
+         WHERE birth_date >= '1965-02-01';
++----+-----------+-------+---------------------+----------------------------------------+
+| id | table     | type  | key                 | Extra                                  |
++----+-----------+-------+---------------------+----------------------------------------+
+|  1 | employees | range | ix_gender_birthdate | Using where; Using index for skip scan |
++----+-----------+-------+---------------------+----------------------------------------+
+```
+
+<br>
+
+### Using join buffer(Block Nested Loop), Using join buffer(Batched Key Access), Using join buffer(hash join)
+일반적으로 빠른 쿼리 실행을 위해 조인되는 칼럼은 인덱스를 생성  
+모든 테이블이 필요한 것이 아닌 드리븐 테이블의 칼럼에만 필요  
+만약 드리븐 테이블에 적절한 인덱스가 없는 경우 네스티드 루프 조인이나 해시 조인을 적용하며 이때 조인 버퍼 사용  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM dept_emp de, empoloyees e
+         WHERE de.from_date > '2005-01-01' AND e.emp_no < 10904;
++----+-------------+-------+-------+-------------+--------------------------------------------+
+| id | select_type | table | type  | key         | Extra                                      |
++----+-------------+-------+-------+-------------+--------------------------------------------+
+|  1 | SIMPLE      | de    | range | ix_fromdate | Using index condition                      |
+|  1 | SIMPLE      | e     | range | PRIMARY     | Using where; Using join buffer (hash join) |
++----+-------------+-------+-------+-------------+--------------------------------------------+
+```
+
+<br>
+
+### Using MRR
+스토리지 엔진 레벨에서는 쿼리 실행의 전체적인 부분을 알지 못함  
+스토리지 엔진은 MySQL 엔진이 넘겨주는 키 값을 기준으로 레코드를 한건씩 읽어서 반환하는 방식  
+이 같은 단점을 보완하기 위해 MRR(`Multi Range Read`) 최적화 도입  
+여러 개의 키 값을 한번에 스토리지 엔진에 전달  
+전달받은 키들을 정렬해서 최소한의 페이지 접근만 수행  
+
+```
+mysql> EXPLAIN
+         SELECT /*+ JOIN_ORDER(s, e) */ *
+         FROM employees e, salaries s
+         WHERE e.first_name = 'Matt'
+           AND e.hire_date BETWEEN '1990-01-01' AND '1991-01-01'
+           AND s.emp_no = e.emp_no
+           AND s.from_date BETWEEN '1990-01-01' AND '1991-01-01'
+           AND s.salary BETWEEN 50000 AND 60000;
++----+-------+--------+-----------+---------+------+----------------------------------+
+| id | table | type   | key       | key_len | rows | Extra                            |
++----+-------+--------+-----------+---------+------+----------------------------------+
+|  1 | s     | range  | ix_salary | 4       | 3314 | Using index condition; Using MRR |
+|  1 | e     | eq_ref | PRIMARY   | 4       |    1 | Using where                      |
++----+-------+--------+-----------+---------+------+----------------------------------+
+```
+
+<br>
+
+### Using sort_union(...), Using union(...), Using intersect(...)
+index_merge 접근 방식으로 실행되는 경우 두 인덱스로부터 읽은 결과를 어떻게 병합했는지 표기  
+- Using intersect(...): 각각의 인덱스를 사용할 수 있는 조건이 AND로 연결된 경우 교집합 추출
+- Using union(...): 각 인덱스를 사용할 수 있는 조건이 OR로 연결된 경우 합집합 추출
+- Using sort_union(...): 위 방식과 같은 작업을 수행하지만 위 방식으로 처리할 수 없는 경우, 프라이머리 키만 먼저 정렬 및 병합한 후 레코드 조회  
+
+<br>
+
+### Using temporary
+임시 테이블을 사용한 경우  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees
+         GROUP BY gender
+         ORDER BY MIN(emp_no);
++----+-------------+-----------+-------+---------------------------------+
+| id | select_type | table     | type  | Extra                           |
++----+-------------+-----------+-------+---------------------------------+
+|  1 | SIMPLE      | employees | index | Using temporary; Using filesort |
++----+-------------+-----------+-------+---------------------------------+
+```
+
+<br>
+
+### Using where
+MySQL 엔진에서 별도의 가공을 해서 필터링 작업을 처리한 경우  
+작업 범위 결정 조건은 스토리지 엔진에서, 체크 조건은 MySQL 엔진에서 처리  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees
+         WHERE emp_no BETWEEN 10001 AND 10100 AND gender = 'F';
++----+-------------+-----------+-------+---------+------+----------+-------------+
+| id | select_type | table     | type  | key     | rows | filtered | Extra       |
++----+-------------+-----------+-------+---------+------+----------+-------------+
+|  1 | SIMPLE      | employees | range | PRIMARY |  100 |    50.00 | Using where |
++----+-------------+-----------+-------+---------+------+----------+-------------+
+```
+
+<br>
+
+### Zero limit
+쿼리 결과값의 메타데이터만 필요해서 `LIMIT 0` 명령을 수행한 경우  
+
+```
+mysql> EXPLAIN SELECT * FROM employees LIMIT 0;
++----+-------------+-------+------+------+-----------+
+| id | select_type | table | type | key  | Extra     |
++----+-------------+-------+------+------+-----------+
+|  1 | SIMPLE      | NULL  | NULL | NULL | Zero limi |
++----+-------------+-------+------+------+-----------+
+```
+
+<br>
