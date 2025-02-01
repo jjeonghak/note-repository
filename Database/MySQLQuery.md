@@ -167,31 +167,3 @@ mysql> SELECT * FROM tb_boolean WHERE bool_value IN (FALSE, TRUE);
 ```
 
 <br>
-
-## MySQL 연산자
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
