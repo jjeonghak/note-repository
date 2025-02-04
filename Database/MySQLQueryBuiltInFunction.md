@@ -340,15 +340,379 @@ UNHEXT() 함수는 16진수 문자열을 읽어서 숫자가 아닌 바이너리
 <br>
 
 ### 암호화 및 해시 함수(MD5, SHA, SHA2)
+MD5, SHA 모두 비대칭형 암호화 알고리즘  
+SHA() 함수는 SHA-1 암호화 알고리즘 사용, 160비트(20바이트) 해시값 반환  
+MD5() 함수는 메시지 다이제스트(`Message Digest`) 알고리즘을 사용, 128비트(16바이트) 해시값 반환  
+두 함수 모두 출력값은 16진수 문자열 형태이기 때문에 저장 공간이 각각 2배로 필요  
+SHA() 함수는 `CHAR(40)`, MD5() 함수는 `CHAR(40)` 타입 필요  
 
+```
+mysql> SELECT MD5('abc');
++----------------------------------+
+| MD5('abc')                       |
++----------------------------------+
+| 900150983cd24fb0d6963f7d28e17f72 |
++----------------------------------+
 
+mysql> SELECT SHA('abc');
++------------------------------------------+
+| SHA('abc')                               |
++------------------------------------------+
+| a9993e364706816aba3e25717850c26c9cd0d89d |
++------------------------------------------+
 
+mysql> SELECT SHA2('abc', 256);
++------------------------------------------------------------------+
+| SHA2('abc', 256)                                                 |
++------------------------------------------------------------------+
+| ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad |
++------------------------------------------------------------------+
+```
 
+<br>
 
+저장 공간을 원래의 16바이트와 20바이트로 줄이기 위해서 BINARY 또는 VARBINARY 타입으로 저장 가능  
+이때 `BINARY(16)` 또는 `BINARY(20)`으로 정의하고 UNHEX() 함수를 이용해 이진값으로 변환해서 저장  
+다시 이진값을 16진수 문자열로 돌릴때는 HEX() 함수를 사용  
 
+```
+mysql> INSERT INTO tab_binary VALUES(UNHEX(MD5('abc')), UNHEX(SHA('abc')), UNHEX(SHA2('abc', 256)));
+mysql> SELECT HEX(col_md5), HEX(col_sha), HEX(col_sha2_256) FROM tab_binary \G
+*************************** 1. row ***************************
+     HEX(col_md5): 900150983CD24FB0D6963F7D28E17F72
+     HEX(col_sha): A9993E364706816ABA3E25717850C26C9CD0B89D
+HEX(col_sha2_256): BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD
+```
 
+<br>
 
+해당 함수는 비대칭형 암호화 알고리즘이고 결과값 중복 가능성이 매우 낮음  
+그렇기 때문에 길이가 긴 데이터 크기를 줄여서 인덱싱하는 용도로도 사용  
 
+```sql
+CREATE TABLE tb_accesslog (
+  access_id BIGINT NOT NULL AUTO_INCREMENT,
+  access_url VARCHAR(1000) NOT NULL,
+  access_dttm DATETIME NOT NULL,
+  PRIMARY KEY (access_id),
+  INDEX ix_accessurl ( (MD5(access_url)) )
+);
+```
 
+```
+-- // 데이터 평문으로 삽입
+mysql> INSERT INTO tb_accesslog VALUES(1, 'http://matt.com', NOW());
 
+-- // 데이터 조회시 평문 검색은 결과 없음
+mysql> SELECT * FROM tb_accesslog WHERE MD5(access_url) = 'http://matt.com';
+Empty set (0.00 sec)
 
+-- // 데이터 조회는 MD5 해시값으로 검색
+mysql> SELECT * FROM tb_accesslog WHERE MD5(access_url) = MD5('http://matt.com');
++-----------+-----------------+---------------------+
+| access_id | access_url      | access_dttm         |
++-----------+-----------------+---------------------+
+|         1 | http://matt.com | 2020-08-23 16:38:55 |
++-----------+-----------------+---------------------+
+
+-- // 131 바이트는 함수 결과 32 글자 바이트(32 * 4)와 메타정보(문자열 길이) 공간
+mysql> EXPLAIN SELECT * FROM tb_accesslog WHERE MD5(access_url) = MD5('http://matt.com');
++----+--------------+---------------------+---------+------+-------+
+| id | table        | type | key          | key_len | rows | Extra |
++----+--------------+---------------------+---------+------+-------+
+|  1 | tb_accesslog | ref  | ix_accessurl | 131     |    1 | NULL  |
++----+--------------+---------------------+---------+------+-------+
+```
+
+<br>
+
+저장 공간을 더 줄이고자 한다면 이진값을 사용  
+
+```sql
+CREATE TABLE tb_accesslog (
+  access_id BIGINT NOT NULL AUTO_INCREMENT,
+  access_url VARCHAR(1000) NOT NULL,
+  access_dttm DATETIME NOT NULL,
+  PRIMARY KEY (access_id),
+  INDEX ix_accessurl ( (UNHEX(MD5(access_url))) )
+);
+```
+
+```
+mysql> SELECT * FROM tb_accesslog WHERE UNHEX(MD5(access_url)) = UNHEX(MD5('http://matt.com'));
++-----------+-----------------+---------------------+
+| access_id | access_url      | access_dttm         |
++-----------+-----------------+---------------------+
+|         1 | http://matt.com | 2020-08-23 16:38:55 |
++-----------+-----------------+---------------------+
+
+mysql> EXPLAIN SELECT * FROM tb_accesslog WHERE UNHEX(MD5(access_url)) = UNHEX(MD5('http://matt.com'));
++----+--------------+---------------------+---------+------+--------------+
+| id | table        | type | key          | key_len | rows | Extra        |
++----+--------------+---------------------+---------+------+--------------+
+|  1 | tb_accesslog | ref  | ix_accessurl | 67      |    1 | Using where  |
++----+--------------+---------------------+---------+------+--------------+
+```
+
+<br>
+
+### 처리 대기(SLEEP)
+프로그래밍 언어나 쉘 스크립트 언어에서 제공하는 `sleep` 기능 수행  
+디버깅 용도도 잠깐 대기하거나 의도적으로 쿼리 실행을 오래 유지할 때 상당히 유용  
+초 단위 인자를 받으며, 어떠한 처리나 값을 반환하지 않음  
+
+```sql
+SELECT SLEEP(1.5) FROM employees WHERE emp_no BETWEEN 10001 AND 10010;
+```
+
+<br>
+
+### 벤치마크(BENCHMARK)
+SLEEP() 함수와 마찬가지로 성틍 테스트용으로 유용  
+첫번째 인자는 반복 수행할 횟수, 두번째 인자는 반복할 표현식  
+이떄 두번째 인자는 꼭 스칼라값을 반환하는 표현식  
+인자로 받은 반환값은 중요하지 않고, 단지 지정한 횟수만큼 반복하는데 얼마나 시간이 소요됐는지 확인  
+네트워크, 쿼리 파싱, 메모리 등의 비용을 고려 못하기 때문에 그 자체로는 큰 의미가 없음  
+두 개의 동일 기능을 상대적으로 분석하는 용도  
+
+```
+mysql> SELECT BENCHMARK(10000000, MD5('abcdefghijk'));
++-----------------------------------------+
+| BENCHMARK(10000000, MD5('abcdefghijk')) |
++-----------------------------------------+
+|                                       0 |
++-----------------------------------------+
+1 row in set (1.26 sec)
+```
+
+<br>
+
+### IP 주소 변환(INET_ATON, INET_NTOA)
+IP 주소는 4바이트의 부호없는 정수  
+하지만 대부분의 DBMS에서는 VARCHAR(15) 타입에 구분자(`.`)를 이용해 저장  
+MySQL에서 지원하는 IP 주소를 문자열과 정수로 변환하는 함수  
+IPv4, IPv6 모두 저장하기 위해서는 BINARY(16)보다는 VARBINARY(16) 타입 사용 권장  
+
+```
+mysql> SELECT HEX(INET6_ATON('fdfe::5a55:caff:fefa:9089'));
++----------------------------------+
+| FDFE0000000000005A55CAFFFEFA9089 |
++----------------------------------+
+
+mysql> SELECT INET6_NTOA('FDFE0000000000005A55CAFFFEFA9089);
++---------------------------+
+| fdfe::5a55:caff:fefa:9089 |
++---------------------------+
+
+mysql> SELECT HEX(INET6_ATON('10.0.5.9'));
++---------+
+| 0A00509 |
++---------+
+
+mysql> SELECT INET6_NTOA(UNHEX('0A00509'));
++----------+
+| 10.0.5.9 |
++----------+
+```
+
+<br>
+
+### JSON 포맷(JSON_PRETTY)
+JSON 칼럼 값을 읽기 쉬운 포맷으로 변환  
+
+```
+mysql> SELECT doc FROM employee_docs WHERE emp_no = 10005;
++------------------------------------------------------------------+
+| doc                                                              |
++------------------------------------------------------------------+
+| {"emp_no": 10005, "gender": "M", "salaries": [{"salary": 9145... |
++------------------------------------------------------------------+
+
+mysql> SELECT JSON_PRETTY(doc) FROM employee_docs WHERE emp_no = 10005 \G
+*************************** 1. row ***************************
+JSON_PRETTY(doc): {
+  "emp_no": 10005,
+  "gender": "M",
+  "salaries": [
+    {
+      "salary": 91453,
+      "to_date": "2001-09-09",
+      "from_date": "2000-09-09"
+    },
+    ...
+  ],
+  ...
+}
+```
+
+<br>
+
+### JSON 필드 크기(JSON_STORAGE_SIZE)
+JSON 데이터는 텍스트 기반이지만 실제 디스크에 저장할때는 BSON(`Binary JSON`) 포맷을 사용  
+하지만 BSON 변환시 저장 공간의 크기를 예측하기 힘들어서 JSON_STORAGE_SIZE() 함수 지원  
+
+```
+mysql> SELECT emp_no, JSON_STORAGE_SIZE(doc) FROM employee_docs LIMIT 2;
++--------+------------------------+
+| emp_no | JSON_STORAGE_SIZE(doc) |
++--------+------------------------+
+|  10001 |                    611 |
+|  10002 |                    383 |
++--------+------------------------+
+```
+
+<br>
+
+### JSON 필드 추출(JSON_EXTRACT)
+JSON 데이터의 필드 값 추출 방법 중 가장 일반적인 방법  
+첫번쨰 인자는 JSON 데이터가 저장된 칼럼 또는 JSON 데이터 자체, 두번쨰 인자는 JSON 경로  
+
+```
+mysql> SELECT emp_no, JSON_EXTRACT(doc, "$.first_name") FROM employee_docs;
++--------+-----------------------------------+
+| emp_no | JSON_EXTRACT(doc, "$.first_name") |
++--------+-----------------------------------+
+|  10001 | "Georgi"                          |
+|    ... | ...                               |
+|  10005 | "Kyoichi"                         |
++--------+-----------------------------------+
+
+mysql> SELECT emp_no, JSON_UNQUOTE(JSON_EXTRACT(doc, "$.first_name")) FROM employee_docs;
++--------+-------------------------------------------------+
+| emp_no | JSON_UNQUOTE(JSON_EXTRACT(doc, "$.first_name")) |
++--------+-------------------------------------------------+
+|  10001 | Georgi                                          |
+|    ... | ...                                             |
+|  10005 | Kyoichi                                         |
++--------+-------------------------------------------------+
+
+mysql> SELECT emp_no, doc->"$.first_name" FROM employee_docs LIMIT 2;
++--------+---------------------+
+| emp_no | doc->"$.first_name" |
++--------+---------------------+
+|  10001 | "Georgi"            |
+|  10002 | "Bezalel"           |
++--------+---------------------+
+
+mysql> SELECT emp_no, doc->>"$.first_name" FROM employee_docs LIMIT 2;
++--------+----------------------+
+| emp_no | doc->>"$.first_name" |
++--------+----------------------+
+|  10001 | Georgi               |
+|  10002 | Bezalel              |
++--------+----------------------+
+```
+
+<br>
+
+### JSON 오브젝트 포함 여부 확인(JSON_CONTAINS)
+JSON 필드를 가지고 있는지 확인하는 함수  
+
+```
+mysql> SELECT emp_no FROM employee_docs
+       WHERE JSON_CONTAIONS(doc, '{"first_name":"Christian"}');
++--------+
+| emp_no |
++--------+
+|  10004 |
++--------+
+
+mysql> SELECT emp_no FROM employee_docs
+       WHERE JSON_CONTAINS(doc, '"Christian"', '$.first_name');
++--------+
+| emp_no |
++--------+
+|  10004 |
++--------+
+```
+
+<br>
+
+### JSON 오브젝트 생성(JSON_OBJECT)
+RDBMS 칼럼의 값을 이용해 JSON 오브젝트를 생성하는 함수  
+
+```
+mysql> SELECT
+         JSON_OBJECT("empNo", "emp_no"
+                     "salary", "salary",
+                     "fromDate", "from_date",
+                     "toDate", "to_date") AS as_json
+       FROM salaries LIMIT 3;
++-------------------------------------------------------------------------------------+
+| as_json                                                                             |
++-------------------------------------------------------------------------------------+
+| {"empNo": 10001, "salary": 60117, "toDate": "1987-06-26", "fromDate": "1986-06-26"} |
+| {"empNo": 10001, "salary": 62102, "toDate": "1988-06-25", "fromDate": "1987-06-26"} |
+| {"empNo": 10001, "salary": 66074, "toDate": "1989-06-25", "fromDate": "1988-06-25"} |
++-------------------------------------------------------------------------------------+
+```
+
+<br>
+
+### JSON 칼럼으로 집계(JSON_OBJECTAGG & JSON_ARRAYAGG)
+GROUP BY 절과 함계 사용되는 집계 함수  
+RDBMS 칼럼의 값들을 모아 JSON 배열 또는 도큐먼트 생성  
+
+```
+mysql> SELECT dept_no, JSON_OBJECTAGG(emp_no, from_date) AS aff_manager
+       FROM dept_manager
+       WHERE dept_no IN ('d001', 'd002', 'd003')
+       GROUP BY dept_no;
++---------+--------------------------------------------------+
+| dept_no | agg_manager                                      |
++---------+--------------------------------------------------+
+| d001    | {"110022": "1985-01-01", "110039": "1991-10-01"} |
+| d002    | {"110085": "1985-01-01", "110114": "1989-12-17"} |
+| d003    | {"110183": "1985-01-01", "110228": "1992-03-21"} |
++---------+--------------------------------------------------+
+
+mysql> SELECT dept_no, JSON_ARRAYAGG(emp_no) as agg_manager
+       FROM dept_manager
+       WHERE dept_no IN ('d001', 'd002', 'd003')
+       GROUP BY dept_no;
++---------+------------------+
+| dept_no | agg_manager      |
++---------+------------------+
+| d001    | [110022, 110039] |
+| d002    | [110085, 110114] |
+| d003    | [110183, 110228] |
++---------+------------------+
+```
+
+<br>
+
+### JSON 데이터를 테이블로 변환(JSON_TABLE)
+JSON 데이터의 값들을 모아서 RDBMS 테이블을 만들어 반환  
+원본 테이블과 동일한 레코드 건수를 보유  
+
+```
+mysql> SELECT e2.emp_no, e2.first_name, e2.gender
+       FROM employee_docs e1,
+            JSON_TABLE(doc, "$" COLUMNS (emp_no, INT PATH "$.emp_no",
+                                         gender CHAR(1) PATH "$.gender",
+                                         first_name VARCHAR(20) PATH "$.first_name")
+                      ) AS e2
+       WHERE e1.emp_no IN (10001, 10002);
++--------+------------+--------+
+| emp_no | first_name | gender |
++--------+------------+--------+
+|  10001 | Georgi     | M      |
+|  10002 | Bezalel    | F      |
++--------+------------+--------+
+
+mysql> EXPLAIN SELECT e2.emp_no, e2.first_name, e2.gender
+               FROM employee_docs e1,
+                    JSON_TABLE(doc, "$" COLUMNS (emp_no, INT PATH "$.emp_no",
+                                                 gender CHAR(1) PATH "$.gender",
+                                                 first_name VARCHAR(20) PATH "$.first_name")
+                              ) AS e2
+               WHERE e1.emp_no IN (10001, 10002);
++----+-------------+-------+-------+---------+---------------------------------------------+
+| id | select_type | table | type  | key     | Extra                                       |
++----+-------------+-------+-------+---------+---------------------------------------------+
+|  1 | SIMPLE      | e1    | range | PRIMARY | Using where                                 |
+|  1 | SIMPLE      | e2    | ALL   | NULL    | Table function: json_table; Using temporary |
++----+-------------+-------+-------+---------+---------------------------------------------+
+```
+
+<br>
