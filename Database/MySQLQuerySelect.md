@@ -502,6 +502,245 @@ COUNT 쿼리에서 가장 많이 하는 실수는 ORDER BY 절이나 LEFT JOIN �
 ## JOIN
 
 ### JOIN 순서와 인덱스
+인덱스 레인지 스캔은 인덱스를 탐색하는 단계(`Index Seek`)와 인덱스를 스캔(`Index Scan`)하는 과정으로 구분  
+일반적으로 인덱스를 이용하는 쿼리는 가져오는 레코드 건수가 소량이라 스캔 작업은 부하가 적지만 탐색 작업은 상대적으로 높음  
+
+조인 작업에서 드라이빙 테이블을 읽을 때는 인덱스 탐색 작업을 단 한번 수행하고, 이후는 스캔만 실행  
+하지만 드리븐 테이블에서는 인덱스 탐색 작업과 스캔 작업을 드라이빙 테이블에서 읽은 레코드 건수만큼 반복  
+옵티마이저는 항상 드라이빙 테이블이 아니라 드리븐 테이블을 최적으로 읽을 수 있게 실행 계획을 수립  
+
+<br>
+
+```sql
+SELECT *
+FROM employees e, dept_emp de
+WHERE e.emp_no = de.emp_no;
+```
+
+- 두 칼럼 모두 인덱스가 있는 경우  
+어느 테이블을 드라이빙으로 선택하든 빠른 검색 작업 가능  
+보통 통계 정보에 있는 레코드 건수에 따라 옵티마이저가 최적 선택  
+
+- 한 칼럼만 인덱스가 있는 경우  
+인덱스가 없는 테이블을 드라이빙 테이블로 선택  
+만약 인덱스가 없는 테이블이 드리븐 테이블이 된다면, 드라이빙 테이블 레코드 건수만큼 드리븐 테이블 풀 스캔 발생  
+
+- 두 칼럼 모두 인덱스가 없는 경우  
+어떤 테이블을 선택해도 드리븐 테이블의 풀 스캔 발생
+레코드 건수가 적은 테이블을 드라이빙 테이블로 선택하는 것이 효율적  
+
+<br>
+
+### JOIN 칼럼의 데이터 타입
+테이블 조인 조건도 WHERE 절과 마찬가지로 비교 대상 칼럼과 표현식 데이터 타입이 반드시 동일  
+
+```
+mysql> CREATE TABLE tb_test1 (user_id INT, user_type INT, PRIMARY KEY(user_id));
+mysql> CREATE TABLE tb_test2 (user_type CHAR(1), type_desc VARCHAR(10), PRIMARY KEY(user_type));
+mysql> EXPLAIN
+         SELECT *
+         FROM tb_test1 tb1, tb_test2 tb2
+         WHERE tb1.user_type = tb2.user_type;
++----+-------+------+------+--------------------------------------------+
+| id | table | type | key  | Extra                                      |
++----+-------+------+------+--------------------------------------------+
+|  1 | tb1   | ALL  | NULL | NULL                                       |
+|  1 | tb2   | ALL  | NULL | Using where; Using join buffer (hash join) |
++----+-------+------+------+--------------------------------------------+
+```
+
+- CHAR 타입과 INT 타입의 비교와 같이 데이터 타입의 종류가 완전히 다른 경우
+- 같은 CHAR 타입이더라도 문자 집합이나 콜레이션이 다른 경우
+- 같은 INT 타입이더라도 부호의 존재 여부가 다른 경우
+
+<br>
+
+### OUTER JOIN의 성능과 주의사항
+이너 조인은 조인 대상 테이블에 모두 존재하는 레코드만 결과 집합으로 반환  
+그렇기 때문에 이너 조인으로 처리 가능하지만, 아우터 조인 실행 쿼리들을 자주 사용  
+옵티마이저는 절대 아우터 조인 테이블을 드라이빙 테이블로 선택하지 못함  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+           LEFT JOIN dept_emp de ON de.emp_no = e.emp_no
+           LEFT JOIN departments d ON d.dept_no = de.dept_no AND d.dept_name = 'Development';
++----+-------+--------+-------------------+--------+-------------+
+| id | table | type   | key               | rows   | Extra       |
++----+-------+--------+-------------------+--------+-------------+
+|  1 | e     | ALL    | NULL              | 299920 | NULL        |
+|  1 | de    | ref    | ix_empno_fromdate |      1 | NULL        |
+|  1 | d     | eq_ref | PRIMARY           |      1 | Using where |
++----+-------+--------+-------------------+--------+-------------+
+
+mysql> EXPLAIN
+         SELECT *
+         FROM employees e
+           INNER JOIN dept_emp de ON de.emp_no = e.emp_no
+           INNER JOIN departments d ON d.dept_no = de.dept_no AND d.dept_name = 'Development';
++----+-------+--------+-------------+-------+-------------+
+| id | table | type   | key         | rows  | Extra       |
++----+-------+--------+-------------+-------+-------------+
+|  1 | d     | ref    | ux_deptname |     1 | Using index |
+|  1 | de    | ref    | PRIMARY     | 41392 | NULL        |
+|  1 | e     | eq_ref | PRIMARY     |     1 | NULL        |
++----+-------+--------+-------------+-------+-------------+
+```
+
+<br>
+
+또한 아우터 조인 테이블에 대한 조건을 WHERE 절에 명시하는 것도 잘못된 방법  
+내부적으로 해당 경우 LEFT JOIN을 INNER JOIN으로 자동 변환  
+아우터로 조인된 칼럼이 NULL인 레코드들만 조회하는 안티 조인 형식이 아니라면 사용하지 않는 것 권장  
+
+```sql
+## 기존 아우터 조인 쿼리
+SELECT *
+FROM employees e
+  LEFT JOIN dept_manager mgr ON mgr.emp_no = e.emp_no
+WHERE mgr.dept_no = 'd001';
+
+## WHERE 절 조건으로 인해 내부적으로 이너 조인으로 변환
+SELECT *
+FROM employees e
+  INNER JOIN dept_manager mgr ON mgr.emp_no = e.emp_no
+WHERE mgr.dept_no = 'd001';
+
+## 정상적인 아우터 조인 쿼리
+SELECT *
+FROM employees e
+  LEFT JOIN dept_manager mgr ON mgr.emp_no = e.emp_no AND mgr.dept_no = 'd001';
+
+## 안티 조인 효과를 기대하기 위한 WHERE 절 조건 사용 쿼리
+SELECT *
+FROM employees e
+  LEFT JOIN dept_manager dm ON dm.emp_no = e.emp_no
+WHERE dm.emp_no IS NULL
+LIMIT 10;
+```
+
+<br>
+
+### JOIN과 외래키(FOREIGN KEY)
+외래키는 조인과 아무런 연관이 없고, 외래키의 주목적은 데이터의 무결성을 보장하기 위함  
+테이블 간의 조인을 수행하는 것은 전혀 문관한 칼럼을 조인 조건으로 사용해도 문법적으로 문제 없음  
+
+<br>
+
+### 지연된 조인(Delayed Join)
+조인 쿼리에 GROUP BY 또는 ORDER BY를 사용할 때 각 처리방법에서 인덱스를 사용한다면 이미 최적으로 처리되고 있을 가능성 높음  
+아니라면 우선 모든 조인을 수행하고 난 후 정렬, 그루핑 처리  
+
+```
+mysql> EXPLAIN
+         SELECT e.*
+         FROM salaries s, employees e
+         WHERE e.emp_no = s.emp_no
+           AND s.emp_no BETWEEB 10001 AND 13000
+         GROUP BY s.emp_no
+         ORDER BY SUM(s.salary) DESC
+         LIMIT 10;
++----+-------+-------+---------+------+----------------------------------------------+
+| id | table | type  | key     | rows | Extra                                        |
++----+-------+-------+---------+------+----------------------------------------------+
+|  1 | e     | range | PRIMARY | 3000 | Using where; Using temporary; Using filesort |
+|  1 | s     | ref   | PRIMARY |   10 | NULL                                         |
++----+-------+-------+---------+------+----------------------------------------------+
+```
+
+<br>
+
+지연된 조인이란 조인 실행전에 정렬, 그루핑 처리하는 방식을 의미  
+- LEFT (OUTER) JOIN인 경우 드라이빙 테이블과 드리븐 테이블은 1:1 또는 M:1 관계
+- INNER JOIN인 경우 드라이빙 테이블과 드리븐 테이블은 1:1 또는 M:1 관계인 동시에 두 테이블에 모두 레코드 존재
+
+```
+mysql> EXPLAIN
+         SELECT e.*
+         FROM
+           (SELECT s.emp_no
+            FROM salaries s
+            WHERE s.emp_no BETWEEN 10001 AND 13000
+            GROUP BY s.emo_no
+            ORDER BY SUM(s.salary) DESC
+            LIMIT 10) x,
+           employees e
+         WHERE e.emp_no = x.emp_no;
++----+------------+--------+---------+-------+----------------------------------------------+
+| id | table      | type   | key     | rows  | Extra                                        |
++----+------------+--------+---------+-------+----------------------------------------------+
+|  1 | <derived2> | ALL    | NULL    |    10 | NULL                                         |
+|  1 | e          | eq_ref | PRIMARY |     1 | NULL                                         |
+|  2 | s          | range  | PRIMARY | 56844 | Using where; Using temporary; Using filesort |
++----+------------+--------+---------+-------+----------------------------------------------+
+```
+
+<br>
+
+### 래터럴 조인(Lateral Join)
+8.0 이전 버전까지는 그룹별로 몇 건씩만 가져오는 쿼리 불가능  
+래터럴 조인은 특정 그룹별로 서브쿼리를 실행해서 그 결과와 조인하는 기능  
+
+```sql
+SELECT *
+FROM employees e
+LEFT JOIN LATERAL (SELECT *
+                   FROM salaries s
+                   WHERE s.emp_no = e.emp_no
+                   ORDER BY s.from_date DESC LIMIT 2) s2 ON s2.emp_no = e.emp_no
+WHERE e.first_name = 'Matt';
+```
+
+<br>
+
+만약 래터럴 조인을 사용하지 않는다면 오류 발생  
+FROM 절에 사용된 서브쿼리가 외부쿼리의 칼럼을 참조하기 위해서는 `LATERAL` 키워드 명시 필수  
+
+```
+mysql> SELECT *
+       FROM employees e
+         LEFT JOIN (SELECT *
+                    FROM salaries s
+                    WHERE s.emp_no = e.emp_no
+                    ORDER BY s.from_date DESC LIMIT 2) s2 ON s2.emp_no = e.emp_no
+       WHERE e.first_name = 'Matt';
+ERROR 1054 (42S22): Unknown column 'e.emp_no' in 'where clause'
+```
+
+<br>
+
+### 실행 계획으로 인한 정렬 흐트러짐
+네스티드 루프 조인은 드라이빙 테이블에서 읽은 레코드의 순서가 다른 테이블이 모두 조인돼도 그대로 유지  
+하지만 쿼리의 실행 계획에서 네스티드 루프 조인 대신 해시 조인이 사용되면서 레코드 정렬 순서가 상이  
+정렬이 필요하다면 꼭 ORDER BY 절 명시 필수  
+
+```
+mysql> SELECT e.emp_no, e.first_name, e.last_name, de.from_date
+       FROM dept_emp de, employees e
+       WHERE de.from_date > '2001-10-01' AND e.emp_no < 10005;
++----+-------+-------+-------------+---------------------------------------------------------+
+| id | table | type  | key         | Extra                                                   |
++----+-------+-------+-------------+---------------------------------------------------------+
+|  1 | e     | range | PRIMARY     | Using where                                             |
+|  1 | de    | range | ix_fromdate | Using where; Using index; Using join buffer (hash join) |
++----+-------+-------+-------------+---------------------------------------------------------+
+```
+
+<br>
+
+## GROUP BY
+
+### WITH ROLLUP
+
+
+
+
+
+
+
+
+
 
 
 
