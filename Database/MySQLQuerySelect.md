@@ -732,9 +732,190 @@ mysql> SELECT e.emp_no, e.first_name, e.last_name, de.from_date
 ## GROUP BY
 
 ### WITH ROLLUP
+그루핑된 그룹별로 소계를 가져오는 기능  
+출력되는 소계는 단순히 최종 합이 아닌 그루핑된 칼럼의 개수에 따라 소계 레벨이 상이  
+항상 그룹 맨 마지막에 전체 총계가 출력되는데 이때 칼럼값은 모두 NULL로 채워져 있음  
 
+```
+mysql> SELECT dept_no, COUNT(*)
+       FROM dept_emp
+       GROUP BY dept_no WITH ROLLUP;
++---------+----------+
+| dept_no | COUNT(*) |
++---------+----------+
+| d001    | 20211    |
+| d002    | 17346    |
+| ...     | ...      |
+| d009    | 23580    |
+| NULL    | 331603   |
++---------+----------+
 
+mysql> SELECT first_name, last_name, COUNT(*)
+       FROM employees
+       GROUP BY first_name, last_name WITH ROLLUP;
++------------+-----------+----------+
+| first_name | last_name | COUNT(*) |
++------------+-----------+----------+
+| Aamer      | Anger     | 1        |
+| Aamer      | ...       | ...      |
+| Aamer      | NULL      | 228      |
+| Aamod      | Andreotta | 2        |
+| Aamod      | ...       | ...      |
+| Aamod      | NULL      | 216      |
+| ...        | ...       | ...      |
+| NULL       | NULL      | 300024   |
++------------+-----------+----------+
+```
 
+<br>
+
+8.0 버전부터 그룹 레코드에 표시되는 NULL 대신 사용자가 변경할 수 있도록 `GROUPING()` 함수 지원  
+
+```
+mysql> SELECT
+         IF(GROUPING(dept_no), 'All dept_no', dept_no) AS dept_no, COUNT(*)
+       FROM dept_emp
+       GROUP BY dept_no WITH ROLLUP;
++-------------+----------+
+| dept_no     | COUNT(*) |
++-------------+----------+
+| d001        | 20211    |
+| d002        | 17346    |
+| ...         | ...      |
+| d009        | 23580    |
+| All dept_no | 331603   |
++-------------+----------+
+```
+
+<br>
+
+### 레코드를 칼럼으로 변환해서 조회
+GROUP BY 또는 집합 함수를 통해 레코드를 그루핑 가능하지만, 하나의 레코드를 여러 개의 칼럼으로 분리하는 SQL 문법은 없음  
+다만 집합 함수와 CASE 구문을 이용해 레코드를 칼럼으로 변환하거나 하나의 칼럼을 조건으로 2개 이상의 칼럼으로 변환 가능  
+
+<br>
+
+### 레코드를 칼럼으로 변환
+레포팅 도구나 OLAP 같은 도구에서는 기존 그루핑 집합 쿼리 결과를 반대로 만들어야 하는 상황 빈번  
+
+```
+mysql> SELECT dept_no, COUNT(*) AS emp_count
+       FROM dept_emp
+       GROUP BY dept_no;
++---------+-----------+
+| dept_no | emp_count |
++---------+-----------+
+| d001    | 20211     |
+| d002    | 17346     |
+| ...     | ...       |
++---------+-----------+
+
+mysql> SELECT
+         SUM(CASE WHEN dept_no = 'd001' THEN emp_count ELSE 0 END) AS count_d001,
+         SUM(CASE WHEN dept_no = 'd002' THEN emp_count ELSE 0 END) AS count_d002,
+         ...
+         SUM(CASE WHEN dept_no = 'd008' THEN emp_count ELSE 0 END) AS count_d008,
+         SUM(CASE WHEN dept_no = 'd009' THEN emp_count ELSE 0 END) AS count_d009,
+         SUM(emp_count) AS count_total
+       FROM (
+         SELECT dept_no, COUNT(*) AS emp_count FROM dept_emp GROUP BY dept_no
+       ) tb_derived;
++------------+------------+------------+------------+-----+-------------+
+| count_d001 | count_d001 | count_d001 | count_d001 | ... | count_total |
++------------+------------+------------+------------+-----+-------------+
+| 20211      | 17346      | 17786      | 73485      | ... | 331603      |
++------------+------------+------------+------------+-----+-------------+
+```
+
+<br>
+
+### 하나의 칼럼을 여러 칼럼으로 분리
+소그룹을 특정 조건으로 분리해서 칼럼 지정 가능  
+
+```
+mysql> SELECT de.dept_no,
+         SUM(CASE WHEN e.hire_date BETWEEN '1980-01-01' AND '1989-12-31' THEN 1 ELSE 0 END) AS cnt_1980,
+         SUM(CASE WHEN e.hire_date BETWEEN '1990-01-01' AND '1989-12-31' THEN 1 ELSE 0 END) AS cnt_1990,
+         SUM(CASE WHEN e.hire_date BETWEEN '2000-01-01' AND '1989-12-31' THEN 1 ELSE 0 END) AS cnt_2000,
+         COUNT(*) AS cnt_total
+       FROM dept_emp de, employees e
+       WHERE e.emp_no = de.emp_no
+       GROUP BY de.dept_no;
++---------+----------+----------+----------+-----------+
+| dept_no | cnt_1980 | cnt_1990 | cnt_2000 | cnt_total |
++---------+----------+----------+----------+-----------+
+| d001    | 11038    | 8171     | 0        | 20211     |
+| d002    | 9580     | 7765     | 1        | 17346     |
+| d003    | 9714     | 8068     | 4        | 17786     |
+| ...     | ...      | ...      | ...      | ...       |
++---------+----------+----------+----------+-----------+
+```
+
+<br>
+
+## ORDER BY
+만약 ORDER BY 절이 조회 쿼리에 없다면 어떠한 정렬도 보장하기 어려움  
+- 인덱스를 사용한 경우 인덱스에 정렬된 순서대로 레코드 가져옴
+- 풀 테이블 스캔인 경우 프라이머리 키 순으로 레코드 가져옴
+- 조회 쿼리가 임시 테이블을 사용한 경우 레코드 순서 예측 불가능
+
+<br>
+
+정렬을 할때 인덱스를 사용하지 못하는 경우 추가 정렬 작업이 수행  
+`filesort` 메시지가 표시된 경우 쿼리 도중 추가적인 정렬 작업이 수행된 것을 의미  
+
+<br>
+
+### ORDER BY 사용법 및 주의사항
+조회되는 칼럼의 순번으로 정렬 가능  
+하지만 숫자 값이 아닌 문자열 상수를 사용하는 경우 ORDER BY 절 무시  
+
+```sql
+## 동일한 정렬 결과
+SELECT first_name, last_name FROM employees ORDER BY last_name;
+SELECT first_name, last_name FROM employees ORDER BY 2;
+
+## 모든 ORDER BY 절 무시
+SELECT first_name, last_name FROM employees ORDER BY "last_name";
+```
+
+<br>
+
+### 여러 방향으로 동시 정렬
+8.0 버전부터 여러 개의 칼럼을 조합해서 정렬할 때 각 칼럼의 정렬 순서를 혼용해서 인덱스 사용 가능  
+
+```sql
+ALTER TABLE salaries ADD INDEX ix_salary_fromdate (salary DESC, from_date ASC);
+```
+
+<br>
+
+## 서브쿼리
+
+### SELECT 절에 사용된 서브쿼리
+서브쿼리는 내부적으로 임시 테이블을 만들거나 쿼리를 비효율적으로 실행하지 않기 때문에 인덱스 사용 가능하다면 문제없음  
+SELECT 절에 서브쿼리를 사용하려면 해당 서브쿼리는 항상 칼럼과 레코드가 하나인 결과 반환 필수  
+
+```
+-- // 서브쿼리 결과가 항상 0건, NULL로 채워서 반환
+mysql> SELECT emp_no, (SELECT dept_name FROM departments WHERE dept_name = 'Sales1')
+       FROM dept_emp LIMIT 10;
++--------+------+
+| 100001 | NULL |
+| 100002 | NULL |
+| ...    | ...  |
++--------+------+
+
+-- // 서브쿼리가 2건 이상의 레코드 반환
+mysql> SELECT emp_no, (SELECT dept_name FROM departments)
+       FROM dept_emp LIMIT 10;
+ERROR 1242 (21000): Subquery returns more than 1 row
+
+-- // 서브쿼리가 2개 이상의 칼럼을 반환
+mysql> SELECT emp_no, (SELECT dept_no, dept_name FROM departments WHERE dept_name = 'Sales1')
+       FROM dept_emp LIMIT 10;
+ERROR 1241 (21000): Operand should contain 1 column(s)
+```
 
 
 
