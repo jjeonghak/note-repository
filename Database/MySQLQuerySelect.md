@@ -681,6 +681,8 @@ mysql> EXPLAIN
 ### 래터럴 조인(Lateral Join)
 8.0 이전 버전까지는 그룹별로 몇 건씩만 가져오는 쿼리 불가능  
 래터럴 조인은 특정 그룹별로 서브쿼리를 실행해서 그 결과와 조인하는 기능  
+래터럴 조인을 사용하면 해당 FROM 절 서브쿼리 내부에서 외부쿼리 참조 가능  
+래터럴 조인은 내부적으로 임시 테이블을 생성  
 
 ```sql
 SELECT *
@@ -894,7 +896,7 @@ ALTER TABLE salaries ADD INDEX ix_salary_fromdate (salary DESC, from_date ASC);
 
 ### SELECT 절에 사용된 서브쿼리
 서브쿼리는 내부적으로 임시 테이블을 만들거나 쿼리를 비효율적으로 실행하지 않기 때문에 인덱스 사용 가능하다면 문제없음  
-SELECT 절에 서브쿼리를 사용하려면 해당 서브쿼리는 항상 칼럼과 레코드가 하나인 결과 반환 필수  
+SELECT 절에 서브쿼리를 사용하려면 해당 서브쿼리는 항상 칼럼과 레코드가 하나인 결과 반환 필수(로우 서브쿼리가 아닌 스칼라 서브쿼리)  
 
 ```
 -- // 서브쿼리 결과가 항상 0건, NULL로 채워서 반환
@@ -916,6 +918,198 @@ mysql> SELECT emp_no, (SELECT dept_no, dept_name FROM departments WHERE dept_nam
        FROM dept_emp LIMIT 10;
 ERROR 1241 (21000): Operand should contain 1 column(s)
 ```
+
+<br>
+
+### FROM 절에 사용된 서브쿼리
+5.7 버전부터 옵티마이저는 FROM 절의 서브쿼리를 임시 테이블이 아닌 외부 쿼리로 병합하는 최적화 수행  
+
+```
+mysql> EXPLAIN SELECT * FROM (SELECT * FROM employees) y;
++----+-------------+-----------+------+------+--------+-------+
+| id | select_type | table     | type | key  | rows   | Extra |
++----+-------------+-----------+------+------+--------+-------+
+|  1 | SIMPLE      | employees | ALL  | NULL | 299920 | NULL  |
++----+-------------+-----------+------+------+--------+-------+
+
+-- // MySQL 서버가 서브쿼리를 병합해서 재작성한 쿼리
+mysql> SHOW WARNINGS \G
+*************************** 1. row ***************************
+  Level: Note
+   Code: 1003
+Message: /* select#1 */ select
+  `employees`.`employees`.`emp_no` AS `emp_no`,
+  `employees`.`employees`.`birth_date` AS `birth_date`,
+  `employees`.`employees`.`first_name` AS `first_name`,
+  `employees`.`employees`.`last_name` AS `last_name`,
+  `employees`.`employees`.`gender` AS `gender`,
+  `employees`.`employees`.`hire_date` AS `hire_date`
+from `employees`.`employees`
+```
+
+<br>
+
+FROM 절의 서브쿼리가 아래 기능을 포함하면 외부 쿼리로 병합 불가  
+- 집합함수 사용
+- DISTINCT
+- GROUP BY 또는 HAVING
+- LIMIT
+- UNION, UNION ALL
+- SELECT 절 서브쿼리 사용
+- 사용자 변수 사용
+
+<br>
+
+### WHERE 절에 사용된 서브쿼리
+- 동등 또는 대소비교(`= (subquery)`)
+- IN 비교(`IN (subquery)`)
+- NOT IN 비교(`NOT IN (subquery)`)
+
+<br>
+
+### 동등 또는 대소비교
+5.5 버전까지는 서브쿼리 외부 조건으로 쿼리를 실행, 최종적으로 서브쿼리를 체크 조건으로 사용  
+이러한 처리 방식은 풀 테이블 스캔이 필요한 경우가 대다수  
+5.5 버전부터는 서브쿼리를 먼저 실행한 후 상수로 변환  
+
+```
+mysql> EXPLAIN
+         SELECT * FROM dept_emp de
+         WHERE de.emp_no = (SELECT e.emp_no
+                            FROM employees e
+                            WHERE e.first_name = 'Georgi' AND e.last_name = 'Facello' LIMIT 1);
++----+-------------+-------+------+-------------------+------+-------------+
+| id | select_type | table | type | key               | rows | Extra       |
++----+-------------+-------+------+-------------------+------+-------------+
+|  1 | PRIMARY     | de    | ref  | ix_empno_fromdate |    1 | Using where |
+|  2 | SUBQUERY    | e     | ref  | ix_firstname      |  253 | Using where |
++----+-------------+-------+------+-------------------+------+-------------+
+
+mysql> EXPLAIN FORMAT=TREE
+         SELECT * FROM dept_emp de
+         WHERE de.emp_no = (SELECT e.emp_no
+                            FROM employees e
+                            WHERE e.first_name = 'Georgi' AND e.last_name = 'Facello' LIMIT 1);
+
+-> Filter: (de.emp_no = (select #2))  (cost=1.10 rows=1)
+  -> Index lookup on de using ix_empno_fromdate (emp_no=(select #2))  (cost=1.10 rows=1)
+  -> Select #2 (subquery in condition; run only once)
+      -> Limit: 1 row(s)
+          -> Filter: (e.last_name = 'Facello')  (cost=70.49 rows=25)
+              -> Index lookup on e using ix_firstname (first_name='Georgi')  (cost=70.49 rows=253)
+```
+
+<br>
+
+만일 튜플 비교 방식이라면 서브쿼리가 먼저 처리되어 상수화되긴하지만 외부 쿼리는 풀 테이블 스캔  
+8.0 버전에서도 아직 튜플 형태의 비교는 주의 필요  
+
+```
+mysql> EXPLAIN
+         SELECT *
+         FROM dept_emp de WHERE (emp_no, from_date) = (
+           SELECT emp_no, from_date
+           FROM salaries
+           WHERE emp_no = 100001 LIMIT 1);
++----+-------------+----------+------+---------+--------+-------------+
+| id | select_type | table    | type | key     | rows   | Extra       |
++----+-------------+----------+------+---------+--------+-------------+
+|  1 | PRIMARY     | de       | ALL  | NULL    | 331143 | Using where |
+|  2 | SUQEURY     | salaries | ref  | PRIMARY |      4 | Using index |
++----+-------------+----------+------+---------+--------+-------------+
+```
+
+<br>
+
+### IN 비교(IN (subquery))
+실제 조인은 아니지만 테이블의 레코드가 다른 테이블의 레코드를 이용한 표현식과 일치하는지 체크하는 형태를 세미 조인  
+5.5 버전까지는 세미 조인 최적화가 부족해서 대부분 풀 테이블 스캔 사용  
+- 테이블 풀-아웃
+- 퍼스트 매치
+- 루스 스캔
+- 구체화
+- 중복 제거
+
+<br>
+
+### NOT IN 비교(NOT IN (subquery))
+해당 경우를 안티 세미 조인이라고 표현  
+해당 방법은 성능 향상에 도움이 되지 않기때문에 최대한 다른 조건을 활용해서 데이터 검색 범위를 좁히는게 효율적  
+- NOT EXISTS
+- 구체화
+
+<br>
+
+## CTE(Common Table Expression)
+이름을 가지는 임시 테이블, SQL 문장 내에서 한번 이상 사용 가능하며 문장 종료시 임시 테이블 삭제  
+재귀적 반복 실행 여부를 기준으로 `Non-recursive` 또는 `Recursive` 구분  
+- SELECT, UPDATE, DELETE 문장 제일 앞
+  ```sql
+  WITH cte1 AS (SELECT ...) SELECT ...
+  WITH cte1 AS (SELECT ...) UPDATE ...
+  WITH cte1 AS (SELECT ...) DELETE ...
+  ```
+
+- 서브쿼리 제일 앞
+  ```sql
+  SELECT ... FROM ... WHERE id IN (WITH cte1 AS (SELECT ...) SELECT ...) ...
+  SELECT ... FROM (WITH cte1 AS (SELECT ...) SELECT ...) ...
+  ```
+
+- SELECT 절 바로 앞
+  ```sql
+  INSERT ... WITH cte1 AS (SELECT ...) SELECT ...
+  REPLACE ... WITH cte1 AS (SELECT ...) SELECT ...
+  CREATE TABLE ... WITH cte1 AS (SELECT ...) SELECT ...
+  CREATE VIEW ... WITH cte1 AS (SELECT ...) SELECT ...
+  DECLARE CURSOR ... WITH cte1 AS (SELECT ...) SELECT ...
+  EXPLAIN ... WITH cte1 AS (SELECT ...) SELECT ...
+  ```
+
+<br>
+
+### 비 재귀적 CTE(Non-Recursive CTE)
+MySQL 서버에서는 `ANSI` 표준을 그대로 이용해서 WITH 절을 이용해 CTE 정의  
+
+```sql
+WITH cte1 AS (SELECT * FROM departments)
+SELECT * FROM cte1;
+```
+
+<br>
+
+여러 개의 CTE 임시 테이블을 이용해서 파생 테이블 대체 가능  
+하지만 두 쿼리의 실행 계획은 조금 상이  
+
+```
+mysql> EXPLAIN
+         WITH cte1 AS (SELECT emp_no, MIN(from_date) FROM salaries GROUP BY emp_no)
+         SELECT * FROM employees e
+           INNER JOIN cte1 t1 ON t1.emp_no = e.emp_no
+           INNER JOIN cte1 t2 ON t2.emp_no = e.emp_no;
++----+-------------+------------+--------+-------------+--------+--------------------------+
+| id | select_type | table      | type   | key         | rows   | Extra                    |
++----+-------------+------------+--------+-------------+--------+--------------------------+
+|  1 | PRIMARY     | <derived2> | ALL    | NULL        | 273035 | NULL                     |
+|  1 | PRIMARY     | e          | eq_ref | PRIMARY     |      1 | NULL                     |
+|  1 | PRIMARY     | <derived2> | ref    | <auto_key0> |     10 | NULL                     |
+|  2 | DERIVED     | salaries   | range  | PRIMARY     | 273035 | Using index for group-by |
++----+-------------+------------+--------+-------------+--------+--------------------------+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
