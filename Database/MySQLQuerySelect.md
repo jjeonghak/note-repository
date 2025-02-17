@@ -1293,20 +1293,156 @@ mysql> WITH RECURSIVE
 +------+---------+------------+--------------------------+----+
 ```
 
+<br>
 
+## 윈도우 함수(Window Function)
+집계 함수는 주어진 그룹별로 하나의 레코드로 묶어서 출력  
+윈도우 함수는 일치하는 레코드 건수는 변하지 않고 그대로 유지  
+일반적인 SQL 문장에서 하나의 레코드를 연산할 때 다른 레코드 값을 참조 불가  
+예외적으로 집계 함수를 이용하면 다른 레코드 칼럼값 참조 가능  
+하지만 결과 집합의 모양이 변경되기 때문에 집합을 그대로 유지하고 싶다면 윈도우 함수 사용  
 
+<br>
 
+### 쿼리 각 절의 실행 순서
 
+<img width="469" alt="windowfunction" src="https://github.com/user-attachments/assets/a04bccb4-2e52-41f1-a435-5f42d915b8ed" />
 
+윈도우 함수를 GROUP BY 칼럼 또는 WHERE 절에 사용 불가  
+파생 테이블 사용시 전체 테이블이 아닌 파생 테이블에 대한 통계 결과 반환  
 
+<br>
 
+```
+-- // 일반 윈도우 함수
+mysql> SELECT emp_no, from_date, salary,
+              AVG(salary) OVER() AS avg_salary
+       FROM salaries
+       WHERE emp_no = 10001
+       LIMIT 5;
++--------+------------+--------+------------+
+| emp_no | from_date  | salary | avg_salary |
++--------+------------+--------+------------+
+|  10001 | 1986-06-26 |  60117 | 75388.9412 |
+|  10001 | 1987-06-26 |  62102 | 75388.9412 |
+|  10001 | 1988-06-25 |  66074 | 75388.9412 |
+|  10001 | 1989-06-25 |  66596 | 75388.9412 |
+|  10001 | 1990-06-25 |  66961 | 75388.9412 |
++--------+------------+--------+------------+
 
+-- // 파생 테이블에 윈도우 함수
+mysql> SELECT emp_no, from_date, salary,
+              AVG(salary) OVER() AS avg_salary
+       FROM (SELECT * FROM salaries WHERE emp_no = 10001 LIMIT 5) s2;
++--------+------------+--------+------------+
+| emp_no | from_date  | salary | avg_salary |
++--------+------------+--------+------------+
+|  10001 | 1986-06-26 |  60117 | 64370.0000 |
+|  10001 | 1987-06-26 |  62102 | 64370.0000 |
+|  10001 | 1988-06-25 |  66074 | 64370.0000 |
+|  10001 | 1989-06-25 |  66596 | 64370.0000 |
+|  10001 | 1990-06-25 |  66961 | 64370.0000 |
++--------+------------+--------+------------+
+```
 
+<br>
 
+### 윈도우 함수 기본 사용법
+윈도우 함수는 집계 함수와는 달리 함수 뒤에 OVER 절을 이용해 연산 대상을 파티션하기 위한 옵션 명시 가능  
+이렇게 OVER 절에 의해 만들어진 그룹을 파티션(`Partition`) 또는 윈도우(`Window`)  
 
+<br>
 
+```
+mysql> SELECT e.*,
+              RANK() OVER(ORDER BY e.hire_date) AS hire_date_rank
+       FROM employees e;
++--------+------------+------------+-------------+--------+------------+----------------+
+| emp_no | birth_date | first_name | last_name   | gender | hire_date  | hire_date_rank |
++--------+------------+------------+-------------+--------+------------+----------------+
+| 110022 | 1956-09-12 | Margareta  | Markovitch  | M      | 1985-01-01 |              1 |
+| 110085 | 1959-10-28 | Ebru       | Alpin       | M      | 1985-01-01 |              1 |
+| ...    | ...        | ...        | ...         | ...    | ...        | ...            |
+| 111692 | 1954-10-05 | Tonny      | Butterworth | F      | 1985-01-01 |              1 |
+| 110114 | 1957-03-28 | Isamu      | Legleitner  | F      | 1985-01-14 |             10 |
+| 200241 | 1956-06-04 | Jaques     | Kalefeld    | M      | 1985-02-01 |             11 |
+| ...    | ...        | ...        | ...         | ...    | ...        | ...            |
++--------+------------+------------+-------------+--------+------------+----------------+
 
+mysql> SELECT de.dept_no, e.emp_no, e.first_name, e.hire_date,
+              RANK() OVER(PARTITION BY de.dept_no ORDER BY e.hire_date) AS hire_date_rank
+       FROM employees e
+         INNER JOIN dept_emp de ON de.emp_no = e.emp_no
+       ORDER BY de.dept_no, e.hire_date;
++---------+--------+------------+------------+----------------+
+| dept_no | emp_no | first_name | hire_date  | hire_date_rank |
++---------+--------+------------+------------+----------------+
+| d001    | 110022 | Margareta  | 1985-01-01 |              1 |
+| d001    |  51773 | Eric       | 1985-02-02 |              2 |
+| ...     | ...    | ...        | ...        | ...            |
+| d001    | 481016 | Toney      | 1985-02-02 |              2 |
+| d001    |  70562 | Morris     | 1985-02-03 |             12 |
+| d001    | 226633 | Xuejun     | 2000-01-04 |          20211 |
+| d002    | 110085 | Ebru       | 1985-01-01 |              1 |
+| d002    | 110114 | Isamu      | 1985-01-14 |              2 |
+| ...     | ...    | ...        | ...        | ...            |
++---------+--------+------------+------------+----------------+
+```
 
+<br>
+
+윈도우 함수의 각 파티션 안에서도 연산 대상 레코드 별로 연산을 수행할 소그룹이 사용, 이를 프레임이라고 표현  
+윈도우 함수는 프레임을 명시적으로 지정하지 않아도 상황에 맞게 묵시적으로 선택  
+
+<br>
+
+```
+AGGREGATE_FUNC() OVER(<partition> <order> <frame>) AS window_func_column
+
+frame:
+  {ROWS | RANGE } {frame_start | frame_between }
+
+frame_between:
+  BETWEEN frame_start AND frame_end
+
+frame_start, frame_end: {
+  CURRENT ROW
+  | UNBOUNDED PRECEDING
+  | UNBOUNDED FOLLOWING
+  | expr PRECEDING
+  | expr FOLLOWING
+}
+```
+
+프레임을 만드는 기준은 ROW, RANGE 중 하나 선택  
+- `ROWS`: 레코드 위치 기준으로 프레임 생성
+- `RANGE`: ORDER BY 절에 명시된 칼럼을 기준으로 값의 범위로 프레임 생성
+
+<br>
+
+프레임의 시작과 끝을 의미하는 키워드
+- `CURRENT ROW`: 현재 레코드
+- `UNBOUNDED PRECEDING`: 파티션의 첫번쨰 레코드
+- `UNBOUNDED FOLLOWING`: 파티션의 마지막 레코드
+- `expr PRECEDING`: 현재 레코드로부터 n번쨰 이전 레코드
+- `expr FOLLOWING`: 현재 레코드로부터 n번째 이후 레코드
+
+<br>
+
+ROWS 구분인 경우 expr에 레코드 위치 명시, RANGE 구분인 경우 칼럼과 비교할 값 명시  
+- `10 PRECEDING`: 현재 레코드로부터 10건 이전부터
+- `INTERVAL 5 DAY PRECEDING`: 현재 레코드의 ORDER BY 칼럼값보다 5일 이전 레코드부터
+- `5 FOLLOWING`: 현재 레코드로부터 5건 이후까지
+- `INTERVAL '2:30' MINUTE_SECOND FOLLOWING`: 현재 레코드의 ORDER BY 칼럼값보다 2분 30초 이후까지
+
+<br>
+
+프레임을 사용하는 방법은 여러가지 존재  
+- `ROWS UNBOUNDED PRECEDING`: 파티션의 첫번쨰 레코드로부터 현재 레코드까지
+- `ROWS BETWEEN UNBOUND PRECEDING AND CURRENT ROW`: 파티션의 첫번쨰 레코드부터 현재 레코드까지
+- `ROWS BEWEEN 1 PRECEDING AND 1 FOLLOWING`: 파티션에서 현재 레코드를 기준으로 앞 레코드부터 뒤 레코드까지
+- `RANGE INTERVAL 5 DAY PRECEDING`: ORDER BY 절에 명시된 칼럼값이 5일전 레코드부터 현재 레코드까지
+- `RANGE BETWEEN 1 DAY PRECEDING AND 1 DAY FOLLOWING`: ORDER BY 절에 명시된 칼럼값이 1일전 레코드부터 1일후 레코드까지
 
 
 
