@@ -196,6 +196,38 @@ map.lastKey();     // 마지막 키 반환
 
 <br>
 
+## TreeSet
+정렬된 값을 저장하는 셋  
+
+```java
+set.add(o);
+set.addAll(c);
+set.contains(o);
+set.containsAll(c);
+set.clear();
+```
+
+
+```java
+set.first();             // 정렬된 첫번째 객체 반환
+set.last();              // 정렬된 마지막 객체 반환
+
+set.floor(o);            // 지정된 객체와 같거나 작은 값 반환 
+set.ceiling(o);          // 지정된 객체와 같거나 큰 값 반환
+
+set.lower(o);            // 지정된 객체보다 작은 값 반환
+set.higher(o);           // 지정된 객체보다 큰 값 반환
+
+set.headSet(o);          // 지정된 객체보다 작은 값 객체들을 반환 
+set.tailSet(o);          // 지정된 객체보다 큰 값 객체들을 반환
+
+set.retainAll(c);        // 주어진 컬렉션과 공통된 요소만 남기고 삭제(교집합)
+set.subSet(from, to);    // 범위 검색의 결과 반환, to 미포함
+set.descendingSet();     // 역순 정렬 결과 반환
+```
+
+<br>
+
 ## String
 ````java
 // 문자열 길이 반환
