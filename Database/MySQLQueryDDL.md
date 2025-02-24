@@ -638,6 +638,50 @@ ALGORITHM=INPLACE, LOCK=NONE;
 <br>
 
 ### 칼럼 삭제
+칼럼을 삭제하는 작업은 항상 테이블 리빌드  
+INSTANT 알고리즘 사용 불가, 항상 INPLACE 알고리즘 사용  
+
+```sql
+ALTER TABLE employees DROP COLUMN emp_telno,
+ALGORITHM=INPLACE, LOCK=NONE;
+```
+
+<br>
+
+### 칼럼 이름 및 칼럼 타입 변경
+```sql
+## 칼럼의 이름 변경
+## INPLACE 알고리즘을 사용하지만 실제 데이터 리빌드 작업은 필요치 않음
+ALTER TABLE salaries CHANGE to_date end_date DATE NOT NULL,
+ALGORITHM=INPLACE, LOCK=NONE;
+
+## INT 칼럼을 VARCHAR 타입으로 변경
+## COPY 알고리즘이 필요하며 온라인 DDL로 실행돼도 스키마 변경 중 테이블 쓰기 작업 불가
+ALTER TABLE salaries MODIFY salary VARCHAR(20),
+ALGORITHM=COPY, LOCK=SHARED;
+
+## VARCHAR 타입의 길이 확장
+## 타입 길이를 확장하는 경우는 현재 길이와 확장하는 길이의 관계에 따라 리빌드 발생 상이
+ALTER TABLE employees MODIFY last_name VARCHAR(30) NOT NULL,
+ALGORITHM=INPLACE, LOCK=NONE;
+
+## VARCHAR 타입의 길이 축소
+## 완전히 다른 타입으로 변경되는 경우와 같이 COPY 알고리즘 사용
+ALTER TABLE employees MODIFY last_name VARCHAR(30) NOT NULL,
+ALGORITHM=COPY, LOCK=SHARED;
+```
+
+<br>
+
+
+
+
+
+
+
+
+
+
 
 
 
