@@ -671,11 +671,185 @@ ALTER TABLE employees MODIFY last_name VARCHAR(30) NOT NULL,
 ALGORITHM=COPY, LOCK=SHARED;
 ```
 
+가장 빈번한 경우가 VARCHAR 또는 VARBINARY 타입의 길이를 확장하는 것  
+칼럼의 최대 허용 사이즈는 메타데이터에, 실제 칼럼이 가지는 값의 길이는 데이터 레코드 칼럼 헤더에 저장  
+하지만 값의 길이를 위해 사용하는 공간의 크기는 최대 바이트 수만큼 필요  
+최대 가질 수 있는 바이트 수가 255 이하인 경우 1byte, 이상인 경우 2byte 사용  
+
 <br>
 
+## 인덱스 변경
+8.0 버전부터 대부분의 인덱스 변경 작업이 온라인 DDL 처리 가능  
 
+<br>
 
+### 인덱스 추가
+```sql
+ALTER TABLE employees ADD PRIMARY KEY (emp_no),
+ALGORITHM=INPLACE, LCOK=NONE;
 
+ALTER TABLE employees ADD UNIQUE INDEX ux_empno (emp_no),
+ALGORITHM=INPLACE, LCOK=NONE;
+
+ALTER TABLE employees ADD INDEX ix_lastname (last_name),
+ALGORITHM=INPLACE, LCOK=NONE;
+
+ALTER TABLE employees ADD FULLTEXT INDEX fx_firstname_lastname (first_name, last_name),
+ALGORITHM=INPLACE, LCOK=SHARED;
+
+ALTER TABLE employees ADD SPATIAL INDEX fx_loc (last_location),
+ALGORITHM=INPLACE, LCOK=SHARED;
+```
+
+전문 검색을 위한 인덱스와 공간 검색을 위한 인덱스는 SHARED 잠금 필요  
+나머지 B-Tree 자료구조를 사용하는 인덱스는 잠금없이 인덱스 생성 가능  
+
+<br>
+
+### 인덱스 조회
+`SHOW INDEXES` 또는 `SHOW CREATE TABLE` 명령으로 표시되는 테이블 생성 명령 참조  
+
+```
+mysql> SHOW INDEX FROM employees;
++-----------+------------+-----------------------+--------------+-------------+-----------+-------------+
+| Table     | Non_unique | Key_name              | Seq_in_index | Column_name | Collation | Cardinality |
++-----------+------------+-----------------------+--------------+-------------+-----------+-------------+
+| employees |          0 | PRIMARY               |            1 | emp_no      | A         |      286659 |
+| employees |          1 | ix_firstname          |            1 | first_name  | A         |        1021 |
+| employees |          1 | ix_hiredate           |            1 | hire_date   | A         |        3628 |
+| employees |          1 | ix_gender_birthdate   |            1 | gender      | A         |           4 |
+| employees |          1 | ix_gender_birthdate   |            2 | birth_date  | A         |       10876 |
+| employees |          1 | fx_firstname_lastname |            1 | first_name  | NULL      |      300030 |
+| employees |          1 | fx_firstname_lastname |            2 | last_name   | NULL      |      300030 |
++-----------+------------+-----------------------+--------------+-------------+-----------+-------------+
+```
+
+`Seq_in_index` 칼럼값은 인덱스에서 해당 칼럼의 위치를 표시  
+`Cardinarlity` 칼럼값은 인덱스에서 해당 칼럼까지의 유니크한 값의 개수를 표시  
+
+<br>
+
+### 인덱스 이름 변경
+5.7 버전부터 인덱스의 이름 변경 가능  
+
+```sql
+ALTER TABLE salaries RENAME INDEX ix_salary TO ix_salary2,
+ALGORITHM=INPLACE, LOCK=NONE;
+```
+
+```sql
+## 새로운 인덱스 생성
+ALTER TABLE employees
+ADD INDEX index_new (first_name, last_name),
+ALGORITHM=INPLACE, LOCK=NONE;
+
+## 기존 인덱스 삭제후, 동시에 새로운 인덱스 이름 변경
+ALTER TABLE employees
+DROP INDEX ix_firstname,
+RENAME INDEX index_new TO ix_firstname,
+ALGORITHM=INPLACE, LOCK=NONE;
+```
+
+<br>
+
+### 인덱스 가시성 변경
+인덱스를 삭제하는 작업은 `ALTER TABLE DROP INDEX` 명령으로 즉시 완료  
+하지만 한번 삭제된 인덱스를 새로 생성하는 것은 매우 많은 시간이 걸림  
+그래서 데이터베이스 서버의 인덱스는 한번 생성되면 거의 삭제하지 못하는 경우가 많음  
+
+8.0 버전부터 인덱스 가시성을 제어 가능  
+메타데이터만 변경하기 때문에 온라인 DDL로 실행되는지 여부를 고려할 필요 없음  
+
+```
+mysql> ALTER TABLE employees ALTER INDEX ix_firstname INVISIBLE;
+mysql> EXPLAIN SELECT * FROM employees WHERE first_name = 'Matt';
++----+-------------+-----------+------+------+--------+-------------+
+| id | select_type | table     | type | key  | rows   | Extra       |
++----+-------------+-----------+------+------+--------+-------------+
+|  1 | SIMPLE      | employees | ALL  | NULL | 300030 | Using where |
++----+-------------+-----------+------+------+--------+-------------+
+
+mysql> ALTER TABLE employees ALTER INDEX ix_firstname VISIBLE;
+mysql> EXPLAIN SELECT * FROM employees WHERE first_name = 'Matt';
++----+-------------+-----------+------+--------------+------+-------+
+| id | select_type | table     | type | key          | rows | Extra |
++----+-------------+-----------+------+--------------+------+-------+
+|  1 | SIMPLE      | employees | ref  | ix_firstname |  233 | NULL  |
++----+-------------+-----------+------+--------------+------+-------+
+
+mysql> SHOW CREATE TABLE employees \G
+CREATE TABLE `employees` (
+  `emp_no` int NOT NULL,
+  ...
+  PRIMARY KEY (`emp_no`),
+  KEY `ix_hiredate` (`hire_date`),
+  KEY `ix_firstname` (`first_name`) /*!80000 INVISIBLE */
+) ENGINE=InnoDB
+```
+
+<br>
+
+### 인덱스 삭제
+`ALTER TABLE ... DROP INDEX ...` 명령으로 삭제 가능  
+프라이머리 키를 제외한 인덱스 삭제는 실제 테이블 리빌드가 필요하지 않음  
+
+```sql
+ALTER TABLE employees DROP PRIMARY KEY, ALGORITHM=COPY, LOCK=SHARED;
+ALTER TABLE employees DROP INDEX ux_empno, ALGORITHM=INPLACE, LOCK=NONE;
+ALTER TABLE employees DROP INDEX fx_loc, ALGORITHM=INPLACE, LOCK=NONE;
+```
+
+<br>
+
+## 테이블 변경 묶음 실헹
+하나의 테이블에 대해 여러 가지 스키마 변경이 필요한 경우 모아서 실행 가능  
+스키마 작업 중 INSTANT 알고리즘을 사용하는 작업은 굳이 모아서 실행할 필요없음  
+
+```sql
+ALTER TABLE employees
+ADD INDEX ix_lastname (last_name, first_name),
+ADD INDEX ix_birthdate (birtsh_date),
+ALGORITHM=INPLACE, LOCK=NONE;
+```
+
+<br>
+
+## 프로세스 조회 및 강제 종료
+MySQL 서버에 접속된 사용자의 목록이나 실행중인 쿼리는 `SHOW PROCESSLIST` 명령으로 확인 가능  
+
+```
+mysql> SHOW PROCESSLIST
++------+---------+----------------+------+---------+-------+--------------+------------------+
+| Id   | User    | Host           | db   | Command | Time  | State        | Info             |
++------+---------+----------------+------+---------+-------+--------------+------------------+
+| 2740 | db_user | 192.168.0.1:14 | db1  | Sleep   | 527   |              | NULL             |
+| 4228 | db_user | 192.168.0.1:15 | db1  | Query   | 53216 | Sending data | SELECT ...       |
+| 6243 | root    | localhost      | NULL | Query   | 0     | NULL         | SHOW PROCESSLIST |
++------+---------+----------------+------+---------+-------+--------------+------------------+
+```
+
+- `Id`: 스레드 아이디, 쿼리나 커넥션의 식별자
+- `User`: 클라이언트가 접속할 때 인증에 사용한 사용자 계정
+- `Host`: 클라이언트의 호스트명이나 IP 주소
+- `db`: 클라이언트가 기본으로 사용하는 데이터베이스 이름
+- `Command`: 해당 스레드가 처리하고 있는 작업 표시
+- `Time`: 해당 스레드가 처리하고 있는 작업이 얼마나 실행되고 있는지 표시
+- `State`: 해당 스레드가 처리하고 있는 작업의 큰 분류 표시
+- `Info`: 해당 스레드가 실행 중인 쿼리 문장
+
+<br>
+
+```sql
+## 쿼리 강제 종료, 커넥션 유지
+KILL QUERY 4228;
+
+## 쿼리 및 커넥션 강제 종료, 트랜잭션 롤백
+KILL 4228;
+```
+
+<br>
+
+## 활성 트랜잭션 조회
 
 
 
