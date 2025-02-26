@@ -850,27 +850,112 @@ KILL 4228;
 <br>
 
 ## 활성 트랜잭션 조회
+트랜잭션이 오랜 시간 완료되지 않고 활성 상태로 남아있는 것은 성능에 악영향  
 
+```
+mysql> SELECT trx_id,
+         (SELECT CONCAT(user, '@', host)
+          FROM information_schema.processlist
+          WHERE id=trx_mysql_thread_id) AS source_info,
+         trx_state,
+         trx_started,
+         now(),
+         (unix_timestamp(now()) - unix_timestamp(trx_started) AS lasting_sec,
+         trx_requested_lock_id,
+         trx_wait_started,
+         trx_mysql_thread_id,
+         trx_tables_in_usq,
+         trx_tables_locked
+       FROM information_schema.innodb_trx
+       WHERE (unix_timestamp(now()) - unix_timestamp(trx_started)) > 5 \G
+*************************** 1. row ***************************
+               trx_id: 23000
+          source_info: root@localhost
+            trx_state: RUNNING
+          trx_started: 2020-09-01 22:50:49
+                now(): 2020-09-01 22:53:39
+          lasting_sec: 170
+trx_requested_lock_id: NULL
+     trx_wait_started: NULL
+  trx_mysql_thread_id: 14
+    trx_tables_in_use: 0
+    trx_tables_locked: 1
+1 row in set (0.00 sec)
+```
 
+5초 이상 활성 상태인 프로세스만 조사하는 쿼리  
+`lasting_sec` 칼럼값이 활성 트랜잭션 상태를 유지한 시간  
 
+<br>
 
+```
+mysql> SELECT * FROM information_schema.innodb_trx WHERE trx_id = 23000 \G
+*************************** 1. row ***************************
+                    trx_id: 23000
+               trx_started: 2020-09-01 22:50:49
+     trx_requested_lock_id: NULL
+          trx_wait_started: NULL
+                trx_weight: 3
+       trx_mysql_thread_id: 14
+                 trx_query: NULL
+       trx_operation_state: NULL
+         trx_tables_in_usq: 0
+         trx_tables_locked: 1
+          trx_lock_structs: 2
+     trx_lock_memory_bytes: 1136
+           trx_rows_locked: 1
+         trx_rows_modified: 1
+   trx_concurrency_tickets: 0
+       trx_isolation_level: REPEATABLE READ
+         trx_unique_checks: 1
+    trx_foreign_key_checks: 1
+trx_last_foreign_key_error: NULL
+ trx_adaptive_hash_latched: 0
+ trx_adaptive_hash_timeout: 0
+          trx_is_read_only: 0
+trx_autocommit_non_locking: 0
+       trx_schedule_weight: NULL
+```
 
+`trx_rows_modified` 칼람과 `trx_rows_locked` 칼럼은 변경 레코드 건수와 보유한 레코드 잠금 건수  
 
+<br>
 
+```
+mysql> SELECT * FROM data_locks \G
+*************************** 1. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 5022884824:1361:140521184204800
+ENGINE_TRANSACTION_ID: 23000
+            THREAD_ID: 63
+             EVENT_ID: 177
+        OBJECT_SCHEMA: employees
+          OBJECT_NAME: employees
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: NULL
+OBJECT_INSTANCE_BEGIN: 140521184204800
+            LOCK_TYPE: TABLE
+            LOCK_MODE: IX
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: NULL
+*************************** 2. row ***************************
+               ENGINE: INNODB
+       ENGINE_LOCK_ID: 5022884824:212:9:2:140521188400672
+ENGINE_TRANSACTION_ID: 23000
+            THREAD_ID: 63
+             EVENT_ID: 188
+        OBJECT_SCHEMA: employees
+          OBJECT_NAME: employees
+       PARTITION_NAME: NULL
+    SUBPARTITION_NAME: NULL
+           INDEX_NAME: PRIMARY
+OBJECT_INSTANCE_BEGIN: 140521188400672
+            LOCK_TYPE: RECORD
+            LOCK_MODE: X, REC_NOT_GAP
+          LOCK_STATUS: GRANTED
+            LOCK_DATA: 10001
+2 rows in set (0.00 sec)
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
