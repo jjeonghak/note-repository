@@ -265,6 +265,9 @@ s.split(regex);
 // 문자열의 앞뒤 공백 제거한 결과 반환
 s.trim();
 
+// 반복 문자열 생성
+s.repeat(cnt);
+
 // 두 문자열이 동일한지 비교(대소문자 구분 또는 무시)
 s.equals(anotherString);
 s.equalsIgnoreCase(anotherString);
