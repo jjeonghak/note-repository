@@ -203,25 +203,63 @@ mysql> SELECT * FROM tb_bi_gram
 <br>
 
 ## 전문 검색 인덱스 디버깅
+여러 다양한 이유로 전문 검색 쿼리가 원하는 결과를 만들어내지 못하는 경우 발생  
+전문 검색 쿼리 오류의 원인을 찾기 쉽게 전문 검색 인덱스 디버깅 기능 제공  
+`innodb_ft_aux_table` 시스템 변수에 전문 검색 인덱스를 가진 테이블을 설정한 경우 해당 인덱스 관리 정보 조회 가능  
 
+```sql
+SET GLOBAL innodb_ft_aux_table = 'test/tb_bi_gram';
+```
 
+<br>
 
+```
+-- // 전문 검색 인덱스의 설정 내용 조회
+mysql> SELECT * FROM information_schema.innodb_ft_config;
++---------------------------+-------+
+| KEY                       | VALUE |
++---------------------------+-------+
+| optimize_checkpoint_limit | 180   |
+| synced_doc_id             | 7     |
+| stopword_table_name       |       |
+| use_stopword              | 1     |
++---------------------------+-------+
 
+-- // 보유한 인덱스 엔트리 목록 조회
+mysql> SELECT * FROM information_schema.innodb_ft_index_table;
++------+--------------+-------------+-----------+--------+----------+
+| WORD | FIRST_DOC_ID | LAST_DOC_ID | DOC_COUNT | DOC_ID | POSITION |
++------+--------------+-------------+-----------+--------+----------+
+| bm   |            4 |           5 |         2 |      4 |       41 |
+| bm   |            4 |           5 |         2 |      5 |       42 |
+| ce   |            4 |           5 |         2 |      4 |       37 |
+| ce   |            4 |           5 |         2 |      5 |       19 |
+| cl   |            2 |           5 |         3 |      2 |        3 |
+| cl   |            2 |           5 |         3 |      2 |        7 |
+| ...  |          ... |         ... |       ... |    ... |      ... |
++------+--------------+-------------+-----------+--------+----------+
 
+-- // 기본적으로 레코드가 새롭게 삽입시 토큰을 즉시 저장하지 않고 메모리에 임시 저장
+mysql> INSERT INTO tb_bi_gram VALUES (NULL, 'Oracle', 'Oracle is database');
+mysql> SELECT * FROM information_schema.innodb_ft_index_cache;
++------+--------------+-------------+-----------+--------+----------+
+| WORD | FIRST_DOC_ID | LAST_DOC_ID | DOC_COUNT | DOC_ID | POSITION |
++------+--------------+-------------+-----------+--------+----------+
+| cl   |            8 |           8 |         1 |      8 |        3 |
+| cl   |            8 |           8 |         1 |      8 |        7 |
+| le   |            8 |           8 |         1 |      8 |        4 |
+| le   |            8 |           8 |         1 |      8 |        7 |
+| se   |            8 |           8 |         1 |      8 |       23 |
++------+--------------+-------------+-----------+--------+----------+
 
+-- // 레코드 삭제시 삭제되는 레코드 정보 조회
+mysql> DELETE FROM tb_bi_gram where id = 1;
+mysql> SELECT * FROM information_schema.innodb_ft_deleted;
++--------+
+| DOC_ID |
++--------+
+|      2 |
++--------+
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
