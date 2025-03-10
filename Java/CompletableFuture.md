@@ -104,7 +104,7 @@ System.out.println("* Price returned after " + retrievalTime + " msecs");
 ````
 * Invocation returned after 43 msecs
 * Price is 123.26
-* Price returned after 1045 msec
+* Price returned after 1045 msecs
 ````
 
 <br>
