@@ -251,7 +251,7 @@ s.contains(charSequence);
 s.startsWith(prefix);
 s.endsWith(suffix);
 
-// 문자열 내에서 주저진 문자 또는 정규식에 맞는 부분을 모두 대체
+// 문자열 내에서 주어진 문자 또는 정규식에 맞는 부분을 모두 대체
 s.replace(target, replacement);
 s.replaceAll(regex, replacement);
 
