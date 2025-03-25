@@ -167,14 +167,73 @@ MySQL 서버에서는 투영 좌표계나 지리 좌표계에 속하지 않는 �
 평면 좌표계는 단위를 가지지 않고 값의 제한이 없기 때문에 무한 평면 좌표계라고도 표현  
 평면 좌표계와 투영 좌표계는 모두 피타고라스 정리 수식에 의해서 좌표간 거리 계산  
 
+```sql
+## 평면 좌표계 사용 예제
+CREATE TABLE plain_coord (
+  id INT NOT NULL AUTO_INCREMENT,
+  location POINT SRID 0,
+  PRIMARY KEY(id)
+);
+
+INSERT INTO plain_coord VALUES (1, ST_PointFromText('POINT(0 0)'));
+INSERT INTO plain_coord VALUES (1, ST_PointFromText('POINT(5 5)', 0));
+
+## 투영 좌표계 사용 예제
+CREATE TABLE projection_coord (
+  id INT NOT NULL AUTO_INCREMENT,
+  location POINT SRID 3857,
+  PRIMARY KEY(id)
+);
+
+INSERT INTO projection_coord VALUES (1, ST_PointFromText('POINT(14133791.066622 4509381.876958)', 3857));
+```
+
+<br>
+
+테이블을 생성할떄 SRID를 명식적으로 정의하지 않은 경우 모든 SRID 데이터 저장 가능  
+하지만 이 경우는 인덱스를 이용한 빠른 검색 수행 불가  
+마치 VARCHAR 타입 칼럼에 여러 콜레이션을 섞어서 저장해둔 것과 같은 결과  
+만약 칼럼에 특정 좌표계를 명시한 경우, 다른 좌표계를 참조하는 공간 데이터를 저장하는 경우 에러 발생  
+
+```
+mysql> INSERT INTO plain_coord VALUES (2, ST_PointFromText('POINT(5 5)', 4326));
+ERROR 3643 (HY000): The SRID of the geometry does not match the SRID of the column 'location'.
+The SRID of the geometry is 4326, but the SRID of the column is 0. Consider changing the SRID
+of the geometry or the SRID property of the column.
+```
+
+<br>
+
+공간 데이터는 MySQL 서버가 내부적으로 사용하는 이진 포맷 데이터로 조회 가능  
+`ST_AsWKB()` 함수의 결과값은 `WKB(Well Known Binary)` 포맷의 공간 데이터  
+하지만 서버의 이진 데이터 포맷은 WKB 앞쪽에 SRID를 위한 4바이트 공간이 추가돼 있기 때문에 미세한 차이 존재  
+
+```
+mysql> SELECT id, location, ST_AsWKB(location) FROM plain_coord \G
+*************************** 1. row ***************************
+                id: 1
+          location: 0x110FQ00001010000OO76C421E243F56A4172142078B1335141
+ST_AsWKB(location): 0x010100000076C421E243F56A4172142078B1335141
+*************************** 2. row ***************************
+                id: 2
+          location: 0x110F00000101000000F10EF02D44F56A417009C05D91255141
+ST_AsWKB(location): 0x0101000000F10EF02D44F56A417009C05D91255141
+```
+
+<br>
 
 
 
-
-
-
-
-
+```
+mysql> SELECT id, ST_AsText(location) AS location_wkt, ST_X(location) AS location_x, ST_Y(location) AS location_y
+       FROM projection_coord;
++----+---------------------------------------+-----------------+----------------+
+| id | location_wkt                          | location_x      | location_y     |
++----+---------------------------------------+-----------------+----------------+
+|  1 | POINT(14133791.066622 4509381.876958) | 14133791.066622 | 4509381.876958 |
+|  2 | P0INT(14133793.435554 4494917.464846) | 14133793.435554 | 4494917.464846 |
++----+---------------------------------------+-----------------+----------------+
+```
 
 
 
