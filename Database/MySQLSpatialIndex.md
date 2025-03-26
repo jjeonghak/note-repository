@@ -222,7 +222,7 @@ ST_AsWKB(location): 0x0101000000F10EF02D44F56A417009C05D91255141
 
 <br>
 
-
+눈으로 식별하기 위해서 `ST_AsText()` 함수를 사용해 이진 데이터를 `WKT` 포맷으로 변환  
 
 ```
 mysql> SELECT id, ST_AsText(location) AS location_wkt, ST_X(location) AS location_x, ST_Y(location) AS location_y
@@ -235,10 +235,192 @@ mysql> SELECT id, ST_AsText(location) AS location_wkt, ST_X(location) AS locatio
 +----+---------------------------------------+-----------------+----------------+
 ```
 
+<br>
+
+## 지리 좌표계
+
+### 지리 좌표계 데이터 관리
+공간 인덱스를 생성하는 칼럼은 반드시 NOT NULL  
+
+```sql
+CREATE TABLE sphere_coord (
+  id INT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(20),
+  location POINT NOT NULL SRID 4326,  -- // WGS84 좌표계
+  PRIMARY KEY (id),
+  SPATIAL INDEX sx_location(location)
+);
+```
+
+<br>
+
+공간 데이터를 검색하는 가장 일반적인 형태는 특정 위치를 기준으로 반경안의 데이터를 검색하는 작업  
+지리 좌표계는 두 점의 거리를 `ST_Distance_Sphere()` 함수로 계산  
+
+```
+mysql> SELECT id, name, ST_AsText(location) AS location,
+         ROUND(ST_Distance_Sphere(location, ST_PointFromText('POINT(37.547027 127.047337)', 4326))) AS distance_meters
+       FROM sphere_coord
+       WHERE ST_Distance_Sphere(location, ST_PointFromText('POINT(37.547027 127.047337)', 4326)) < 1000;
++----+--------------------+-----------------------------+-----------------+
+| id | name               | location                    | distance_meters |
++----+--------------------+-----------------------------+-----------------+
+|  1 | Seoulforest        | POINT(37.544738 127.039074) |             772 |
+|  2 | Hanyang University | POINT(37.555363 127.044521) |             960 |
++----+--------------------+-----------------------------+-----------------+
+
+mysql> EXPLAIN
+         SELECT id, name, ST_AsText(location) AS location,
+           ROUND(ST_Distance_Sphere(location, ST_PointFromText('POINT(37.547027 127.047337)', 4326))) AS distance_meters
+         FROM sphere_coord
+         WHERE ST_Distance_Sphere(location, ST_PointFromText('POINT(37.547027 127.047337)', 4326)) < 1000;
++----+-------------+--------------+------+------+------+-------------+
+| id | select_type | table        | type | key  | rows | Extra       |
++----+-------------+--------------+------+------+------+-------------+
+|  1 | SIMPLE      | sphere_coord | ALL  | NULL |    4 | Using where |
++----+-------------+--------------+------+------+------+-------------+
+```
+
+<br>
+
+아직 인덱스를 이용한 반경 검색 기능은 지원하지 않음  
+차선책으로 `MBR(Minimum Bounding Rectangle)`을 이용한 `ST_Within()` 함수를 이용  
+우선 주어진 위치를 기준으로 반경 1km 원을 감사는 사각형을 생성  
+WGS 84(SRID 4326) 공간 좌표계의 위치의 단위는 각도이고, 위도에 따라 경도 1도에 해당하는 거리가 상이  
+
+```
+-- // TopRight: 기준점의 북동쪽(우측 상단) 끝 좌표
+Longitude_TopRight = Longitude_Origin + (${DistanceKm}/abs(cos(radians(${Latitude_Origin}))*111.32))
+Latitude_TopRight = Longitude_Origin + (${DistanceKm}/111.32)
+
+-- // BottomLeft: 기준점의 남서쪽(좌측 하단) 끝 좌표
+Longitude_BottomLeft = Longitude_Origin - (${DistanceKm}/abs(cos(radians(${Latitude_Origin}))*111.32))
+Latitude_BottomLeft = Longitude_Origin - (${DistanceKm}/111.32)
+```
+
+<br>
+
+위의 식을 이용해서 중심 위치로부터 주어진 km 반경의 원을 감싸는 직사각형 객체 반환함수 구현  
+
+```sql
+DELIMITER ;;
+
+CREATE DEFINER='root'@'localhost'
+  FUNCTION getDistanceMBR(p_origin POINT, p_distanceKm DOUBLE) RETURNS POLYGON
+DETERMINISTIC
+  SQL SECURITY INVOKER
+BEGIN
+  DECLARE v_originLat DOUBLE DEFAULT 0.0;
+  DECLARE v_originLon DOUBLE DEFAULT 0.0;
+
+  DECLARE v_deltaLon DOUBLE DEFAULT 0.0;
+  DECLARE v_Lat1 DOUBLE DEFAULT 0.0;
+  DECLARE v_Lon1 DOUBLE DEFAULT 0.0;
+  DECLARE v_Lat2 DOUBLE DEFAULT 0.0;
+  DECLARE v_Lon2 DOUBLE DEFAULT 0.0;
+
+  SET v_originLat = ST_X(p_origin);
+  SET v_originLon = ST_Y(p_origin);
+
+  SET v_deltaLon = p_distanceKm / ABS(COS(RADIANS(v_originLat))*111.32);
+  SET v_Lon1 = v_originLon - v_deltaLon;
+  SET v_Lon2 = v_originLon + v_deltaLon;
+  SET v_Lat1 = v_originLat - (p_distanceKm / 111.32);
+  SET v_Lat2 = v_originLat + (p_distanceKm / 111.32);
+
+  SET @mbr = ST_AsText(ST_Envelope(ST_GeomFromText(CONCAT("LINESTRING(", v_Lat1, " ", v_Lon1,", ", v_Lat2, " ", v_Lon2, ")"))));
+  RETURN ST_PolygonFromText(@mbr, ST_SRID(p_origin));
+END ;;
+```
+
+<br>
+
+<img width="500" alt="mbr" src="https://github.com/user-attachments/assets/bc740a41-c95c-4de9-b356-255c11e14b14" />
 
 
+```
+mysql> SET @distanceMBR = getDistanceMBR(ST_GeomFromText('POINT(37.547027 127.047337)', 4326), 1);
+mysql> SELECT ST_SRID(@distanceMBR), ST_AsText(@distanceMBR) \G
+*************************** 1. row ***************************
+  ST_SRID(@distanceMBR): 4326
+ST_AsText(@distanceMBR): POLYGON((37.53804388825009 127.03600689589169,
+                                  37.55601011174991 127.03600689589169
+                                  37.55601011174991 127.05866710410828
+                                  37.53804388825009 127.05866710410828
+                                  37.53804388825009 127.03600689589169))
+```
 
+<br>
 
+만약 지리 좌표계가 아닌 8.0.24 이하 버전의 평면 좌표계(SRID 0)를 사용한다면 `ST_Buffer()` 함수 사용 가능  
+
+```
+mysql> SET @origin = ST_GeomFromText('POINT(0 0)');
+mysql> SET @pt_strategy = ST_Buffer_Strategy('point_circle', 8);
+
+-- // @origin으로부터 거리가 2인 점 8개로 구성된 다각형 조회
+mysql> SELECT ST_AsText(ST_Buffer(@origin, 2, @pt_strategy)) AS bounding_circle \G
+*************************** 1. row ***************************
+bounding_circle: POLYGON((2 0, 1.414213562373095 1.4142135623730954, -3.6739403974420594e-16 2,
+                          -1.4142135623730954 1.414213562373095, -2 -2.4492935982947064e-16,
+                          -1.414213562373095 -1.4142135623730951, 1.2246467991473532ㄷ-16 -2,
+                          1.4142135623730951 -1.414213562373095, 2 0))
+```
+
+<br>
+
+실제 반경 검색은 `ST_Contains()` 또는 `ST_Within()` 함수 사용  
+두 함수는 동일하지만 파라미터를 반대로 입력  
+
+```
+mysql> SELECT id, name
+       FROM sphere_coord
+       WHERE ST_Contains(getDistanceMBR(ST_PointFromText('POINT(37547027 127.047337)', 4326), 1), location);
++----+--------------------+
+| id | name               |
++----+--------------------+
+|  2 | Hanyang University |
+|  1 | Seoulforest        |
++----+--------------------+
+
+mysql> SELECT id, name
+       FROM sphere_coord
+       WHERE ST_Within(location, getDistanceMBR(ST_PointFromText('POINT(37547027 127.047337)', 4326), 1));
++----+--------------------+
+| id | name               |
++----+--------------------+
+|  2 | Hanyang University |
+|  1 | Seoulforest        |
++----+--------------------+
+
+mysql> EXPLAIN
+         SELECT id, name
+         FROM sphere_coord
+         WHERE ST_Within(location, getDistanceMBR(ST_PointFromText('POINT(37547027 127.047337)', 4326), 1));
++----+-------------+--------------+-------+-------------+---------+------+-------------+
+| id | select_type | table        | type  | key         | key_len | rows | Extra       |
++----+-------------+--------------+-------+-------------+---------+------+-------------+
+|  1 | SIMPLE      | sphere_coord | range | sx_location |      34 |    4 | Using where |
++----+-------------+--------------+-------+-------------+---------+------+-------------+
+```
+
+<br>
+
+또한 1km 반경의 MBR 사각형 내의 점들을 검색하기 때문에 모서리 부분이 포함  
+가장 쉬운 방법은 인덱스를 통해 검색된 결과에 다시 한번 거리 계산 조건을 적용하는 것  
+
+<img width="500" alt="mbr2" src="https://github.com/user-attachments/assets/0cc61b72-6f95-4f6a-9e2a-dab371193a01" />
+
+```sql
+SELECT id, name
+FROM sphere_coord
+WHERE ST_Within(location, getDistanceMBR(ST_PointFromText('POINT(37.547027 127.047337)', 4326), 1))
+  AND ST_Distance_Sphere(location, ST_PointFromText('POINT(37.547027 127.047337)', 4326) <= 1000;
+```
+
+<br>
+
+### 지리 좌표계 주의 사항
 
 
 
