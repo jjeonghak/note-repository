@@ -421,13 +421,176 @@ WHERE ST_Within(location, getDistanceMBR(ST_PointFromText('POINT(37.547027 127.0
 <br>
 
 ### 지리 좌표계 주의 사항
+GIS 기능이 도입된 것은 오래됐지만 지리 좌표계나 SRS 관리 기능이 도입된 것은 8.0 버전이 처음  
+하지만 해당 버전에서도 지리 좌표계의 데이터 검색 및 변환 기능, 성능이 조금은 미숙  
+
+<br>
+
+### 정확성 주의 사항
+`ST_Continas()` 함수가 정확하지 않은 결과를 반환할 경우 존재  
+공간 인덱스 활용 여분에 따라 다른 결과를 반환할 가능성 존재  
+
+```
+mysql> SET @SRID := 4326 /* WGS84 */;
+
+-- // 경도는 서울 부근과 비슷한 값이지만 위도는 북극에 가까운 지점
+mysql> SET @point := ST_GeomFromText('POINT(84.50249779176816 126.96600537699246)', @SRID);
+
+-- // 경기도 부근의 작은 영역 생성
+mysql> SET @polygon := ST_GeomFromText('POLYGON((
+                         37.399190586836184 126.965669993654370,
+                         37.398563808320795 126.966005172597650,
+                         ...
+                         37.399190586836184 126.965669993654370))', @SRID);
+
+-- // 북극에 가까운 지점이 경기도 특정 지역에 포함되는 결과 반환
+mysql> SELECT ST_Contains(@polygon, @point) AS within_polygon;
++----------------+
+| within_polygon |
++----------------+
+|              1 |
++----------------+
+```
+
+<br>
+
+간단히 거리 비교 조건을 추가해서 문제 회피 가능  
+`ST_Distance_Sphere()` 함수는 공간 인덱스를 활용할 수 없기 때문에 `ST_Continas()` 함수 없이는 사용 금지  
+
+```
+-- // POLYGON 중심 지점
+mysql> SET @center := ST_GeomFromText('POINT(37.398899 126.966064)', @SRID);
+
+-- // POLYGON 중심 지점에서 떨어진 거리를 확인
+mysql> SELECT (ST_Contains(@polygon, @point) AND ST_Distance_Sphere(@point, @center) <= 1000) AS within_polygon;
+```
+
+<br>
+
+### 성능 주의 사항
+일반적으로 지리 좌표계의 경우 SRID 4326인 좌표계를 많이 사용  
+포함 관계를 비교하는 경우 투영 좌표계보다는 느린 성능  
+
+```
+-- // 지리 좌표계 성능 테스트
+mysql> SET @SRID := 4326;
+mysql> SET @polygon := ST_GeomFromText('POLYGON((
+                         37.399190586836184 126.96566999365437,
+                         37.39919052827099 126.96566999594106,
+                         ...
+                         37.399190586836184 126.9656699936547))', @SRID);
+mysql> SET @point := ST_GeomFromText('POINT(37.50249779176816 126.96600537699246)', @SRID);
+
+mysql> SELECT BENCHMARK(1000000m ST_Cotains(@polygon, @point)) AS polygon_performance_with_srid4326;
++-----------------------------------+
+| polygon_performance_with_srid4326 |
++-----------------------------------+
+|                                 0 |
++-----------------------------------+
+1 row in set (41.44 sec)
+```
+
+```
+-- // 투영 좌표계 성능 테스트
+mysql> SET @SRID := 3857;
+mysql> SET @polygon := ST_GeomFromText('POLYGON((
+                         14133753.7319204200 4494895.8380367200,
+                         14133753.7321749700 4494895.8298302030,
+                         ...
+                         14133753.7319204200 4494895.8380367200))', @SRID);
+mysql> SET @point := ST_GeomFromText('POINT(14133791.0666228350 4509381.8769587210)', @SRID);
+
+mysql> SELECT BENCHMARK(1000000m ST_Cotains(@polygon, @point)) AS polygon_performance_with_srid3857;
++-----------------------------------+
+| polygon_performance_with_srid3857 |
++-----------------------------------+
+|                                 0 |
++-----------------------------------+
+1 row in set (13.09 sec)
+```
+
+<br>
+
+### 좌표계 변환
+일반적으로 휴대폰 같은 모바일 장치로부터 수신받는 GPS 좌표는 WGS 84, SRID 4326 지리 좌표계로 표현  
+SRID 3857은 WGS 84 좌표를 평면으로 투영한 시스템이기 때문에 상호 변환 가능  
+`ST_Transform()` 함수를 이용해서 SRID 간에 좌표값 변환 가능하지만 아직 SRID 3857 변환은 불가능  
 
 
+```sql
+## SRID 4326 -> SRID 3857
+CREATE DEFINER=,dba,@'%'
+  FUNCTION convert4326To3857(p_4326 POINT) RETURNS POINT
+  DETERMINISTIC
+  SQL SECURITY INVOKER
+BEGIN
+  DECLARE lon DOUBLE；
+  DECLARE lat DOUBLE；
+  DECLARE x DOUBLE；
+  DECLARE y DOUBLE；
 
+  IF ST_SRID(p_4326)=3857 THEN
+    RETURN p_4326；
+  ELSEIF ST_SRID(p_4326)＜>4326 THEN
+    SIGNAL SQLSTATE 'HY000' SET MYSQL_ERRN0=1108, MESSAGE_TEXT='Incorrect parameters (SRID must be 4326)'；
+  END IF；
 
+  SET lon = ST_Longitude(p_4326)；
+  SET lat = ST_Latitude(p_4326)；
 
+  ## 20037508.34 미터 = 적도의 지구 둘레의 절반 = ( Ji * EarthRadius) = ( Ji * 6378137 meters)
+  SET x = lon * 20037508.34 / 180；
+  SET y = LOG(TAN((90 + lat) * PI() / 360)) / (PI() / 180)；
+  SET y = y * 20037508.34 / 180；
 
+  RETURN ST_PointFromText(CONCAT('POINT(', x, ' ', y, ')’), 3857)；
+END ；；
+```
 
+```sql
+## SRID 3857 -> SRID 4326
+CREATE DEFINER='dba'@'%'
+  FUNCTION convert3857TO4326(p_3857 POINT) RETURNS POINT
+  DETERMINISTIC
+  SQL SECURITY INVOKER
+BEGIN
+  DECLARE lon DOUBLE
+  DECLARE lat DOUBLE；
+  DECLARE x DOUBLE；
+  DECLARE y DOUBLE；
 
+  IF ST_SRID(p_3857)=4326 THEN
+    RETURN p_3857；
+  ELSEIF ST_SRID(p_3857)<>3857 THEN
+    SIGNAL SQLSTATE 'HY000' SET MYSQL_ERRNO=1108, MESSAGE_TEXT='Incorrect parameters (SRID must be 3857)'；
+  END IF；
 
+  SET x = ST_X(p_3857)；
+  SET y = ST_Y(p_3857)；
 
+  ## 적도의 지구 둘레의 절반 = (2 * ji * R)/2 = (k * EarthRadius) = (k * 6378137 meters) = 20037508.34 meters
+  SET lon = x * 180 / 20037508.34 ；
+  SET lat = ATAN(EXP(y * PI() / 20037508.34)) * 360 / PI() - 90；
+
+  RETURN ST_PointFromText(CONCAT('POINT(', lat, ' ', lon, ')’), 4326)；
+END ；；
+```
+
+```sql
+### SRID 3857 거리 계산
+CREATE DEFINER='dba'©'%'
+  FUNCTION distanceInSphere(p1_3857 POINT, p2_3857 POINT) RETURNS DOUBLE
+  DETERMINISTIC
+  SQL SECURITY INVOKER
+BEGIN
+  DECLARE p1_4326 POINT；
+  DECLARE p2_4326 POINT；
+
+  SET p1_4326 = convert3857TO4326(p1_3857)；
+  SET p2_4326 = convert3857To4326(p2_3857)；
+
+  ## 6370986 = Default Radius meters in MySQL server
+  RETURN ST_Distance_Sphere(p1_4326, p2_4326, 6370986)；
+END ；；
+```
+<br>
