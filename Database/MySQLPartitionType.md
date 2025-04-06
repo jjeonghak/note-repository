@@ -315,7 +315,7 @@ PARTITIONS 2;
 
 ### 리니어 해시 파티션/리니어 키 파티션의 통합
 
-<img width="450" alt="linearhashpartitionmerge" src="https://github.com/user-attachments/assets/571c9517-352d-49e5-a4cb-d98f5b019ba2" />
+<img width="450" alt="linearhashpartitionmerge" src="https://github.com/user-attachments/assets/7dbb6e93-2bc3-4334-a164-9334d7783394" />
 
 새로운 파티션을 추가할 때와 같이 일부 파티션에 대해서만 레코드 통합  
 
