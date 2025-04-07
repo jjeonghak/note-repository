@@ -287,12 +287,494 @@ ERROR 1305 (42000): PROCEDURE sf_sum does not exist
 <br>
 
 ## 트리거
+테이블의 레코드가 저장되거나 변경될때 미리 정의해둔 작업을 자동으로 실행해주는 스토어드 프로그램  
+MySQL 트리거는 INSERT, UPDATE, DELETE 쿼리 실행시 시작되도록 설정 가능  
+대표적으로 칼럼 유효성 체크, 복사 및 백업, 계산된 결과를 다른 테이블에 함께 업데이트하는 등의 작업을 위해 사용  
+스토어드 함수나 프로시저보다는 필요성이 떨어지는 편  
+트리거는 테이블에 대해서만 생성 가능  
+5.7 이전 버전에서는 테이블당 하나의 이벤트에 대해 2개 이상 트리거 등록이 불가능  
 
+<br>
 
+### 트리거 생성
+`BEFORE`, `AFTER` 키워드를 사용해서 트리거가 언제 실행될지 명시  
+`OLD` 키워드는 테이블의 변경되기 전 레코드, `NEW` 키워드는 변경될 레코드를 지칭  
 
+```sql
+CREATE TRIGGER on_delete BEFORE DELETE ON employees
+  FOR EACH ROW
+BEGIN
+  DELETE FROM salaries WHERE emp_no = OLD.emp_no;
+END ;;
+```
 
+<br>
 
+| SQL 종류 | 이벤트 순서 |
+|--|--|
+| INSERT | BEFORE INSERT ==> AFTER INSERT |
+| LOAD DATA | BEFORE INSERT ==> AFTER INSERT |
+| REPLACE | 중복 레코드 존재하는 경우: <br> &emsp;BEFORE INSERT ==> AFTER INSERT <br> 중복 레코드 존재하지 않는 경우: <br> &emsp;BEFORE DELETE ==> AFTER DELETE ==> BEFORE INSERT ==> AFTER INSERT |
+| INSERT INTO ... <br> ON DUPLICATE SET | 중복 레코드 존재하는 경우: <br> &emsp;BEFORE INSERT ==> AFTER INSERT <br> 중복 레코드 존재하지 않는 경우: <br> &emsp;BEFORE UPDATE ==> AFTER UPDATE |
+| UPDATE | BEFORE UPDATE ==> AFTER UPDATE |
+| DELETE | BEFORE DELETE ==> AFTER DELETE |
+| TRUNCATE | 이벤트 발생하지 않음 |
+| DROP TABLE | 이벤트 발생하지 않음 |
 
+<br>
+
+트리거의 `BEGIN ... END` 코드 블록에서 아래 유형은 사용 불가  
+- 트리거는 외래키 관계에 의해 자동으로 변경되는 경우 호출 불가
+- 레코드 기반 복제에서는 레플리카 서버의 트리거를 기동시키지 않지만, 문장 기반 복제는 기동시킴
+- 명시적 또는 묵시적인 `ROLLBACK`/`COMMIT`을 유발하는 SQL 문장 사용 불가
+- `RETURN` 문장 사용 불가, 트리거 종료시 `LEAVE` 명령 사용
+- `information_schema`, `performance_schema` 데이터베이스에 존재하는 테이블에는 트리거 생성 불가
+
+<br>
+
+### 트리거 실행
+트리거는 스토어드 프로시저나 함수와 같이 작동 확인을 위해 명시적으로 실행하는 방법이 없음  
+직접 레코드 이벤트를 수행해서 작동 확인  
+
+<br>
+
+### 트리거 딕셔너리
+8.0 이전 버전까지 트리거는 해당 데이터베이스 딕셔너리의 `*.TRG` 파일로 기록  
+8.0 버전부터 보이지 않는 시스템 테이블로 저장, `information_schema` 데이터베이스의 `TRIGGERS` 뷰를 통해 조회  
+
+```
+mysql> SELECT trigger_schema, trigger_name, event_manipulation, action_timing
+       FROM information_schema.TRIGGERS
+       WHERE trigger_schema = 'employees';
++----------------+--------------+--------------------+---------------+
+| TRIGGER_SCHEMA | TRIGGER_NAME | EVENT_MANIPULATION | ACTION_TIMING |
++----------------+--------------+--------------------+---------------+
+| employees      | on_delete    | DELETE             | BEFORE        |
++----------------+--------------+--------------------+---------------+
+
+mysql> SELECT trigger_schema, trigger_name, event_manipulation, action_timing, action_statement
+       FROM information_schema.TRIGGERS
+       WHERE trigger_schema = 'employees' \G;
+*************************** 1. row ***************************
+    TRIGGER_SCHEMA: employees
+      TRIGGER_NAME: on_delete
+EVENT_MANIPULATION: DELETE
+     ACTION_TIMING: BEFORE
+  ACTION_STATEMENT: BEGIN
+         DELETE FROM salaries WHERE emp_no = OLD.emp_no;
+       END
+```
+
+<br>
+
+## 이벤트
+주어진 특정한 시간에 스토어드 프로그램을 실행할 수 있는 스케줄러 기능  
+MySQL 서버의 이벤트는 스케줄링을 전담하는 스레드 존재, 이 스레드가 활성화된 경우에만 이벤트 실행  
+`event_scheduler` 시스템 변수값을 1로 설정해서 활성화 가능  
+실행 이력은 별도로 저장되지 않고 가장 최근 실행된 정보만 조회 가능하기 때문에 이벤트 처리 로직에서 사용자 테이블로 직접 기록하는 것 권장  
+
+```
+mysql> SHOW GLOBAL VARIABLES LIKE 'event_scheduler';
++-----------------+-------+
+| Variable_name   | Value |
++-----------------+-------+
+| event_scheduler | ON    |
++-----------------+-------+
+
+mysql> SHOW PROCESSLIST;
++----+-----------------+-----------+------+---------+--------+------------------------+------+
+| Id | User            | Host      | db   | Command | Time   | State                  | Info |
++----+-----------------+-----------+------+---------+--------+------------------------+------+
+|  5 | event_schesuler | localhost | NULL | Daemon  | 429360 | Waiting on empty queue | NULL |
++----+-----------------+-----------+------+---------+--------+------------------------+------+
+```
+
+<br>
+
+### 이벤트 생성
+이벤트는 반복 실행 여부에 따라 일회성 이벤트와 반복성 이벤트로 구분  
+`DAY`, `QUARTER`, `MONTH`, `HOUR`, `MINUTE`, `WEEK`, `SECOUND` 등 반복 주기 사용 가능  
+
+```sql
+## 일회성 이벤트
+CREATE EVENT onetime_job
+  ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR
+DO
+  INSERT INTO daily_rank_log VALUES (NOW(), 'Donw');
+
+## 반복성 이벤트
+CREATE EVENT daily_ranking
+  ON SCHEDULE EVERY 1 DAY STARTS '2020-09-07 01:00:00' ENDS '2021-01-01 00:00:00'
+DO
+  INSERT INTO daily_rank_log VALUES (NOW(), 'Done');
+```
+
+<br>
+
+반복 여부에 상관없이 DO 절은 단순히 하나의 쿼리나 스토어드 프로시저 호출 또는 `BEGIN ... END` 복합절 사용 가능  
+
+```sql
+## 프로시저 호출
+CREATE EVENT daily_ranking
+  ON SCHEDULE EVERY 1 DAY STARTS '2020-09-16 01:00:00' ENDS '2021-01-01 00:00:00'
+DO
+  CALL SP_INSERT_BATCH_LOG(NOW(), 'Done');
+
+## 복합절 사용
+CRETAE EVENT daily_ranking
+  ON SCHEDULE EVERY 1 DAY STARTS '2020-09-16 01:00:00' ENDS '2021-01-01 00:00:00'
+DO BEGIN
+  INSERT INTO daily_rank_log VALUES (NOW(), 'Strat');
+  ## 랭킹 정보 수집 & 처리
+  INSERT INTO daily_rank_log VALUES (NOW(), 'Done');
+END ;;
+```
+
+<br>
+
+`ON COMPLETION PRESERVE` 절을 이용해서 완전히 종료된 이벤트를 유지 가능, 기본적으로 완전히 종료된 이벤트는 자동으로 삭제  
+이벤트를 생성할때 `ENABLE`, `DISABLE`, `DISABLE ON SLAVE` 3가지 상태로 생성 가능  
+이벤트는 기본적으로 생성되면서 복제 소스 서버에서 `ENABLE`  
+복제된 레플리카 서버에서는 `SLAVESIDE_DISABLED`로 생성  
+복제 소스 서버에서 실행된 이벤트가 만들어낸 데이터 변경 사항은 자동으로 레플리카 서버로 복제  
+다만 레플리카 서버가 소스 서버로 승격되면 수동으로 이벤트 상태를 `ENABLE` 상태로 변경 필수  
+
+```
+mysql> SELECT event_schema, event_name
+       FROM information_schema.EVENTS
+       WHERE STATUS = 'SLAVESIDE_DISABLED'
++--------------+------------+
+| EVENT_SCHEMA | EVENT_NAME |
++--------------+------------+
+| testdb       | myevent    |
++--------------+------------+
+
+-- // 수동으로 
+mysql> ALTER EVENT myevent ENABLE;
+```
+
+<br>
+
+### 이벤트 실행 및 결과 확인
+이벤트 또한 트리거와 같이 특정한 사건이 발생헤야 실행  
+
+```
+mysql> DELIMITER ;;
+mysql> CREATE TABLE daily_tank_log (exec_dttm DATETIME, exec_msg VARCHAR(50));
+mysql> CREATE EVENT daily_ranking
+         ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 MINUTE
+         ON COMPLETION PRESERVE
+       DO BEGIN
+         INSERT INTO daily_rank_log VALUES (NOW(), 'Done');
+       END ;;
+
+mysql> SELECT * FROM information_schema.EVENTs \G
+************************** 1. row **************************
+   EVENT_CATALOG: def
+    EVENT_SCHEMA: test
+      EVENT_NAME: daily_ranking
+         DEFINER: root@localhost
+       TIME_ZONE: SYSTEM
+      EVENT_BODY: SQL
+EVENT_DEFINITION: BEGIN
+     INSERT INTO daily_rank_log VALUES (NOW(), 'Done');
+   END
+      EVENT_TYPE: ONE TIME
+      EXECUTE_AT: 2020-09-08 09:09:46
+  INTERVAL_VALUE: NULL
+  INTERVAL_FIELD: NULL
+        SQL_MODE: STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,...
+          STARTS: NULL
+            ENDS: NULL
+          STATUS: DISABLED
+   ON_COMPLETION: PRESERVE
+         CREATED: 2020-09-08 09:08:46
+    LAST_ALTERED: 2020-09-08 09:08:46
+   LAST_EXECUTED: 2020-09-08 09:09:46
+   EVENT_COMMENT:
+      ORIGINATOR: 1
+
+mysql> SELECT * FROM test.daily_rank_log;
++---------------------+----------+
+| exec_dttm           | exec_msg |
++---------------------+----------+
+| 2020-09-08 09:09:46 | Done     |
++---------------------+----------+
+```
+
+<br>
+
+### 이벤트 딕셔너리
+8.0 이전 버전까지 이벤트 딕셔너리 정보는 `events` 테이블에 관리  
+8.0 버전부터 보이지 않는 시스템 테이블로 관리  
+단지 `information_schema` 데이터베이스 `EVENTS` 뷰를 통해 조회 가능  
+
+```
+mysql> SELECT * FROM information_schema.EVENTS \G
+*************************** 1. row ***************************
+   EVENT_CATALOG: def
+    EVENT_SCHEMA: test
+      EVENT_NAME: daily_ranking
+         DEFINER: root@localhost
+       TIME_ZONE: SYSTEM
+      EVENT_BODY: SQL
+EVENT_DEFINITION: BEGIN
+     INSERT INTO daily_rank_log VALUES (NOW(), 'Done');
+   END
+      EVENT_TYPE: ONE TIME
+      EXECUTE_AT: 2020-09-08 09:09:46
+  INTERVAL_VALUE: NULL
+  INTERVAL_FIELD: NULL
+        SQL_MODE: STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,...
+          STARTS: NULL
+            ENDS: NULL
+          STATUS: DISABLED
+   ON_COMPLETION: PRESERVE
+         CREATED: 2020-09-08 09:08:46
+    LAST_ALTERED: 2020-09-08 09:08:46
+   LAST_EXECUTED: 2020-09-08 09:09:46
+   EVENT_COMMENT:
+      ORIGINATOR: 1
+```
+
+<br>
+
+## 스토어드 프로그램 본문(Body) 작성
+
+### BEGIN ... END 블록과 트랜잭션
+하나의 `BEGIN ... END` 블록은 또 다른 여러 개의 블록을 중첩해서 포함 가능  
+블록 내에서 트랜잭션을 시작하는 명령은 `BEGIN`, `START TRANSACTION`  
+하지만 블록 내에서 `BEGIN` 명령은 모두 블록의 시작으로 해석하기 때문에 결국 스토어드 프로그램 본문은 `START TRANSACTION` 사용  
+스토어드 함수나 트리거에서는 트랜잭션 사용 불가  
+스토어드 프로시저 내부에서 트랜잭션을 완료하면 호출하는 애플리케이션에서 트랜잭션 조절 불가  
+
+```sql
+CREATE PROCEDURE sp_hello (IN name VARCHAR(50))
+BEGIN
+  START TRANSACTION;
+  INSERT INTO tb_hello VALUES (name, CONCAT('Hello ', name));
+  COMMIT;
+END ;;
+```
+
+<br>
+
+### 변수
+스토어드 프로그램의 블록 사이에서 사용하는 로컬 변수는 사용자 변수와 다름  
+스토어드 프로그램에서 사용자 변수와 로컬 변수는 거의 혼용해서 제한 없이 사용 가능  
+하지만 프로시저 내부에서 프리페어 스테이트먼트를 사용하려면 반드시 사용자 변수를 사용  
+로컬 변수는 `DECLARE` 명령으로 정의되고 반드시 타입 명시 필수  
+값 할당은 `SET` 또는 `SELECT ... INTO ...` 문장으로 가능  
+
+```
+## 로컬 변수 정의
+DECLARE v_name VARCHAR(50) DEFAULT 'Matt';
+DECLARE v_email VARCHAR(50) DEFAULT 'matt@email.com';
+
+## 로컬 변수에 값 할당
+SET v_name = 'Kim', v_email = 'kim@email.com';
+
+## 결과 레코드가 정확히 1건인 쿼리만 가능
+SELECT emp_no, first_name, last_name INTO v_empno, v_firstname, v_lastname
+FROM employees
+WHERE emp_no = 10001
+LIMIT 1;
+```
+
+<br>
+
+블록 내에서 변수명이 겹치는 경우 아래와 같은 우선순위로 탐색  
+1. DECLARE 정의 로컬 변수
+2. 스토어드 프로그램 입력 파라미터
+3. 테이블 칼럼
+
+```
+mysql> CREATE PROCEDURE sp_hello (IN first_name VARCHAR(50))
+       BEGIN
+         DECLARE first_name VARCHAR(50) DEFAULT 'Kim';
+         SELECT CONCAT('Hello ', first_name) FROM employees LIMIT 1;
+       END ;;
+
+mysql> CALL sp_hello('Lee');;
++-----------+
+| Hello Kim |
++-----------+
+```
+
+<br>
+
+변수가 많아 혼란스러운 경우 접두사를 사용하는 것 권장  
+
+```sql
+CREATE PROCEDURE sp_hello (IN p_first_name VARCHAR(50))
+BEGIN
+ DECLARE v_first_name VARCHAR(50) DEFAULT 'Kim';
+ SELECT CONCAT('Hello ', first_name) FROM employees LIMIT 1;
+END ;;
+```
+
+<br>
+
+### 제어문
+절차적인 처리를 위해 여러 가지 제어 문장 사용 가능  
+스토어드 프로그램의 블록 내부에서만 사용 가능한 문법  
+
+<br>
+
+### IF ... ELSEIF ... ELSE ... END IF
+
+```sql
+CREATE FUNCTION sf_greatest(p_value1 INT, p_value2 INT)
+RETURNS INT
+BEGIN
+  IF p_value1 IS NULL THEN
+    RETURN p_value2;
+  ELSEIF p_value2 IS NULL THEN
+    RETURN p_value1;
+  ELSEIF p_value1 >= p_value2 THEN
+    RETURN p_value1;
+  ELSE
+    RETURN p_value2;
+  END IF;
+END ;;
+```
+
+<br>
+
+### CASE WHEN ... THEN ... ELSE ... END CASE
+프로그래밍 언어와 달리 `BREAK` 같은 별도의 멈춤 명령은 필요하지 않음  
+
+```sql
+CASE 변수
+  WHEN 비교대상값1 THEN 처리내용1
+  WHEN 비교대상값2 THEN 처리내용2
+  ELSE 처리내용3
+END CASE;
+
+CASE
+  WHEN 비교조건식1 THEN 처리내용1
+  WHEN 비교조건식2 THEN 처리내용2
+  ELSE 처리내용3
+END CASE;
+```
+
+<br>
+
+### 반복 루프
+반복 루프 처리를 위해 `LOOP`, `REPEAT`, `WHILE` 구문 사용 가능  
+`LOOP` 문은 반복 조건 명시 불가, `LEAVE` 명령으로 반복 종료  
+
+```sql
+## LOOP 구문
+CREATE FUNCTION sf_factorial1 (p_max INT)
+  RETURNS INT
+BEGIN
+  DECLARE v_factorial INT DEFAULT 1;
+
+  factorial_loop : LOOP
+    SET v_factorial = v_factorial * p_max;
+    SET p_max = p_max - 1;
+    IF p_max <= 1 THEN
+      LEAVE factorial_loop;
+    END IF;
+  END LOOP;
+
+  RETURN v_factorial;
+END ;;
+
+## REPEAT 구문
+CREATE FUNCTION sf_factorial2 (p_max INT)
+  RETURNS INT
+BEGIN
+  DECLARE v_factorial INT DEFAULT 1;
+
+  REPEAT
+    SET v_factorial = v_factorial * p_max;
+    SET p_max = p_max - 1;
+  UNTIL p_max <= 1 END REPEAT;
+
+  RETURN v_factorial;
+END ;;
+
+## WHILE 구문
+CREATE FUNCTION sf_factorial3 (p_max INT)
+  RETURNS INT
+BEGIN
+  DECLARE v_factorial INT DEFAULT 1;
+
+  WHILE p_max > 1 DO
+    SET v_factorial = v_factorial * p_max;
+    SET p_max = p_max - 1;
+  END WHILE;
+
+  RETURN v_factorial;
+END ;;
+```
+
+<br>
+
+### 핸들러와 컨디션을 이용한 에러 핸들링
+이미 정의한 컨디션 또는 사용자 정의 컨디션을 어떤식으로 처리할지 정의하는 기능  
+핸들러는 예외 상황뿐만 아니라 거의 모든 SQL 문장의 처리 상태에 대해 핸들러를 등록 가능  
+
+<br>
+
+### SQLSTATE와 에러 번호(Error No)
+
+```
+ERROR ERROR-NO (SQL-STATE): ERROR-MESSAGE
+```
+
+- `ERROR-NO`  
+4자리 숫자 값으로 구성된 에러 코드, MySQL에서만 유효한 에러 식별 번호  
+
+- `SQL-STATE`  
+다섯 글자의 알파벳과 숫자로 구성, 에러뿐만 아니라 여러 가지 상태를 의미하는 코드  
+이 값은 DBMS 종류가 다르더라도 ANSI SQL 표준을 준수한다면 모두 똑같은 값과 의미  
+앞 2글자는 아래와 같은 의미  
+  - `00`: 정상 처리됨(에러 아님)
+  - `01`: 경고 메시지
+  - `02`: Not found(SELECT, CURSOR 결과가 없는 경우)
+
+- `ERROR-MESSAGE`  
+포매팅된 텍스트 문장, 사람이 읽을 수 있는 형태의 에러 메시지  
+
+<br>
+
+| ERROR NO | SQL STATE | ERROR NAME |  DESCRIPTION |
+|--|--|--|--|
+| 1242 | 21000 | ER_SUBQUERY_NO_1_ROW | 레코드 1건만 반환해야하는 서브쿼리가 2건 이상 반환 |
+| 1406 | 22001 | ER_DATA_TOO_LONG | sql_mode 시스템 변수에 STRIC_ALL_TABLES 설정이 있고, 칼럼의 지정된 크기보다 큰 값이 저장 |
+| 1022 | 23000 | ER_DUP_KEY | 프라이머리 키 또는 유니크 키 중복(NDB 클러스터) |
+| 1062 | 23000 | ER_DUP_ENTRY | 프라이머리 키 또는 유니크 키 중복(InnoDB, MyISAM) |
+| 1169 | 23000 | ER_DUP_UNIQUE | 유니크 키 중복(NDB 클러스터) |
+| 1061 | 42000 | ER_DUP_KEYNAME | 테이블 생성이나 변경에서 중복된 이름의 인덱스 발생 |
+| 1149 | 42000 | ER_SYNTAX_ERROR | SQL 명령 문법 에러 |
+| 1166 | 42000 | ER_WRONG_COLUMN_NAME | SQL 명령 문법 에러(칼럼명) |
+| 1172 | 42000 | ER_TOO_MANY_ROWS | 스토어드 프로그램의 SELECT INTO 문장에서 2건 이상 레코드 반환 |
+| 1203 | 42000 | RE_TOO_MANY_USER_ <br> CONNECTIONS | 접속된 커넥션이 지정된 개수보다 많은 경우 |
+| 1235 | 42000 | ER_NOT_SUPPORTED_YET | 현재 버전에서 지원하지 않는 기능 사용 |
+| 1046 | 42000 | ER_PARSE_ERROR | SQL 명령 문법 에러 |
+| 1265 | 01000 | WARN_DATA_TRUNCATED | sql_mode 시스템 변수에 `STRIC_ALL_TABLES` 설정이 없고, 지정된 크기보다 큰 값을 저장한 경우 경고 메시지만 반환 |
+| 1152 | 08S01 | ER_ABORTING_CONNECTION | 네트워크 문제로 커넥션이 비정상 종료 |
+| 1058 | 21S01 | ER_WRONG_VALUE_COUNT | 칼럼의 개수와 값의 개수가 일치하지 않는 경우 |
+| 1050 | 42S01 | ER_TABLE_EXISTS_ERROR | 이미 동일한 이름의 테이블이 존재하는 경우 |
+| 1051 | 42S02 | ER_BAD_TABLE_ERROR | 테이블이 없는 경우(DROP 명령) |
+| 1146 | 42S02 | ER_NO_SUCH_TABLE | 테이블이 없는 경우(INSERT, UPDATE, DELETE 등 명령) |
+| 1109 | 42S02 | ET_UNKNOWN_TABLE | 테이블이 없는 경우(잘못된 mysqldump 명령) |
+| 1060 | 42S21 | ER_DUP_FIELDNAME | 테이블 생성이나 변경에서 중복된 칼럼 발생 |
+| 1028 | HY000 | ER_FILESORT_ABORT | 정렬 작업 실패 |
+| 1205 | HY000 | ER_LOCK_WAIT_TIMEOUT | 레코드 잠금 대기 제한 시간 초과 |
+
+<br>
+
+### 핸들러
+스토어드 프로그램에서는 `DECLARE ... HANDLER` 구문으로 예외 핸들링  
+
+```sql
+DECLARE handler_type HANDLER
+  FOR condition_value [, condition_value] ... handler_statements
+```
 
 
 
