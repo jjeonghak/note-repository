@@ -776,23 +776,236 @@ DECLARE handler_type HANDLER
   FOR condition_value [, condition_value] ... handler_statements
 ```
 
+<br>
 
+핸들러 타입에 따라 동작 방식 상이  
+- `CONTINUE`: `handler_statements`를 실행하고 스토어드 프로그램의 마지막 실행 지점으로 돌아가 나머지 코드 처리  
+- `EXIT`: `handler_statements`를 실행하고 이 핸들러가 정의된 블록을 종료  
 
+<br>
 
+핸들러 정의 문장의 컨디션 값(`condition_value`)에는 아래와 같이 여러 형태의 값 사용 가능  
+- `SQLSTATE`  
+스토어드 프로그램이 실행되는 도중 어떤 이벤트가 발생했고 해당 이벤트 상태값이 일치할때 실행되는 핸들러
 
+- `SQLWARNING`  
+스토어드 프로그램에서 코드를 실행하던 중 경고가 발생했을때 실행되는 핸들러(`SQLSTATE` 값이 `01` 시작)
 
+- `NOT FOUUND`  
+조회 쿼리 건수가 1건도 없거나 커서의 레코드를 마지막까지 일고 실행하는 핸들러(`SQLSTATE` 값이 `02` 시작)
 
+- `SQLEXCEPTION`  
+`SQLSTATE` 값이 `00`, `01`, `02`로 시작하지 않는 모든 이벤트
 
+<br>
 
+`handler_statements`에는 단순 명령문 또는 블록 명령문 작석 가능  
 
+```sql
+## 단순 명령문
+DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET error_flag = 1;
 
+## 블록 명령문
+DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    SELECT 'Error occurred - terminating';
+  END;
 
+## 특정 에러 번호 핸들러
+DECLARE CONTINUE HANDLER FOR 1022, 1062 SELECT 'Duplicate key in index';
 
+## 특정 상태 핸들러
+DECLARE CONTINUE HANDLER FOR SQLSTATE '23000' SELECT 'Duplicate key in index';
 
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET process_done=1;
 
+DECLARE CONTINUE HANDLER FOR SQLSTATE '02000' SET process_done=1;
 
+DECLARE EXIT HANDLER FOR SQLWARNING, SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    SELECT 'Process terminated, Because error';
+    SHOW ERRORS;
+    SHOW WARNINGS;
+  END;
+```
 
+<br>
 
+### 컨디션
+단순히 에러 번호나 상태 숫자값만으로 어떤 조건을 의미하는지 이해하기 어려움, 조건의 이름을 등록하는 것이 컨디션  
 
+```sql
+DECLARE condition_name CONDITION FOR condition_value
+```
 
+`condition_value`는 아래 2가지 방법으로 정의 가능
+- 1개 이상의 MySQL 에러 코드
+- 상태값을 사용할 때는 `SQLSTATE` 키워드 명시후 상태값 입력
 
+<br>
+
+### 컨디션을 사용하는 핸들러 정의
+```sql
+CREATE FUNCTION sf_testfunc()
+  RETURNS BIGINT
+BEGIN
+  DECLARE dup_key CONDITION FOR 1062;
+  DECLARE EXIT HANDLER FOR dup_key
+    BEGIN
+      RETURN -1;
+    END;
+
+  INSERT INTO tb_test VALUES (1);
+  RETURN 1;
+END ;;
+```
+
+<br>
+
+### 시그널을 이용한 예외 발생
+스토어드 프로그램에서 사용자가 직접 예외나 에러를 발생시키려면 시그널 명령 사용  
+5.5 버전부터 시그널 기능 지원  
+
+<br>
+
+### 스토어드 프로그램의 BEGIN ... END 블록에서 SIGNAL 사용
+시그널 명령은 에러와 경고를 모두 발생 가능, 문법상 아무런 차이 없음  
+
+```sql
+CREATE FUNCTION sf_divide (p_dividend INT, p_divisor INT)
+  RETURNS INT
+BEGIN
+  DECLARE null_divisor CONDITION FOR SQLSTATE '45000';
+
+  IF p_divisor IS NULL THEN
+    ## null_divisor 컨디션은 반드시 SQLSTATE로 정의
+    SIGNAL null_divisor
+      SET MESSAGE_TEXT = 'Divisor can not be null', MYSQL_ERRNO = 9999;
+  ELSEIF p_divisor = 0 THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Divisor can not be 0', MYSQL_ERRNO = 9998;
+  ELSEIF p_dividend IS NULL THEN
+    SIGNAL SQLSTATE '01000'
+      SET MESSAGE_TEXT = 'Dividend is null, so regarding divided as 0', MYSQL_ERRNO = 9997;
+    RETURN 0;
+  END IF;
+
+  RETURN FLOOR(p_dividend / p_divisor);
+END;;
+```
+
+```
+mysql> SELECT sf_divide(1, NULL);
+ERROR 9999 (45000): Divisor can not be null
+
+myusql> SELECT sf_divide(1, 0);
+ERROR 9998 (45000): Divisor can not be null
+
+mysql> SELECT sf_divide(NULL, 1);
++-----------------+
+| divide(NULL, 1) |
++-----------------+
+|               0 |
++-----------------+
+1 row in set, 1 warning (0.00 sec)
+
+mysql> SHOW WARNINGS;
++---------+------+----------------------------------------------+
+| Level   | Code | Message                                      |
++---------+------+----------------------------------------------+
+| Warning | 9997 | Dividend is null, so regarding dividend as 0 |
++---------+------+----------------------------------------------+
+
+mysql> SELECT sf_divide(0, 1);
++--------------+
+| divide(0, 1) |
++--------------+
+|            0 |
++--------------+
+```
+
+<br>
+
+### 핸들러 코드에서 SIGNAL 사용
+핸들러 코드에서 시그널 명령을 사용해 발생된 에러나 예외를 다른 사용자 정의 예외로 변환해서 다시 던지는 것 가능  
+
+```sql
+CREATE PROCEDURE sp_remove_user (IN p_userid INT)
+BEGIN
+  DECLARE v_affectedrowcount INT DEFAULT 0;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+      SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Can not remove user information', MYSQL_ERRNO = 9999;
+    END;
+
+  DELETE FROM tb_user WHERE user_id = p_userid;
+  SELECT ROW_COUNT() INTO v_affectedrowcount;
+  IF v_affectedrowcount <> 1 THEN
+    SIGNAL SQLSTATE '45000';
+  END IF;
+END;;
+```
+
+<br>
+
+### 커서
+JDBC 프로그램에서 자주 사용하는 결과셋(`ResultSet`)  
+- 스토어드 프로그램의 커서는 전방향(전진) 읽기만 가능
+- 스토어드 프로그램에서는 커서의 칼럼을 바로 업데이트 불가
+
+<br>
+
+커서는 아래와 같이 구분 가능  
+- 센서티브(`Sensitive`) 커서  
+일치하는 레코드에 대한 정보를 실제 레코드의 포인터만 유지하는 형태  
+칼럼의 데이터를 변경하거나 삭제하는 것 가능  
+별도로 임시 테이블로 레코드를 복사하지 않기 때문에 커서 오픈이 빠름  
+
+- 인센서티브(`Insensitive`) 커서  
+일치하는 레코드를 별도의 임시 테이블로 복사해서 가지고 있는 형태  
+임시 테이블로 복사하기 때문에 느리고, 칼럼의 데이터를 변경하거나 삭제하는 것 불가  
+
+- 어센서티브(`Asensitive`) 커서  
+MySQL 스토어드 프로그램에서 정의되는 커서 형식  
+센서티브 커서와 인센서티브 커서를 혼용해서 사용하는 방식  
+
+<br>
+
+커서는 일반적인 프로그래밍 언어에서 조회 쿼리 결과를 사용하는 방법과 거의 유사  
+스토어드 프로그램에서도 조회 쿼리 문장으로 커서를 정의하고 정의된 커서를 오픈하면 실제로 쿼리가 실행되고 결과를 불러옴  
+
+```sql
+CREATE FUNCTION sf_emp_count(p_dept_no VARCHAR(10))
+  RETURNS BIGINT
+BEGIN
+  DECLARE v_total_count INT DEFAULT 0;
+  DECLARE v_no_more_data TINYINT DEFAULT 0;
+  DECLARE v_emp_no INTEGER;
+  DECLARE v_from_date DATE;
+  DECLARE v_emp_list CURSOR FOR SELECT emp_no, from_date FROM dept_emp WHERE dept_no = p_dept_no;
+  DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_no_more_data = 1;
+
+  OPEN v_emp_list;
+  REPEAT
+    FETCH v_emp_list INTO v_emp_no, v_from_date;
+    IF v_emp_no > 20000 THEN
+      SET v_total_count = v_total_count + 1;
+    END IF;
+  UNTIL v_no_more_data END REPEAT;
+
+  CLOSE v_emp_list;
+  RETURN v_total_count;
+END;;
+```
+
+<br>
+
+`DECLARE` 명령으로 정의하는 순서는 반드시 아래 순서로 정의  
+1. 로컬 변수와 컨디션
+2. 커서
+3. 핸들러
+
+<br>
