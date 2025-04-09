@@ -625,7 +625,7 @@ END ;;
 
 ```sql
 CREATE FUNCTION sf_greatest(p_value1 INT, p_value2 INT)
-RETURNS INT
+  RETURNS INT
 BEGIN
   IF p_value1 IS NULL THEN
     RETURN p_value2;
