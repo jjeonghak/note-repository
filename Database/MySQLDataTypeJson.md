@@ -7,7 +7,7 @@
 <br>
 
 ## JSON 타입
-TEXT 칼럼이나 BLOB 칼럼에 `JSON` 저장 가능  
+TEXT 칼럼이나 BLOB 칼럼에 JSON 저장 가능  
 문자열로 저장하는 것이 아닌 바이너리 포맷의 `BSON(Binary JSON)`으로 변환해서 저장  
 
 <br>
@@ -74,24 +74,111 @@ JSON 도큐먼트를 구성하는 모든 키의 위치와 키의 이름이 필�
 
 <br>
 
+### 부분 업데이트 성능
+8.0 버전부터 JSON 타입에 대해 부분 업데이트(`Partial Update`) 기능을 제공  
+`JSON_SET()`, `JSON_REPLACE()`, `JSON_REMOVE()` 함수를 이용해 특정 필드값을 변경하거나 삭제하는 경우에만 동작  
 
+<br>
 
+```
+mysql> UPDATE tb_json SET fd = JSON_SET(fd, '$.user_id', "12345") WHERE id = 2;
+mysql> SELECT id, fd, JSON_STORAGE_SIZE(fd), JSON_STORAGE_FREE(fd) FROM tb_json;
++----+-------------------------+-----------------------+-----------------------+
+| id | fd                      | JSON_STORAGE_SIZE(fd) | JSON_STORAGE_FREE(fd) |
++----+-------------------------+-----------------------+-----------------------+
+|  1 | {"user_id": 1234567890} |                    23 |                     0 |
+|  2 | {"user_id": "12345"}    |                    30 |                     5 |
++----+-------------------------+-----------------------+-----------------------+
 
+mysql> UPDATE tb_json SET fd = JSON_SET(fd, '$.user_id', "12345678901") WHERE id = 2;
+mysql> SELECT id, fd, JSON_STORAGE_SIZE(fd), JSON_STORAGE_FREE(fd) FROM tb_json;
++----+----------------------------+-----------------------+-----------------------+
+| id | fd                         | JSON_STORAGE_SIZE(fd) | JSON_STORAGE_FREE(fd) |
++----+----------------------------+-----------------------+-----------------------+
+|  1 | {"user_id": 1234567890}    |                    23 |                     0 |
+|  2 | {"user_id": "12345678901"} |                    31 |                     0 |
++----+----------------------------+-----------------------+-----------------------+
+```
 
+부분 업데이트로 처리됐는지 명확하게 아는 방법은 없음  
+다만 필드의 값이 변경되고 저장공간에 사용되는 바이트와 사용되지 않은 바이트를 비교해서 예측 가능  
+일반적으로 복제를 위해서 JSON 변경 내용을 바이너리 로그에 기록, 해당 작업은 여전히 데이터 모두를 기록  
+`binlog_row_value_options`, `binlog_row_image` 시스템 변수값을 변경하면 부분 업데이트 성능을 빠르게 개선 가능  
+해당 시스템 변수값 설정도 중요하지만 복제에 프라이머리 키 여부가 더 중요  
 
+```
+-- // ROW 또는 STATEMENT
+mysql> SET binlog_format = ROW;
+mysql> SET binlog_row_value_options = PARTIAL_JSON;
+mysql> SET binlog_row_image = MINIMAL;
 
+mysql> UPDATE tb_json SET fd = JSON_SET(fd, '$.name', "Matt Lee");
+Query OK, 16 rows affected (2.30 sec)
 
+mysql> UPDATE tb_json SET fd = JSON_SET(fd, '$.name', "Kit");
+Query OK, 16 rows affected (0.18 sec)
+```
 
+<br>
 
+### JSON 타입 콜레이션과 비교
+JSON 칼럼에 저장되는 데이터와 가공되어 나온 결과값은 모두 `utf8mb4` 문자 집합과 `utf8mb4_bin` 콜레이션을 보유  
+바이너리 콜레이션이기 때문에 대소문자 구분과 액센트 문자 등도 구분해서 비교  
 
+```
+mysql> SET @user1 = JSON_OBJECT('name', 'Matt');
+mysql> SELECT CHARSET(@user1), COLLATION(@user1);
++-----------------+-------------------+
+| CHARSET(@user1) | COLLATION(@user1) |
++-----------------+-------------------+
+| utf8mb4         | utf8mb4_bin       |
++-----------------+-------------------+
 
+mysql> SET @user2 = JSON_OBJECT('name', 'matt');
+mysql> SELECT @user1 = @user2;
++-----------------+
+| @user1 = @user2 |
++-----------------+
+|               0 |
++-----------------+
+```
 
+<br>
 
+### JSON 칼럼 선택
+`BLOB`, `TEXT` 타입에 `JSON` 문자열을 저장하는 경우 아무런 변환 없이 입력된 값을 그대로 디스크에 저장  
+이진 포맷으로 컴팩션해서 저장할 뿐만 아니라 부분 업데이트를 통한 빠른 변경 기능 제공  
 
+```sql
+CREATE TABLE tb_json (
+  doc JSON NOT NULL,
+  id BIGINT AS (doc->>'$.id') STORED NOT NULL,
+  PRIMARY KEY(id)
+);
 
+CREATE TABLE tb_column (
+  id BIGINT NOT NULL,
+  name VARCHAR(50) NOT NULL,
+  PRIMARY KEY(id)
+);
 
+INSERT INTO tb_json (doc) VALUES ('{"id":1, "name":"Matt"}'), ('{"id":2, "name":"Esther"}');
+INSERT INTO tb_column VALUES (1, 'Matt'), (2, 'Esther');
+```
 
+<br>
 
+JSON 칼럼은 각 레코드가 가지는 속성들이 너무 상이하고 다양하지만 선택적으로 값을 가지는 경우 유리  
+속성들이 중요도와 검색 조건으로 사용될 가능성이 낮고 자주 접근하지 않는 경우 유리  
 
+```
+mysql> CREATE TABLE test (id INT NOT NULL PRIMARY KEY, value JSON);
 
+mysql> SELECT id, value FROM test WHERE id = 1;
+1 row in set (0.16 sec)
 
+mysql> SELECT id FROM test WHERE id = 1;
+1 row in set (0.01 sec)
+```
+
+<br>
