@@ -28,7 +28,7 @@ Arrays.sort(arr, Comparator.reverseOrder());    // 내림차순 정렬
 ````
 
 ```java
-Sting[] list = Arrays.stream(arr).toArray(String[]::new);    // 리스트로 변환
+Sting[] list = Arrays.stream(arr).toArray(String[]::new);    // 배열로 변환
 ```
 
 <br>
@@ -58,6 +58,10 @@ import java.util.stream.Collectors;
 
 List<Integer> sortedList = list.stream().sorted().collect(Collectors.toList());    // 스트림 정렬
 ````
+
+```java
+int[] answer = tempList.stream().mapToInt(Integer::intValue).toArray();    // 배열로 변환
+```
 
 <br>
 
