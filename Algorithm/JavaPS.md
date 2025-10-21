@@ -23,8 +23,9 @@ Arrays.stream(arr);      // 배열 스트림 변환
 ````
 
 ````java
-Arrays.sort(arr);                               // 오름차순 정렬
-Arrays.sort(arr, Comparator.reverseOrder());    // 내림차순 정렬
+Arrays.sort(arr);                                                // 오름차순 정렬
+Arrays.sort(arr, Comparator.reverseOrder());                     // 내림차순 정렬
+Arrays.sort(arr, Comparator.comparingInt(Integer::bitCount));    // 비트수 정렬(001, 010, 100 -> 011, 101, 110 -> 111)
 ````
 
 ```java
