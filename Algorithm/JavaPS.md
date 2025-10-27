@@ -289,7 +289,7 @@ s.toCharArray();
 
 <br>
 
-## Shape
+## Rotation
 
 ```java
 // 좌표 전체 90도 회전
@@ -311,7 +311,7 @@ private List<int[]> rotateAndNormalizeShape(List<int[]> shape) {
     int minY = Integer.MAX_VALUE;
 
     for (int[] p : shape) {
-        // 90도 회전: (x, y) -> (y, -x)
+        // 시계 방향 90도 회전: (x, y) -> (y, -x)
         rotated.add(new int[]{p[1], -p[0]});
         minX = Math.min(minX, p[1]);
         minY = Math.min(minY, -p[0]);
