@@ -307,8 +307,8 @@ private int[][] rotateTable(int[][] table) {
 // 도형 90도 회전 및 정규화
 private List<int[]> rotateAndNormalizeShape(List<int[]> shape) {
     List<int[]> rotated = new ArrayList<>();
-    int minX = 0;
-    int minY = 0;
+    int minX = Integer.MAX_VALUE;
+    int minY = Integer.MAX_VALUE;
 
     for (int[] p : shape) {
         // 90도 회전: (x, y) -> (y, -x)
