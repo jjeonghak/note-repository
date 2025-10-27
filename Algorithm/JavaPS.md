@@ -289,6 +289,48 @@ s.toCharArray();
 
 <br>
 
+## Shape
+
+```java
+// 좌표 전체 90도 회전
+private int[][] rotate(int[][] table) {
+    int[][] result = new int[n][n];
+    
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            result[i][j] = table[j][n - i - 1];
+        }
+    }
+    return result;
+}
+
+// 도형 90도 회전 및 정규화
+private List<int[]> rotateAndNormalizeShape(List<int[]> shape) {
+    List<int[]> rotated = new ArrayList<>();
+    for (int[] p : shape) {
+        // 90도 회전: (x, y) -> (y, -x)
+        rotated.add(new int[]{p[1], -p[0]});
+    }
+    
+    // 회전된 모양을 다시 (0,0) 기준으로 정규화합니다.
+    Collections.sort(rotated, (a, b) -> {
+    if (a[0] == b[0]) return Integer.compare(a[1], b[1]);
+        return Integer.compare(a[0], b[0]);
+    });
+    
+    int minX = rotated.get(0)[0];
+    int minY = rotated.get(0)[1];
+    
+    List<int[]> normalized = new ArrayList<>();
+    for (int[] p : rotated) {
+        normalized.add(new int[]{p[0] - minX, p[1] - minY});
+    }
+    return normalized;
+}
+```
+
+<br>
+
 ## Pair
 
 ````java
