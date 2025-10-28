@@ -6,7 +6,7 @@ Leaf노드의 Index번호를 따로 구해야 함
 범위를 반씩 나누어 가지기 때문에 Leaf노드의 Index번호가 어떻게 나올지 모름
 Index 구해서 따로 index저장 배열에 저장해야 함
 
-ll set_tree(int Node, int Start, int End)
+ll set_tree(int Node, int s, int e)
 {
     if (s == e) return segTree[Node] = Arr[s];
     
