@@ -236,11 +236,262 @@ You've hit kubia-manual
 <br>
 
 ## 레이블을 이용한 파드 구성
+레이블은 파드와 모든 쿠버네티스 리소스를 조직화할 수 있는 키-값  
+레이블 셀렉터를 사용해 리소스 검색 가능  
 
+<img width="750" height="350" alt="label" src="https://github.com/user-attachments/assets/1293ef59-161c-4a9b-a15c-d1845b21b791" />
 
+<br>
+<br>
 
+### 레이블 지정
 
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubia-manual-v2
+  # 레이블 두개
+  labels:
+    creation_method: manual
+    env: prod
+```
 
+<br>
 
+### 레이블 조회
 
+```
+$ kubectl get pod --show-labels
+NAME              READY  STATUS    RESTARTS  AGE  LABELS
+kubia-manual      1/1    Running   0         16m  <none>
+kubia-manual-v2   1/1    Running   0         2m   creation_method=manual,env=prod
+kubia-zxzij       1/1    Running   0         1d   run=kubia
 
+$ kubectl get pod -L creation_method,env
+NAME              READY  STATUS    RESTARTS  AGE  CREATION_METHOD    ENV
+kubia-manual      1/1    Running   0         16m  <none>             <none>
+kubia-manual-v2   1/1    Running   0         2m   manual             prod
+kubia-zxzij       1/1    Running   0         1d   <none>             <none>
+```
+
+<br>
+
+### 레이블 수정
+
+```
+$ kubectl label pod kubia-manual creation_method=manual
+pod "kubia-manul" labeled
+
+$ kubectl label pod kubia-manual-v2 env=debug --overwrite
+pod "kubia-manul-v2" labeled
+
+$ kubectl get pod -L creation_method,env
+NAME              READY  STATUS    RESTARTS  AGE  CREATION_METHOD    ENV
+kubia-manual      1/1    Running   0         16m  manual             <none>
+kubia-manual-v2   1/1    Running   0         2m   manual             debug
+kubia-zxzij       1/1    Running   0         1d   <none>             <none>
+```
+
+<br>
+
+### 레이블 셀렉터를 이용한 파드 부분 집합 나열
+- 특정한 키를 포함하거나 포함하지 않는 레이블
+- 특정한 키와 값을 가진 레이블
+- 특정한 키를 갖고 있지만, 다른 값을 가진 레이블
+
+```
+$ kubectl get pod -l creation_method=manual
+NAME              READY  STATUS    RESTARTS  AGE
+kubia-manual      1/1    Running   0         16m
+kubia-manual-v2   1/1    Running   0         2m
+
+$ kubectl get pod -l creation_method!=manual
+NAME              READY  STATUS    RESTARTS  AGE
+kubia-zxzij       1/1    Running   0         1d
+
+$ kubectl get pod -l env
+NAME              READY  STATUS    RESTARTS  AGE
+kubia-manual-v2   1/1    Running   0         2m
+
+$ kubectl get pod -l '!env'
+NAME              READY  STATUS    RESTARTS  AGE
+kubia-manual      1/1    Running   0         16m
+kubia-zxzij       1/1    Running   0         1d
+```
+
+<br>
+
+### 레이블과 셀렉터를 이용한 파드 스케줄링 제한
+기본적인 쿠버네티스 동작은 워커 노드 전체에 걸친 무작위 스케줄링  
+파드를 스케줄링할 위치를 결정할 때 하드웨어 인프라에 영향이 있는 경우 사용  
+일반적으로 새 노드를 클러스터에 추가할때, 노드가 제공하는 하드웨어나 분류 관련 레이블을 지정  
+
+```
+$ kubectl label node gke-kubia-85f6-node-0rrx gpu=true
+node "gke-kubia-85f6-node-0rrx" labeled
+
+$ kubectl get node -l gpu=true
+NAME                      STATUS  AGE
+gke-kubia-85f6-node-0rrx  Ready   1d
+```
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubia-gpu
+spec:
+  # 특정 레이블을 포함한 노드에 해당 파드 배포
+  nodeSelector:
+    gpu: "true"
+  containers:
+  - image: luksa/kubia
+    name: kubia
+```
+
+<br>
+
+## 파드 어노테이션
+파드 및 다른 오브젝트는 레이블 외에 어노테이션 소유 가능  
+어노테이션은 키-값 쌍으로 레이블과 거의 비슷하지만 식별 정보를 갖지 않음  
+레이블은 레이블 셀렉터를 통해 오브젝트 선택이 가능하지만 어노테이션은 불가능  
+반면 어노테이션은 더 많은 정보를 보유 가능하기 때문에 주로 도구들에서 주석처럼 사용  
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    # 버전 1.9에서부터 해당 어노테이션은 제거됨
+    kubernetes.io/created-by: |
+      {"kind":"SerializedReference", "apiVersion":"v1",
+      "reference":{"kind":"ReplicationController", "namespace":"default", ...
+```
+
+<br>
+
+### 어노테이션 추가 및 수정
+
+```
+$ kubectl annotate pod kubia-manual mycompany.com/someannotation="foo bar"
+pod "kubia-manul" annotated
+
+$ kubectl describe pod kubia-manual
+...
+Annotations:    mycompany.com/someannotation=foo bar
+...
+```
+
+<br>
+
+## 네임스페이스를 사용한 리소스 그룹화
+오브젝트를 겹치지 않는 그룹으로 분할할때 사용  
+분리된 네임스페이스는 같은 리소스 이름을 다른 네임스페이스에 걸쳐 여러번 사용 가능  
+멀티테넌트 환경처럼 리소스를 분리하는데 사용  
+대부분의 리소스가 네임스페이스 안에 속하지만 노드 리소스는 전역  
+
+```
+$ kubectl get ns
+NAME          LABELS    STATUS    AGE
+default       <none>    Active    1h
+kube-public   <none>    Active    1h
+kube-system   <none>    Active    1h
+
+$ kubectl get pod --namespace kube-system
+NAME                                  READY  STATUS    RESTARTS  AGE
+fluentd-cloud-kubia-e8fe-node-txje    1/1    Running   0         1h
+heapster-v11-fz1ge                    1/1    Running   0         1h
+kube-dns-v9-p8a4t                     0/4    Pending   0         1h
+kube-ui-v4-kdlai                      1/1    Running   0         1h
+l7-lb-controller-v0.5.2-bue96         2/2    Running   92        1h
+```
+
+<br>
+
+### 네임스페이스 생성
+
+- 대부분의 오브젝트 이름은 `RFC 1035`에 지정된 규칙을 준수하지만 네임스페이스는 점(`.`)을 포함 불가
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: custom-namespace
+```
+
+```
+$ kubectl create namespace custom-namespace
+namespace "custom-namespace" created
+```
+
+<br>
+
+### 다른 네임스페이스 오브젝트 관리
+
+```
+$ kubectl create -f kubia-manual.yaml -n custom-namespace
+pod "kubia-manual" created
+```
+
+<br>
+
+- 네임스페이스를 전달하지 않은 경우 kubectl 컨텍스트에 구성된 기본 네임스페이스에서 작업 실행
+- 현재 컨텍스트의 네임스페이스는 `kubectl config` 명령으로 변경
+- 아래처럼 별칭 설정으로 빠르게 전환 가능(`kcd some-namespace`)
+
+```sh
+alias kcd='kubectl config set-context $(kubectl config current-context) --namespace '
+```
+
+<br>
+
+## 파드 중지와 제거
+파드를 삭제하면 쿠버네티스는 `SIGTERM` 신호를 프로세스에 전달  
+지정된 시간(기본값 30초) 동안 종료되지 않은 경우 `SIGKILL` 신호를 통해 종료  
+
+<br>
+
+### 파드 삭제
+
+```
+$ kubectl delete pod kubia-gpu
+pod "kubia-gpu" deleted
+
+$ kubctl delete pod -l creation_method=manual
+pod "kubia-manual" deleted
+pod "kubia-manual-v2" deleted
+```
+
+<br>
+
+- 네임스페이스 자체 삭제
+
+```
+$ kubectl delete ns custom-namespace
+namespace "custom-namespace" deleted
+```
+
+<br>
+
+- 네임스페이스 내부의 파드 삭제
+
+```
+$ kubectl delete pod --all
+pod "kubia-zxzij" deleted
+```
+
+<br>
+
+- 네임스페이스 내부의 모든 리소스(시크릿 제외) 삭제
+- kubernetes 서비스도 삭제하지만 잠시후 자동으로 생성
+
+```
+$ kubectl delete all --all
+pod "kubia-09as0" deleted
+replicatioincontroller "kubia" deleted
+service "kubernetes" deleted
+service "kubia-http" deleted
+```
+
+<br>
