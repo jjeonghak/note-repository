@@ -428,30 +428,22 @@ spec:
             image: luksa/batch-job
 ```
 
+<br>
 
+### 실행 방법
+잡 리소스는 대략 예정된 시간에 크론잡 리소스에 생성  
+잡은 파드를 생성, 잡이나 파드는 상대적으로 늦게 생성되고 실행 가능  
+만약 엄격한 실행 시간 요구사항을 갖는 경우 `startingDeadlineSeconds` 옵션으로 설정  
+일반적인 상황에서 크론잡은 항상 하나의 잡만 생성하지만 두개 또는 전혀 생성되지 않을 수 있음  
+그렇기 때문에 잡은 항상 `멱등성` 필수  
 
+```yaml
+apiVersion: batch/v1beta1
+kind: CronJob
+spec:
+  schedule: "0,15,30,45, * * * *"
+  startingDeadlineSeconds: 15
+  ...
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
