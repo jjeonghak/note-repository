@@ -498,26 +498,103 @@ You've hit kubia-xueq1
 <br>
 
 
+## 레디니스 프로브
+라이브니스 프로브와 유사하게 주기적으로 호출되며 특정 파드가 클라이언트 요청을 수신할 수 있는지 결정  
+컨테이너 레디니스 프로브(`readiness probe`)가 성공을 반환하면 컨테이너 요청 수락 준비 완료  
 
+<br>
 
+### 레디니스 프로브 유형
+라이브니스 프로브와 마찬가지로 세가지 유형 존재  
+- `HTTP GET`
+- `TCP Socket`
+- `Exec`
 
+<br>
 
+### 레디니스 프로브 동작
+첫번째 레디니스 점검을 수행하기 전에 시간 설정 가능  
+주기적으로 프로브 호출한 후 결과에 따라 서비스에서 해당 파드 유지 또는 제거  
+라이브니스 프로브와는 다르게 준비 상태 점검 실패시 컨테이너 종료 또는 재시작하지 않음  
+파드들 간의 의존관계가 있는 경우 굉장히 유용(백엔드, 데이터베이스 등)  
 
+<img width="600" height="250" alt="readiness_probe" src="https://github.com/user-attachments/assets/229c45c4-ef5d-4874-bf6c-03d2aba5840f" />
 
+<br>
+<br>
 
+### 파드에 레디니스 프로브 추가
 
+```yaml
+apiVersion: v1
+kind: ReplicationController
+...
+spec:
+  ...
+  template:
+  ...
+    spec:
+      containers:
+      - name: kubia
+        image: luksa/kubia
+        # 파드의 각 컨테이너에 레디니스 프로브 설정 가능
+        readinessProbe:
+          exec:
+            command:
+            - ls
+            - /var/ready
+      ...
+```
 
+<br>
 
+```
+$ kubectl get pods
+NAME          READY  STATUS    RESTARTS  AGE
+kubia-2r1qb   0/1    Running   0         1m
+kubia-3rax1   0/1    Running   0         1m
+kubia-3yw4s   0/1    Running   0         1m
 
+$ kubectl exec kubia-2r1qb -- touch /var/ready
 
+$ curl http://130.211.53.173
+You've hit kubia-2r1qb
+$ curl http://130.211.53.173
+You've hit kubia-2r1qb
+$ curl http://130.211.53.173
+You've hit kubia-2r1qb
+```
 
+<br>
 
+## 헤드리스 서비스
+만약 클라이언트가 서비스 ip 주소가 아닌 모든 파드 ip를 알아야하는 경우 사용  
+DNS 조회 수행시 하나의 ip가 아닌 파드 ip 반환  
+`clusterIP` 필드를 `None`으로 설정  
 
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubia-headless
+spec:
+  clusterIP: None
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: kubia
+```
 
+<br>
 
+## 서비스 문제 해결
+- 먼저 외부가 아닌 클러스터 내에서 서비스 클러스터 ip에 연결되는지 확인
+- 레디니스 프로브 정의 및 성공 여부 확인
+- 파드가 해당 서비스의 일부인지 endpoint 목록 확인
+- FQDN 또는 일부분으로 서비스에 엑세스 가능한지 확인
+- 대상 포트가 아닌 서비스로 노출된 포트에 연결 확인
+- 파드 ip로 직접 연결해서 연결 포트 확인
+- 엑세스 불가한 경우 애플리케이션이 로컬호스트 바인딩된지 확인
 
-
-
-
-
-
+<br>
