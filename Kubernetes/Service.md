@@ -394,11 +394,113 @@ spec:
 
 <br>
 
+- 인그레스 ip 주소 얻기  
+
 ```
 $ kubectl get ingress
 NAME   HOST               ADDRESS         PORTS  AGE
 kubia  kubia.example.com  192.168.99.100  80     29m
 ```
+
+- 이후 `/etc/hosts`에 ip와 host 정보 입력  
+
+```
+$ curl http://kubia.example.com
+You've hit kubia-ke823
+```
+
+<br>
+
+<img width="600" height="300" alt="ingress_pod_access" src="https://github.com/user-attachments/assets/68d49800-e432-4ae9-99ff-97acde273a0c" />
+
+<br>
+<br>
+
+### 하나의 인그레스로 여러 서비스 노출
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kubia
+spec:
+  rules:
+  - host: foo.example.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: foo
+          servicePort: 80
+  - host: bar.example.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: bar
+          servicePort: 80
+```
+
+<br>
+
+### TLS 트래픽을 처리하는 인그레스
+인그레스를 위한 TLS 인증서 생성 필수  
+클라이언트와 컨트롤러 간의 통신은 암호화되지만 컨트롤러와 백엔드 파드 간의 통신은 암호화되지 않음  
+컨트롤러가 인증서와 개인키를 인그레스에 첨부해야하며 이때 시크릿(`secret`) 리소스에 저장  
+
+```
+$ openssl genrsa -out tls.key 2048
+$ openssl req -new -x509 -key tls.key -out tls.cert -days 360 -subj
+$ kubectl create secret tls tls-secret --cert=tls.cert --key=tls.key
+secret "tls-secret" created
+```
+
+<br>
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kubia
+spec:
+  # 전체 tls 구성
+  tls:
+  - hosts:
+    # tls 연결 허용한 호스트
+    - kubia.example.com
+    # 개인키와 인증서는 secret 리소스에서 참조
+    secretName: tls-secret
+  rules:
+    - host: kubia.example.com
+      http:
+        paths:
+        - path: /
+          backend:
+            serviceName: kubia-nodeport
+            servicePort: 80
+```
+
+<br>
+
+```
+$ curl -k -v https://kubia.example.com/kubia
+* About to connect() to kubia.example.com port 443 (#0)
+...
+* Server certificate:
+*
+subject: CN=kubia.example.com
+...
+> GET /kubia HTTP/1.1
+> ...
+You've hit kubia-xueq1
+```
+
+<br>
+
+
+
+
+
 
 
 
