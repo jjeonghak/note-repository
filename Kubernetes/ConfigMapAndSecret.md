@@ -216,6 +216,115 @@ spec:
 
 <br>
 
+### 모든 항목을 환경변수로 전달
+
+```yaml
+spec:
+  containers:
+  - image: some-image
+  # env 대신 envFrom 사용
+  envFrom:
+  # 모든 환경변수는 CONFIG_ 접두사
+  - prefix: CONFIG_
+  configMapRef
+    name: my-config-map
+...
+```
+
+<br>
+
+### 명령줄 인자로 컨피그맵 항목 전달
+
+<img width="550" height="250" alt="configmap_args" src="https://github.com/user-attachments/assets/8bfa9024-f5b6-4af0-9f5f-ede92ff4abd0" />
+
+<br>
+<br>
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fortune-args-from-configmap
+spec:
+  containers:
+  - image: luksa/fortune:args
+    # 컨피그맵 환경변수 정의
+    env:
+    - name: INTERVAL
+      valueFrom:
+        configMapKeyRef:
+          name: fortune-config
+          key: sleep-interval
+    # 인자로 앞에서 정의한 환경변수 지정
+    args: ["$(INTERVAL)"]
+```
+
+<br>
+
+### 컨피그맵 볼륨을 이용해 컨피그맵 항목을 파일로 노출
+환경변수 또는 명령줄 인자로 설정 옵션을 전달하는 것은 일반적으로 짧은 변수값에 대해서 사용  
+컨피그맵은 모든 설정 파일들을 컨테이너에 노출시키기 위해 컨피그맵 볼륨을 사용  
+
+<img width="300" height="200" alt="configmap_file" src="https://github.com/user-attachments/assets/60b34f9c-6956-4f11-b5f3-b5c0d2f83d50" />
+
+<br>
+<br>
+
+- 값으로 사용할 nginx 설정 파일
+
+```nginx
+server {
+  listen        80;
+  server_name   www.kubia-example.com;
+
+  gzip on;
+  gzip_types text/plain application/xml;
+
+  location / {
+    root    /usr/share/nginx/html;
+    index   index.html index.htm;
+  }
+}
+```
+
+<br>
+
+```
+$ kubectl create configmap fortune-config --from-file=configmap-files
+configmap "fortune-config" created
+
+$ kubectl get configmap fortune-config -o yaml
+apiVersion: v1
+data:
+  my-nginx-config.conf: |
+    server {
+      listen        80;
+      server_name   www.kubia-example.com;
+    
+      gzip on;
+      gzip_types text/plain application/xml;
+    
+      location / {
+        root    /usr/share/nginx/html;
+        index   index.html index.htm;
+      }
+    }
+  sleep-interval: |
+    25
+kind: ConfigMap
+...
+```
+
+<br>
+
+
+
+
+
+
+
+
+
 
 
 
