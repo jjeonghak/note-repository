@@ -647,30 +647,63 @@ spec:
       secretName: fortune-https
 ```
 
+<br>
 
+### 시크릿 볼륨 메모리
+시크릿 볼륨에 마운트해 파드에 성공적으로 전달했다면 인메모리 파일시스템(`tmpfs`)을 사용  
+즉, 민감한 데이터를 노출시킬 수 있는 디스크에 저장하지 않음  
 
+```
+$ kubectl exec fortune-https -c web-server -- mount | grep certs
+tmpfs on /etc/nginx/certs type tmpfs (ro,relatime)
+```
 
+<br>
 
+### 환경변수로 시크릿 항목 노출
+볼륨이 아닌 개별 항목만을 환경변수로 노출 가능  
 
+```yaml
+env:
+- name: FOO_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: fortune-https
+      key: foo
+```
 
+<br>
 
+### 이미지를 가져올때 사용하는 시크릿
+쿠버네티스에서 자격증명을 전달하는 것이 필요한 경우  
+파드를 배포할때 컨테이너 이미지가 프라이빗인 경우 이미지를 위한 자격증명 필요  
+- 도커 레지스트리 자격증명을 가진 시크릿 생성
+- 파드 매니페스트에 `imagePullSecrets` 필드에 해당 시크릿 참조
 
+<br>
 
+```
+$ kubectl create secret docker-registry mydockerhubsecret \
+  --docker-username=myusername --docker-password=mypassword \
+  --docker-email=my.email@provider.com
+```
 
+시크릿을 생성하고 그 안에 도커 허브 사용자 이름, 패스워드 등 지정  
+`.dockercfg` 항목을 갖고 있는 시크릿 생성  
 
+<br>
 
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: private-pod
+spec:
+  imagePullSecrets:
+  - name: mydockerhubsecret
+  containers:
+  - image: username/private:tag
+    name: main
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
