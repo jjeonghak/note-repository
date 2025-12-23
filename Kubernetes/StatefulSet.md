@@ -56,11 +56,17 @@
 
 <img width="600" height="550" alt="statefulset_replication" src="https://github.com/user-attachments/assets/2c9efaab-47c1-4dcf-a6f7-748c9d750388" />
 
+<br>
+<br>
 
+### 스케일링
+스케일링시 사용하지 않는 다음 서수 인덱스를 갖는 새로운 파드 인스턴스 생성  
+스케일 다운을 하는 경우 어떤 인스턴스가 삭제될지 예상 가능  
 
+<img width="600" height="200" alt="scale_down" src="https://github.com/user-attachments/assets/c93c8f7b-f406-4993-ac7b-d014ab8d3f3d" />
 
-
-
+<br>
+<br>
 
 
 
