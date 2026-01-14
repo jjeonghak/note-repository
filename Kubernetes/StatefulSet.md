@@ -68,10 +68,13 @@
 <br>
 <br>
 
+### 각 스테이트풀 인스턴스에 전용 스토리지 제공
+스테이트풀셋의 각 파드는 별도의 퍼시스턴트볼륨을 갖는 다른 퍼시스턴트볼륨클레임을 참조  
 
+<img width="550" height="250" alt="statefulset_and_pvc" src="https://github.com/user-attachments/assets/78a5a603-68c7-4ca9-8c52-599622a99ba0" />
 
-
-
+<br>
+<br>
 
 
 
