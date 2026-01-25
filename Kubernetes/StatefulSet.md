@@ -62,6 +62,8 @@
 ### 스케일링
 스케일링시 사용하지 않는 다음 서수 인덱스를 갖는 새로운 파드 인스턴스 생성  
 스케일 다운을 하는 경우 어떤 인스턴스가 삭제될지 예상 가능  
+스케일 업하는 경우 두개 이상의 API 오브젝트 생성(파드와 퍼시스턴트볼륨클레임)  
+스케일 다운하는 경우 바인딩된 퍼시스턴트볼륨클레임은 그대로 보존  
 
 <img width="600" height="200" alt="scale_down" src="https://github.com/user-attachments/assets/c93c8f7b-f406-4993-ac7b-d014ab8d3f3d" />
 
@@ -75,6 +77,57 @@
 
 <br>
 <br>
+
+### 동일 파드의 새 인스턴스에 퍼시스턴트볼륨클레임 재활용
+스케일 다운을 하더라도 스케일 업으로 다시 되돌리기 가능(퍼시스턴트볼륨클레임 재활용)  
+
+<img width="550" height="400" alt="pvc_recycling" src="https://github.com/user-attachments/assets/7615205b-cb7c-4f14-86fe-26b875731507" />
+
+<br>
+<br>
+
+## 스테이트풀셋 생성
+
+```yaml
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: kubia
+spec:
+  serviceName: kubia
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: kubia
+    spec:
+      containers:
+      - name: kubia
+        image: luksa/kubia-pet
+        ports:
+        - name: http
+          containerPort: 8080
+        volumeMounts:
+        - name: data
+          mountPath: /var/data
+volumeClaimTemplates:
+- metadata:
+    name: data
+  spec:
+    resources:
+      requests:
+      storage: 1Mi
+    accessModes:
+    - ReadWriteOnce
+```
+
+<br>
+
+
+
+
+
+
 
 
 
