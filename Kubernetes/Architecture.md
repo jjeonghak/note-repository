@@ -210,18 +210,85 @@ API 서버로 배포된 리소스에 지정된대로 시스템을 원하는 상�
 - 퍼시스턴트볼륨 컨트롤러
 - 이외의 컨트롤러
 
+<br>
 
+컨트롤러는 모두 API 서버에서 리소스 변경되는 것을 감지하고 각 변경 작업을 수행  
+일반적으로 조정 루프를 실행해서 실제 상태를 원하는 상태로 조정하고 새로운 상태를 리소스 `status` 섹션에 기록  
+어떤 컨트롤러도 kubelet과 직접 통신하거나 명령을 내리지 않음  
 
+<br>
 
+### kubelet
+컨트롤 플레인의 일부이지만 마스터 노드에서 실행되지 않고 서비스 프록시와 함께 워커 노드에 실행  
+kubelet은 실행중인 노드를 노드 리소스로 만들어서 API 서버에 등록  
+지속적으로 API 서버를 모니터링해서 해당 노드에 파드가 스케줄링되면 파드의 컨테이너를 시작  
+또한 지속적으로 실행중인 컨테이너를 모니터링해서 상태, 이벤트, 리소스 사용량을 API 서버에 보고  
+컨테이너 라이브니스 프로브를 실행하는 구성 요소  
+API 서버와 통신 없이 특정 로컬 디렉토리 안에 있는 매니페스트 파일을 기반으로 정적 파드 실행 가능  
 
+<img width="550" height="300" alt="kubelet_and_static_pod" src="https://github.com/user-attachments/assets/84cf4800-fe21-4df9-8e43-9b401f6ff460" />
 
+<br>
+<br>
 
+### 서비스 프록시
+kube-proxy는 서비스의 IP와 포트로 들어온 접속을 서비스를 지원하는 파드 중 하나와 연결  
+서비스가 둘 이상의 파드에서 지원되는 경우 프록시는 파드 간에 로드 밸런싱을 수행  
 
+<br>
 
+<img width="500" height="150" alt="kube_proxy_v1" src="https://github.com/user-attachments/assets/f15714c1-5683-4478-99d7-9e0036938b43" />
 
+초기 구현은 사용자 공간에서 동작하는 프록시(`userspace` 프록시 모드)  
+실제 서버 프로세스가 연결을 수락하고 이를 파드로 전달  
+서비스 IP로 향하는 연결을 가로채기 위해 프록시는 `iptables` 규칙을 설정해 이를 프록시 서버로 전송  
 
+<br>
 
+<img width="500" height="150" alt="kube_proxy_v2" src="https://github.com/user-attachments/assets/62680de3-8f98-4920-8ce5-e46f6e13cc59" />
 
+현재는 `iptables` 규칙만 사용해 프록시 서버를 거치지 않고 패킷을 무작위로 선택한 파드로 전달(`iptables` 프록시 모드)  
+이 두 모드의 차이점은 패킷이 kube-proxy를 통과해 사용자 공간에서 처리되는지 아니면 커널에서 처리되는지 여부  
+또한 `userspace` 프록시 모드는 라운드 로빈 방식이며, `iptables` 프록시 모드는 무작위 방식  
+
+<br>
+
+## 컨트롤러 협업
+
+<img width="550" height="300" alt="controller_manager" src="https://github.com/user-attachments/assets/19f0567d-cbef-4d8d-b25f-681d3958237c" />
+
+<br>
+<br>
+
+### 이벤트 체인
+
+<img width="650" height="450" alt="event_chain" src="https://github.com/user-attachments/assets/d7c95af6-a8c5-4ec9-b488-d2d6692d0801" />
+
+kubectl에 의해서 매니페스트가 쿠버네티스 API 서버에 전송  
+API 서버는 리소스 정의를 검증하고 이를 etcd에 저장한 후 결과 응답  
+이때 연계된 이벤트가 발생  
+
+<br>
+
+### 클러스터 이벤트 관찰
+
+```
+$ kubectl get events --watch
+NAME                KIND        REASON             SOURCE
+...kubia            Deployment  ScalingReplicaSet  deployment-controller
+                    Scaled up replica set kubia-193 to 3
+...kubia-193        ReplicaSet  SuccessfulCreate   replicaset-controller
+                    Created pod: kubia-193-w7112
+...kubia-193-tpg6j  Pod         Scheduled          default-scheduler
+                    Successfully assigned kubia-193-tpg6j to node1
+...kubia-193        ReplicaSet  SuccessfulCreate   replicaset-controller
+                    Created pod: kubia-193-39590
+...kubia-193        ReplicaSet  SuceessfulCreate   replicaset-controller
+                    Created pod: kubia-193-tpg6j
+...
+```
+
+<br>
 
 
 
