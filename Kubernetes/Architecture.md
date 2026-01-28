@@ -253,6 +253,15 @@ kube-proxy는 서비스의 IP와 포트로 들어온 접속을 서비스를 지�
 
 <br>
 
+<img width="500" height="500" alt="iptables_proxy_mode" src="https://github.com/user-attachments/assets/9410835f-feb5-4d98-918e-88686167d569" />
+
+API 서버에서 서비스를 생성하면 가상 IP 주소가 할당되며 워커 노드의 kube-proxy 에이전트에 통보  
+각 kube-proxy는 실행중인 노드에 해당 서비스 주소로 접근 가능하도록 변경  
+서비스 IP/포트 쌍으로 향하는 패킷을 가로채서 목적지 주소를 변경해 패킷이 서비스를 지원하는 여러 파드로 리다이렉션  
+서비스와 함께 엔드포인트 오브젝트가 변경되는 것을 같이 감시  
+
+<br>
+
 ## 컨트롤러 협업
 
 <img width="550" height="300" alt="controller_manager" src="https://github.com/user-attachments/assets/19f0567d-cbef-4d8d-b25f-681d3958237c" />
@@ -290,15 +299,107 @@ NAME                KIND        REASON             SOURCE
 
 <br>
 
+## 파드
 
+<img width="500" height="200" alt="pause_container" src="https://github.com/user-attachments/assets/980dbec2-c7cb-4741-8b9e-79bbee87a912" />
 
+```
+$ kubectl run nginx --image=nginx
+deployment "nginx" created
 
+docker@minikubeVM:~$ docker ps
+CONTAINER ID  IMAGE                 COMMAND                 CREATED
+c917a6f3c3f7  nginx                 "nginx -g 'daemon off"  4 seconds ago
+98b8bf797174  gcr.io/.../pause:3.0  "/pause"                7 seconds ago
+```
 
+또한 kubelet은 실행한 파드 내에 퍼즈(`pause`) 컨테이너를 함께 실행  
+파드의 모든 컨테이너가 동일한 네트워크와 리눅스 네임스페이스를 공유하도록하는 인프라스트럭처 컨테이너  
+파드의 라이프사이클과 동일, 만약 중간에 종료되면 kubelet은 파드의 모든 컨테이너를 다시 생성
 
+<br>
 
+### 파드 간 네트워킹
+각 파드는 고유한 IP 주소를 보유, NAT 없이 플랫(`flat`) 네트워크로 서로 통신  
+네트워크는 쿠버네티스 자체가 아닌 시스템 관리자 또는 컨테이너 네트워크 인터페이스(`CNT`) 플러그인에 의해 제공  
 
+<br>
 
+<img width="500" height="350" alt="pod_networking" src="https://github.com/user-attachments/assets/ed9a5c52-15a5-40ec-b5e6-0217bcee7f2b" />
 
+특정 네트워크 기술 사용을 강요하지 않지만 파드가 동일한 워커 노드에서 서로 통신 가능해야함  
+네트워크는 파드가 자신을 보는 IP 주소가 다른 모든 파드에서 해당 파드 주소를 찾을때도 동일한 IP 주소로 보여야함  
+외부 통신할때는 패킷의 출발지 IP를 사설 IP가 아닌 호스트 워커 노드의 IP로 변경  
 
+<br>
 
+<img width="400" height="250" alt="bridge" src="https://github.com/user-attachments/assets/021a9153-1638-4076-bf9b-82d22f0fb042" />
 
+파드의 컨테이너는 퍼즈 컨테이너의 네트워크 네임스페이스를 사용  
+인프라스트럭처 컨테이너가 시작되기 전에 컨테이너를 위한 가상 이더넷 인터페이스 쌍(`veth`)이 생성  
+한쪽 인터페이스는 호스트의 네임스페이스에 남고, 다른쪽은 컨테이너 네트워크 네임스페이스 안으로 옮겨짐  
+호스트의 네트워크 네임스페이스에 있는 인터페이스는 컨테이너 런타임이 사용 가능하게 설정된 네트워크 브릿지에 연결  
+컨테이너 내부에서 실행되는 애플리케이션은 `eth0` 인터페이스로 전송  
+호스트 네임스페이스의 다른 `veth` 인터페이스로 나와 브릿지로 전달  
+
+<br>
+
+<img width="600" height="300" alt="node_and_bridge" src="https://github.com/user-attachments/assets/8873c26c-2956-435d-bb96-67be0b53e3ab" />
+
+서로 다른 노드 사이에 브릿지 연결 가능  
+오버레이, 언더레이 네트워크 또는 일반적인 계층 3 라우팅을 통해 가능  
+파드 IP는 전체 클러스터 내에서 유일해야하기 때문에 노드 사이의 브릿지는 겹치지 않는 주소 범위를 사용  
+패킷은 먼저 `veth` 쌍을 통과한 후 브릿지를 통해 노드 물리 어댑터로 전달  
+회선을 통해 다른 노드의 물리 어댑터로 전달되고 브릿지를 지나 목표 컨테이너의 `veth` 쌍을 통과  
+해당 방식은 두 노드가 라우터 없이 같은 네트워크 스위치에 연결된 경우에만 동작  
+소프트웨어 정의 네트워크(`SDN`) 사용하면 네트워크 토폴로지가 복잡하더라도 같은 네트워크 연결로 간주  
+
+<br>
+
+컨테이너 네트워크 인터페이스(`CNI`) 플러그인을 통해 설정 가능  
+kubelet 시작시 `--network-plugin=cni` 옵션을 사용  
+- `Calico`
+- `Flannel`
+- `Romana`
+- `Weave Net`
+
+<br>
+
+## 고가용성 클러스터
+
+<img width="600" height="300" alt="control_plain" src="https://github.com/user-attachments/assets/62abfdf6-7ef0-4c0f-a494-1c7a26e451db" />
+
+다양한 컨트롤러는 노드 장애시 애플리케이션이 특정 규모로 원활하게 동작하도록 지원  
+수평 확장을 위해서는 디플로이먼트 리소스로 애플리케이션을 실행  
+수평 확장이 불가한 경우 리더 선출 메커니즘 사용  
+컨트롤 플레인 또한 여러 마스터 노드로 구성해서 가용성 보장  
+
+<br>
+
+<img width="600" height="250" alt="controller_manager_and_scheduler" src="https://github.com/user-attachments/assets/84dac9dc-4167-4dc1-a664-1a5032175223" />
+
+여러 복제본을 동시에 실행할 수 있는 API 서버와 달리 컨트롤러 매니저나 스케줄러는 아님  
+감시를 통해 상태 변경을 적용할때 여러 인스턴스가 서로 경쟁해서 원하지 않는 결과 초래 가능  
+한번의 하나의 인스턴스만 확성화하고 각 개별 구성 요소는 선출된 리더일 때만 활성화  
+
+<br>
+
+컨트롤 플레인 구성 요소에서 사용하는 리더 선출은 서로 통신할 필요없음(엔드포인트 리소스 사용)  
+단지 동일한 이름으로 된 서비스가 존재하지 않는 한 부작용이 없기 때문에 사용  
+`control-plane.alpha.kubernetes.io/leader` 어노테이션의 `holerIdentity` 필드가 현재 리더 이름  
+이 필드에 이름을 넣는 것에 처음 성공한 인스턴스가 리더  
+
+```yaml
+$ kubectl get endpoints kube-scheduler -n kube-system -o yaml
+apiVersion: v1
+kind: Endpoints
+metadata:
+  annotations:
+    control-plane.alpha.kubernetes.io/leader: '{"holderIdentity":
+    "minikube","leaseDurationSeconds":15,"acquireTime":
+    "2017-05-27T18:54:53Z", "renewTime":"2017-05-28T13:07:49Z",
+    "leaderTransitions":0}'
+...
+```
+
+<br>
