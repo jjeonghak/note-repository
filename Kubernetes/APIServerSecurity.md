@@ -125,3 +125,211 @@ spec:
 
 <img width="550" height="350" alt="role_and_clusterrole" src="https://github.com/user-attachments/assets/f7074a40-c7c6-4e0c-bcac-2b9fe807eed8" />
 
+<br>
+<br>
+
+롤 리소스는 어떤 리소스에 어떤 액션을 수행 가능한지 정의  
+
+<img width="550" height="300" alt="role" src="https://github.com/user-attachments/assets/8f3fbed4-d674-465b-ba7c-d747c67d5f7b" />
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: foo
+  name: service-reader
+rules:
+  - apigroups: [""]
+    verbs: ["get", "list"]
+    resources: ["services"]
+```
+
+<br>
+
+롤은 수행 가능한 액션을 정의하지만 누가 수행할지 지정하지 않음  
+주체에 바인딩하기 위해서는 롤바인딩 필요  
+
+<img width="500" height="300" alt="rolebinding" src="https://github.com/user-attachments/assets/33669b39-1730-470c-ab0e-6999c8520dc5" />
+
+```
+$ kubectl create rolebinding test --role=service-reader --serviceaccount-foo:default -n foo
+rolebinding "test" created
+
+$ kubectl get rolebinding test -n foo -o yaml
+```
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: test
+  namespace: foo
+  ...
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-reader
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: foo
+```
+
+<br>
+
+일반 롤은 롤이 위치하고 있는 동일한 네임스페이스 리소스에만 액세스 가능  
+또한 API 서버의 리소스를 나타내지 않는 일부 URL 경로에 관한 액세스 권한 부여 불가  
+클러스터롤을 사용해서 클러스터 수준 리소스에 액세스 가능  
+
+```
+$ kubectl create clusterrole pv-reader --verb=get,list --resource=persistentvolumes
+clusterrole "pv-reader" created
+
+$ kubectl get clusterrole pv-reader -o yaml
+```
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pv-reader
+  resourceVersion: "39932"
+  selfLink: ...
+  uid: e9ac1099-30e2-11e7-955c-080027e6b159
+rules:
+- apiGroup:
+  - ""
+  resources:
+  - persistentvolumes
+  verbs:
+  - get
+  - list
+```
+
+<br>
+
+클러스터롤은 일반 롤바인딩이 아닌 클러스터롤바인딩을 해야 제대로 동작  
+
+```
+$ kubectl create clusterrolebinding pv-test --clusterrole=pv-reader --serviceaccount=foo:default
+clusterrolebinding "pv-test" created
+```
+
+<br>
+
+일반적으로 `system:discovery` 클러스터롤을 통해 리소스가 아닌 URL 액세스 가능  
+
+```
+$ kubectl get clusterrole system:discovery -o yaml
+```
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:discovery
+  ...
+rules:
+- nonResourceURLs:
+  - /api
+  - /api/*
+  - /apis
+  - /apis/*
+  - /healthz
+  - /swafferapi
+  - /swafferapi/*
+  - /version
+  verbs:
+  - get
+```
+
+```
+$ kubectl get clusterrolebinding system:discovery -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:discovery
+  ...
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:discovery
+subjects:
+- apiGroup: rbac.authoziation.k8s.io
+  kind: Group
+  name: system:authenticated
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: system:unauthenticated
+```
+
+<br>
+
+클러스터롤이 항상 클러스터롤바인딩이 될 필요는 없음  
+클러스터롤은 일반 롤바인딩과 클러스터 롤바인딩에 따라 동작 상이  
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: CluterRole
+metadata:
+  name: view
+  ...
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - endpoints
+  - persistentvolumeclaims
+  - pods
+  - replicationcontrollers
+  - replicationcontrollers/scale
+  - serviceaccounts
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+...
+```
+
+<img width="600" height="300" alt="clusterrole_with_clusterrolebinding" src="https://github.com/user-attachments/assets/8abeef15-0bad-44d3-aa8e-9ef9559b0ec9" />
+
+<img width="600" height="300" alt="clusterrole_with_rolebinding" src="https://github.com/user-attachments/assets/51979577-e862-4515-a173-81f6b9af7c9e" />
+
+<br>
+<br>
+
+| 액세스 | 롤 타입 | 바인딩타입 |
+|--|--|--|
+| 클러스터 수준 리소스(노드, PV) | 클러스터롤 | 클러스터롤바인딩 |
+| 리소스가 아닌 URL | 클러스터롤 | 클러스터롤바인딩 |
+| 모든 네임스페이스의 네임스페이스로 지정된 리소스 | 클러스터롤 | 클러스터롤바인딩 |
+| 특정 네임스페이스의 네임스페이스로 지정된 리소스 <br> (여러 네임스페이스에 동일한 클러스터롤 재사용) | 클러스터롤 | 롤바인딩 |
+| 특정 네임스페이스의 네임스페이스로 지정된 리소스 <br> (각 네임스페이스에 롤을 정의) | 롤 | 롤바인딩 |
+
+<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
