@@ -281,36 +281,136 @@ AOP 애스팩트에 비유 가능, 사후/사전 쓰기 장벽을 사용
 
 <img width="400" height="200" alt="classic_gc" src="https://github.com/user-attachments/assets/974b55be-241c-4090-a2b9-81dbbe0b3e79" />
 
+여러가지 컬렉터 별로 함께 사용 가능하거나 신세대, 구세대용 컬렉션으로 구분 가능  
+
 <br>
 
+### 시리얼 컬렉터
 
+<img width="500" height="150" alt="serial_collector" src="https://github.com/user-attachments/assets/18f9d748-ac8e-45bb-bb33-0eeef4e01887" />
 
+가장 기초적이고 오래된 컬렉터, JDK 1.3.1 전까지 핫스팟 가상머신의 유일한 구세대용 컬렉터  
+단일 스레드로 동작, 회수가 완료될 때까지 다른 모든 작업 스레드가 대기  
+시리얼 컬렉터를 사용하려면 `-XX:+UseSerialGC` 매개변수 사용  
 
+<br>
 
+### 파뉴 컬렉터
 
+<img width="500" height="150" alt="parnew_collector" src="https://github.com/user-attachments/assets/72830373-d2d8-41c2-b88f-1372d426b200" />
 
+여러 스레드를 활용하여 시리얼 컬렉터를 병렬화한 버전  
+파뉴 컬렉터와 CMS 조합으로 사용했지만 JDK 9부터 공식 서버용 컬렉터 권장안에서 삭제  
 
+<br>
 
+### 패러렐 스캐빈지 컬렉터
+신세대용 컬렉터로 마크-카피 알고리즘에 기초하여 여러 스레드를 사용해서 병렬로 회수  
+CMS 컬렉터가 사용자 스레드 일시 정지 시간 최소화가 목표였다면 PS 컬렉터는 처리량을 제어하는 것이 목표  
+컬렉션 정지 시간 최댓값 지정은 `-XX:MaxGCPauseMillis`, 처리량 지정은 `-XX:GCTimeRatio` 매개변수 사용  
+목표만 설정해준다면 가상머신이 메모리 관리 최적화 진행(적응형 조율)  
 
+<br>
 
+### 시리얼 올드 컬렉터
 
+<img width="500" height="150" alt="serial_old_collector" src="https://github.com/user-attachments/assets/a9bd144f-40ce-4ff1-9ab8-dea33a3283c5" />
 
+시리얼 컬렉터의 구세대용 버전, 단일 스레드 컬렉터이며 마크-컴팩트 알고리즘 사용  
+서버용으로 사용한다면 JDK 5 이전의 PS 컬렉터와의 호환 또는 CMS 컬렉터 실패 대비책  
 
+<br>
 
+### 패러렐 올드 컬렉터
 
+<img width="500" height="150" alt="parallel_old_collector" src="https://github.com/user-attachments/assets/26e09b85-7595-40c6-83ce-8d70031e555f" />
 
+PS 컬렉터의 구세대용 버전, 멀티스레드를 이용한 병렬 회수 및 마크-컴팩트 알고리즘 사용  
+처리량을 중시하는 PS 컬렉터와 딱맞는 구세대 컬렉터  
+패러렐 올드 컬렉터를 사용하려면 `-XX:+UseParallelGC` 매개변수 사용  
 
+<br>
 
+### CMS 컬렉터
 
+<img width="600" height="150" alt="cms_collector" src="https://github.com/user-attachments/assets/772c1d6e-460e-4965-85ce-e4f360cd8a5a" />
 
+표시와 쓸기 단계 모두를 사용자 스레드와 동시에 수행, 가비지 컬렉션에 따른 일시 정지 시간을 최소로 줄이는 것을 목표  
+- 최초 표시: 스탑 더 월드 방식, GC 루트와 직접 연결된 객체들만 표시하기 때문에 빠르게 끝남
+- 동시 표시: 그래프 전체 탐색, 시간이 오래 걸리지만 사용자 스레드가 대기하지 않음
+- 재표시: 스탑 더 월드 방식: 사용자 스레드가 참조 관계를 변경한 객체들을 다시 탐색
+- 동시 쓸기: 위의 단계에서 죽었다고 판단되는 객체들을 쓸어 담음
 
+<br>
 
+짧은 정지 시간을 추구하는 핫스팟 가상머신의 첫번째 성공작이지만 완벽하지 않음  
+동시성을 위해 설계되었기 때문에 프로세서 자원에 아주 민감(코어의 1/4 사용, 4개 이하 코어인 경우 치명적)  
+부유 쓰레기(`floating garbage`) 처리가 불가해서 동시 모드 실패 유발 가능, 완벽한 스탑 더 월드 방식의 전체 GC 발생  
+마크-스윕 알고리즘의 문제점인 메모리 파편화 문제 발생  
+JDK 9 버전에서 폐기 대상으로 지정, JDK 14에서 완전히 제거  
 
+<br>
 
+### G1 컬렉터(Garbage First)
 
+<img width="600" height="300" alt="garbage_first_collector" src="https://github.com/user-attachments/assets/572654bc-a2e8-4129-814e-ace62ebe5244" />
 
+부분 회수(`partial collection`) 설계 아이디어와 리전을 회수 단위로 하는 메모리 레이아웃 분야 개첵  
+JDK 9 버전 이후 PS + 패러렐 올드 조합을 밀어내고 서버 모드용 기본 컬렉터로 지정  
+광역적으로 마크-컴팩트 알고리즘, 지엽적으로 마크-카피(두 리전 사이) 사용  
+정지 시간 예측 모델을 이용해서 가비지 컬렉터가 쓰는 시간을 통제하는 것을 목표  
+힙 메모리 어느 곳이든(신세대, 구세대) 회수 대상에 포함가능, 이를 회수 집합(`CSet`)이라고 표현  
+고정된 세대 단위 영역 구분에서 벗어나 연속된 자바 힙을 동일 크기의 여러 독립 리전으로 나눔  
+리전 하나의 크기는 `-XX:G1HeapRegionSize` 매개변수로 설정  
+사용자가 설정한 `-XX:MaxGCPauseMillis` 일시 정지 시간이 허용하는 한도에서 회수 효과가 가장 큰 리전부터 회수  
 
+<br>
 
+<img width="550" height="150" alt="garbage_first_collector_2" src="https://github.com/user-attachments/assets/37b5d392-ea3a-43eb-a998-1fa8230245df" />
+
+- 최초 표시: GC 루트가 직접 참조하는 객체들을 표시하고 TAMS 포인터 값을 수정
+- 동시 표시: 도달 가능성을 분석, 전체 힙의 객체 그래프를 재귀적으로 스캔하며 회수 객체 탐색
+- 재표시: 시작 단계 스냅샷 이후 변경된 소수 객체만 처리
+- 복사 및 청소: 통계 데이터를 기초로 리전들을 회수 가치와 비용에 따라 정렬, 목표한 일시 정지 시간에 부합하도록 계획 수립
+
+<br>
+
+### 모던 가비지 컬렉터
+
+<img width="400" height="300" alt="modern_garbage_collector" src="https://github.com/user-attachments/assets/64309e19-52c7-4236-8d9c-046f7db39724" />
+
+일부 클래식 가비지 컬렉터는 이미 사라지거나 통폐합, 가장 큰 특징은 신세대용과 구세대용 구분이 사라짐  
+시리얼 컬렉터가 시리얼 올드 컬렉터를 흡수, PS와 패러렐 올드가 통합  
+
+<br>
+
+## 저지연 가비지 컬렉터
+
+<img width="300" height="200" alt="impossible_trinity" src="https://github.com/user-attachments/assets/d1b21e6a-3fd5-4591-b1a5-502b9db1500a" />
+
+가비지 컬렉터를 측정하는 지표는 `처리량`, `지연시간`, `메모리 사용량`  
+이 세가지 중 지연시간의 중요성이 점점 커지는 추세  
+
+<br>
+
+<img width="500" height="300" alt="garbage_collector_concurrent" src="https://github.com/user-attachments/assets/d1123618-7e04-4cad-8cc8-bea58f22f8fe" />
+
+셰넌도어와 ZGC는 거의 모든 과정이 동시에 수행, 이 두 컬렉터를 저지연 가비지 컬렉터라고 표현  
+
+<br>
+
+### 셰넌도어
+오라클의 견제를 받아서 유료 상용 버전에는 제외, 무료 오픈 소스 OpenJDK에만 존재하는 컬렉터  
+레드햇이 독립적으로 시작한 프로젝트였지만 OpenJDK에 기증  
+G1과 힙 레이아웃이 비슷하며, 최초 표시와 동시 표시 등 여러 단계의 처리 방식에도 공통점이 많음  
+
+<br>
+
+<img width="400" height="250" alt="connection_matrix" src="https://github.com/user-attachments/assets/bda6a005-ee8a-4f05-bce7-1966588800ef" />
+
+- 동시 모으기 지원
+- JDK 21 이전까지 세대 단위 컬렉션을 사용하지 않음
+- 메모리와 컴퓨팅 자원을 많이 사용하는 기억 집합 대신 연결 행렬(`connection matrix`)로 리전 간 참조 관계 기록
 
 
 
