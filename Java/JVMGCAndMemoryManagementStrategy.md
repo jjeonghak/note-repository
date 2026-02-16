@@ -412,6 +412,196 @@ G1과 힙 레이아웃이 비슷하며, 최초 표시와 동시 표시 등 여�
 - JDK 21 이전까지 세대 단위 컬렉션을 사용하지 않음
 - 메모리와 컴퓨팅 자원을 많이 사용하는 기억 집합 대신 연결 행렬(`connection matrix`)로 리전 간 참조 관계 기록
 
+<br>
+
+<img width="600" height="300" alt="shenandoah_behavior" src="https://github.com/user-attachments/assets/2f2c5ce6-e88d-4302-9796-d69f763fd005" />
+
+- 최초 표시: 스탑 더 월드 방식, GC 루트에서 직접 참조하는 객체 표시
+- 동시 표시: 객체 그래프 탐색 후 표시
+- 최종 표시: 스탑 더 월드 방식, 보류 중인 모든 표시 완료
+- 동시 청소: 죽어있는 객체 리전 청소
+- 동시 이주: 다른 컬렉터와 구분되는 차이, 살아있는 객체들을 다른 리전으로 복사, `읽기 장벽`과 `포워딩 포인트` 사용
+- 최초 참조 갱신: 스탑 더 월드 방식, 이주 이후 옛 객체를 가리키는 모든 참조 수정
+- 동시 참조 갱신: 객체 그래프 탐색 없이 물리 메모리 주소의 순서대로 참조 타입을 선형 검색해서 값 수정
+- 최종 참조 갱신: 스탑 더 월드 방식, GC 루트 집합의 참조도 갱신
+- 동시 청소: 회수 집합에 더 이상 살아있는 객체가 없기 때문에 해당 공간 확보
+
+<br>
+
+셰넌도어가 이주를 동시에 수행할 수 있도록 하는 핵심 개념이 포워딩 포인터  
+기존에는 이동될 객체의 원래 메모리에 메모리 보호 트랩을 설정해서 동시 이주를 구현, 사용자 모드와 커널 모드의 전환이 필수  
+원래의 객체 레이아웃 구조 상단에 참조 필드를 하나 추가, 동시 이주가 아닌 경우 참조 필드는 객체 자신을 가리킴  
+
+<br>
+
+<img width="450" height="300" alt="forwarding_pointer" src="https://github.com/user-attachments/assets/749f8729-05c9-4d3b-b1dc-dc762296f232" />
+
+필연적으로 스레드들의 경쟁에 직면, 데이터를 쓰기 위해서는 반드시 새로 복사된 객체에만 허용  
+GC 스레드가 객체 복사본을 만들고 포워딩 포인터 값을 수정하는 사이에 사용자 스레드가 객체 필드를 수정한 경우  
+즉, 포워딩 포인터에 접근하는 동작 동기화 필수, `CAS` 기법을 써서 동시 이주중에도 객체 접근 문제 해결  
+또한 읽기 작업과 쓰기 작업 모두에 읽기/쓰기 장벽 사용  
+
+<br>
+
+<img width="450" height="150" alt="forwarding_pointer_and_header" src="https://github.com/user-attachments/assets/c6bd2782-8cd9-4da5-a7f7-358d147afb9f" />
+
+JDK 13에서는 포워딩 포인터를 객체 헤더에 통합, 마크 워드의 마지막 2비트(락 플래그) `0b11` 값을 이용  
+같은 공간에 더 많은 객체를 담을 수 있고 캐시 적중률이 높아짐  
+
+<br>
+
+### ZGC
+오라클이 개발, JDK 15에 정식 버전으로 등록, JDK 21부터 신세대와 구세대를 구분하는 세대 구분 ZGC 추가  
+기본적으로 세대 구분없이 리전 기반 메모리 레이아웃을 사용  
+낮은 지연 시간을 최우선 목표로 동시 마크-컴팩트 알고리즘을 구현하기 위해 읽기 장벽, 컬러 포인터, 메모리 다중 매핑 기술 사용  
+셰넌도어와 다르게 한 리전 안의 생존 객체들이 이동하면 그 즉시 해당 리전을 재활용 가능  
+
+<br>
+
+다른 컬렉터의 리전 기반 메모리 레이아웃와 다르게 동적으로 리전이 생성/파괴  
+- 소리전: 2MB 고정, 256KB 미만 작은 객체를 담음
+- 중리전: 32MB로 고정, 4MB 미만 객체를 담음
+- 대리전: 크기가 동적으로 변함, 4MB 이상의 큰 객체용
+
+<br>
+
+<img width="450" height="150" alt="color_pointer" src="https://github.com/user-attachments/assets/34876b29-18cb-41a9-a2bd-96e5e2b96a01" />
+
+ZGC도 셰넌도어와 비슷하게 읽기 장벽을 사용하지만 포워딩 포인터가 아닌 `컬러 포인터 기술` 사용  
+가비지 컬렉터나 가상머신 자체에서만 사용하는 추가 데이터를 주호 객체 헤더에 저장  
+컬러 포인터는 포인터 자체에 소량의 추가 정보를 직접 저장하는 기술  
+즉, ZGC의 도달 가능성 분석은 객체 그래프를 순회하는 것이 아닌 참조 그래프를 순회하며 참조에 표시하는 것  
+주소 공간을 44 비트까지로 제한, 상위 4비트를 네가지 플래그 정보를 저장  
+하지만 메모리 용량이 제한되고(16TB, 2^44) 32 비트 플랫폼에서는 동작하지 않으며, 압축 포인터 같은 여러 기술 지원 불가  
+
+<br>
+
+<img width="450" height="150" alt="zgc_behavior" src="https://github.com/user-attachments/assets/d18d0b3c-87e3-4db9-a3a5-ab26bf927913" />
+
+- 최초 표시: 스탑 더 월드 방식, GC 루트에서 직접 참조하는 객체 표시
+- 동시 표시: 객체 그래프를 탐색하며 도달 가능성을 분석
+- 동시 재배치 준비: 청소해야할 리전들을 선정해서 재배치 집합 생성
+- 동시 재배치: 재배치 집합 안의 생존 객체들을 새로운 리전으로 복사, 컬러 포인터를 이용해서 참조만 보고 가능
+- 동시 재매핑: 힙 전체에서 재배치 집합에 있는 옛 객체들을 향하는 참조 전부를 갱신
+
+<br>
+
+### 세대 구분 ZGC
+세대 구분을 통해 얻은 가장 큰 이점은 수명이 짧은 객체들을 더 자주 회수 가능  
+일반 ZGC는 `-XX:+UseZGC`, 세대 구분 ZGC는 `-XX:+ZGenerational` 매개변수 추가로 사용  
+컬러 포인터와 연계하며 효율적인 쓰기 장벽이 추가  
+
+```
+$ java -XX:+UseZGC -XX:+ZGenerational ...
+```
+
+<br>
+
+읽기 장벽의 부하를 줄이기 위해 다중 매핑 메모리 기법을 사용  
+같은 힙 메모리를 세개의 독립된 가상 주소로 매핑  
+읽기 장벽과 쓰기 장벽의 코드를 명확히 구분  
+기억 집합 카드 테이블이 아닌 기억 집합 비트맵을 사용  
+
+<br>
+
+### 가상 머신과 가비지 컬렉터 로그
+업계 표준이 없어서 컬렉터마다 포맷이 다를 가능성 존재  
+JDK 9부터 모든 핫스팟 기능의 로그를 설정 가능
+
+<br>
+
+```
+-Xlog[:[selector][:[output][:[decorators][:output-options]]]]
+```
+
+<img width="450" height="80" alt="gc_log_format" src="https://github.com/user-attachments/assets/14a75b54-1ad2-4db5-9496-331f7e2b0191" />
+
+셀렉터는 `태그`와 `로그 레벨`로 구성  
+태그는 가상머신의 기능 모듈 이름을 뜻함  
+로그 레벨은 출력 정보의 상세함 정도를 설정, Trace, Debug, Info, Warning, Error, Off 여섯 단계 존재  
+
+- 기본 정보 조회 `-Xlog:gc`
+```
+$ java -Xlog:gc GCTest
+[0.222s][info][gc] Using G1
+[2.825s][info][gc] GC(0) Pause Young (G1 Evacuation Pause) 26M->5M(256M) 355.623ms
+[3.096s][info][gc] GC(1) Pause Young (G1 Evacuation Pause) 14M->7M(256M) 50.030ms
+[3.385s][info][gc] GC(2) Pause Young (G1 Evacuation Pause) 17M->10M(256M) 40.576ms
+```
+
+<br>
+
+- 상세 정보 조회 `-Xlog:gc*`
+```
+$ java -Xlog:gc* GCTest
+[0.233s][info][gc,heap] Heap region size: 1M
+[0.383s][info][gc ] Using G1
+[0.383s][info][gc,heap,coops] Heap address:0xfffffffe50400000,
+    size: 4064MB, Compressed Oops mode: Non-zerp based:
+0xfffffffe5000000, Oop shift amount: 3
+```
+
+<br>
+
+- 가비지 컬렉션 전후 가용한 힙과 메서드 영역 용량 변화 조회 `-Xlog:gc+heap=debug`
+```
+$ java -Xlog:gc+heap=debug GCTest
+[0.113s][info][gc,heap] Heap region size: 1M
+[0.113s][debug][gc,heap] Minimum heap 8388608 Inital heap 268435456
+    Maximum heap 4261412864
+[2.529s][debug][gc,heap] GC(0) Heap before GC invocations=0 (full 0):
+    used 26624K
+```
+
+<br>
+
+- 가비지 컬렉션 중 사용자 스레드의 동시 실행 시간과 일시 정지 시간 조회 `-Xlog:safepoint`
+```
+$ java -Xlog:safepoint GCTest
+[1.376s][info][safepoint] Application time: 0.3091519 seconds
+[1.377s][info][safepoint] Total time for which application threads were
+    stopped: 0.0004600 seconds, Stopping threads took:
+0.0002648 seconds
+```
+
+<br>
+
+- 회수 후 남은 객체들의 나이 분포 조회 `-Xlog:gc+age=trace`
+```
+$ java -Xlog:gc+age=trace GCTest
+[2.406s][debug][gc,age] GC(0) Desired survivor size 1572864 bytes,
+    new threshold 15 (max threshold 15)
+[2.745s][trace][gc,age] GC(0) Age table with threshold 15 (max threshold 15)
+[2.745s][trace][gc,age] GC(0) - age 1: 3100640 bytes, 3100640 total
+```
+
+<br>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
