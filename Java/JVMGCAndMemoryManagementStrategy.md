@@ -577,37 +577,175 @@ $ java -Xlog:gc+age=trace GCTest
 
 <br>
 
+## 메모리 할당과 회수 전략
+객체 메모리 할당이란 개념적으로 힙에 할당한다는 뜻, 전통적인 세대 단위 설계에서는 새로운 객체는 신세대에 할당  
+실험 및 연구는 시리얼 컬렉션 기준으로 진행  
 
+<br>
 
+객체는 먼저 에덴에 할당  
+에덴의 공간이 부족해진 경우 가상머신은 마이너 GC 시작  
 
+```java
+private static final int _1MB = 1024 * 1024;
 
+/**
+ * -XX:+UseSerialGC -Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8 -Xlog:gc*
+ */
+public static void testAllocation() {
+  byte[] alloc1, alloc2, alloc3, alloc4;
+  alloc1 = newbyte[2 * _1MB];
+  alloc2 = newbyte[2 * _1MB];
+  alloc3 = newbyte[2 * _1MB];
+  alloc4 = newbyte[4 * _1MB];  // 마이너 GC 발생
+}
+```
 
+<img width="450" height="200" alt="before_allocation_test" src="https://github.com/user-attachments/assets/46cecf95-0b8e-4c7c-b8b8-6ca39d3bfc14" />
 
+<img width="450" height="200" alt="after_allocation_test" src="https://github.com/user-attachments/assets/43fd4996-b3b2-4b52-b032-eb964b5eba75" />
 
+<img width="450" height="200" alt="final_allocation_test" src="https://github.com/user-attachments/assets/2ed63aae-67c3-4536-b3c8-34a9a62b486e" />
 
+```
+Using Serial
+Version: 17+35-2724 (release)
+...
+GC(0) Pause Young (Allocation Failure)
+GC(0) DefNew: 729K(9216K)->672K(9216K)
+        Eden: 729K(8192K)->0K(8192K)
+        From: 0K(1024K)->672K(1024K)
+GC(0) Tenured: 0K(10240K)->6144K(10240K)
+...
+Heap
+  def new generation  total 9216K, used 4850K
+    eden space 8192K,  50% used
+    from space 1024K,  65% used
+    to   space 1024K,   0% used
+  tenured generation  total 10240K, used 6144K
+```
 
+<br>
 
+연속된 메모리 공간을 필요로하는 큰 객체(긴 문자열, 긴 배열)는 바로 구세대 할당  
 
+```java
+/**
+ * -XX:+UseSerialGC -Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8 
+ * -Xlog:gc* -XX:PretenureSizeThreshold=3M
+ */
+public static void testPretenureSizeThreshold() {
+  byte[] alloc;
+  alloc = new byte[4 * _1MB];
+}
+```
 
+```
+Heap
+  def new generation  total 9216K, used 1312K
+    eden space 8192K,  16% used
+    from space 1024K,   0% used
+    to   space 1024K,   0% used
+  tenured generation  total 10240K, used 4096K
+```
 
+<br>
 
+각 객체의 객체 헤더에 세대 나이 카운터를 두어 나이 관리  
+에덴에서 태어난 객체는 마이너 GC를 거치면서 나이가 1씩 증가하며 생존자 공간으로 먼저 옮김  
+특정 나이(`-XX:MaxTenuringThreshold`)가 된 객체는 구세대로 승격   
 
+```java
+/**
+ * -XX:+UseSerialGC -Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8
+ * -Xlog:gc* -Xlog:gc+age=trace -XX:MaxTenuringThreshold=1
+ * 또는
+ * -XX:+UseSerialGC -Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8
+ * -Xlog:gc* -Xlog:gc+age=trace -XX:MaxTenuringThreshold=15
+ * -XX:TragetSurvivorRatio=80
+ */
+@SuppressWarnings("unused")
+public static void testTenuringThreshold() {
+  byte[] alloc1, alloc2, alloc3;
+  alloc1 = new byte[_1MB / 8];
+  alloc2 = new byte[4 * _1MB];
+  alloc3 = new byte[4 * _1MB];  // 첫번째 GC 발생
+  alloc3 = null;
+  alloc3 = new byte[4 * _1MB];  // 두번째 GC 발생
+}
+```
 
+```
+GC(0) Pause Young (Allocation Failure)
+GC(0) Age table with threshold 1 (max threshold 1)
+GC(0) DefNew: 5372K(9216K)->800K(9216K)
+        Eden: 5372K(8192K)->0K(8192K)
+        From: 0K(1024K)->800K(1024K)
+GC(0) Tenured: 0K(10240K)->4096K(10240K)
+...
+GC(1) Pause Young (Allocation Failure)
+GC(1) Age table with threshold 1 (max threshold 1)
+GC(1) DefNew: 4896K(9216K)->0K(9216K)
+        Eden: 4896K(8192K)->0K(8192K)
+        From: 800K(1024K)->0K(1024K)
+GC(0) Tenured: 4096K(10240K)->4896K(10240K)
+...
+Heap
+  def new generation  total 9216K, used 4178K
+    eden space 8192K,  51% used
+    from space 1024K,   0% used
+    to   space 1024K,   0% used
+  tenured generation  total 10240K, used 5024K
+```
 
+<br>
 
+핫스팟 가상머신은 나이가 `-XX:MaxTenuringThreshold`보다 적어도 구세대로 승격시키는 경우 존재  
+생존자 공간 점유율에 의해(기본값 50%) 생존자 공간의 절반을 넘어서면 모든 객체를 구세대로 옮김  
 
+```java
+/**
+ * -XX:+UseSerialGC -Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8
+ * -Xlog:gc* -Xlog:gc+age=trace -XX:MaxTenuringThreshold=15
+ * -XX:TragetSurvivorRatio=80
+ */
+public static void testTenuringThreshold2() {
+  byte[] alloc1, alloc_new, alloc2, alloc3;
+  alloc1 = new byte[_1MB / 8];
+  alloc_new = new byte[_1MB / 16];  // 생존자 공간 80% 초과
+  alloc2 = new byte[4 * _1MB];
+  alloc3 = new byte[4 * _1MB];  // 첫번째 GC 발생
+  alloc3 = null;
+  alloc3 = new byte[4 * _1MB];  // 두번째 GC 발생
+}
+```
 
+```
+GC(0) Pause Young (Allocation Failure)
+GC(0) Desired survivor size 838856bytes,
+      new threshold 1 (max threshold 15)
+GC(0) Age table with threshold 1 (max threshold 15)
+GC(0) - age  1:    885400bytes,    885400 total
+GC(0) DefNew: 5436K(9216K)->864K(9216K)
+        Eden: 5436K(8192K)->0K(8192K)
+        From: 0K(1024K)->864K(1024K)
+GC(0) Tenured: 0K(10240K)->4096K(10240K)
+...
+GC(1) Pause Young (Allocation Failure)
+GC(1) Desired survivor size 838856bytes,
+      new threshold 15 (max threshold 15)
+GC(1) Age table with threshold 15 (max threshold 15)
+GC(1) DefNew: 4960K(9216K)->0K(9216K)
+        Eden: 4960K(8192K)->0K(8192K)
+        From: 864K(1024K)->0K(1024K)
+GC(1) Tenured: 4096K(10240K)->4960K(10240K)
+...
+Heap
+  def new generation  total 9216K, used 4178K
+    eden space 8192K,  51% used
+    from space 1024K,   0% used
+    to   space 1024K,   0% used
+  tenured generation  total 10240K, used 4960K
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
