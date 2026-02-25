@@ -305,18 +305,58 @@ public class ClassLoaderTest {
 
 <br>
 
+JDK 8까지 유지된 3계층 클래스 로더와 부모 위임 모델을 통해 로드  
 
+- 부트스트랩 클래스 로더  
+  `JAVA_HOME/lib` 디렉토리에 위치한 파일들과 자바 가상머신이 클래스로 인식하는 파일들을 로드  
+  해당 로더는 자바 프로그램에서 직접 참조 불가능  
+  
+- 확장 클래스 로더  
+  `sun.misc.Launcher$ExtClassLoader`를 뜻함  
+  `JAVA_HOME/lib/ext` 디렉토리에서 클래스로 인식하는 파일들을 로드  
+  자바 코드로 구현되어 있어서 프로그램 안에서 직접 사용 가능  
 
+- 애플리케이션 로더  
+  `sun.misc.Launcher$AppClassLoader`를 뜻함  
+  `ClassLoader` 클래스의 `getSystemClassLoader()` 메서드가 반환하는 클래스 로더  
 
+<br>
 
+<img width="500" height="250" alt="class_loader_and_parents_delegation_model" src="https://github.com/user-attachments/assets/efc80e69-6bde-40b7-ab2e-4657516b240e" />
 
+부트스트랩 클래스 로더 외에는 부모가 필수로 존재  
+클래스 로딩을 요청받은 클래스 로더는 수준에 맞는 상위 클래스 로더로 요청을 위임  
+즉 프로그램이 아무리 많은 클래스 로더를 활용하더라도 Object 클래스는 모두 동일한 클래스(최상위 부트스트랩 클래스 로더)임이 보장  
 
+```java
+protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+  synchronized (getClassLoadingLock(name)) {
+    Class<?> c = findLoadedClass(name);
+    if (c == null) {
+      try {
+        if (parent != null) {
+          c = parent.loadClass(name, false);
+        } else {
+          c = findBootstrapClassOrNull(name);
+        }
+      } catch (ClassNotFoundException e) {
+        // 부모 클래스 로더 요청 실패
+      }
 
+      if (c == null) {
+        // 부모 클래스 로더가 실패한 경우 직접 시도
+        c = findClass(name);
+      }
+    }
+    if (resolve) {
+      resolveClass(c);
+    }
+    return c;
+  }
+}
+```
 
-
-
-
-
+<br>
 
 
 
