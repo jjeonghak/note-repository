@@ -358,18 +358,41 @@ protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundE
 
 <br>
 
+### 부모 위임 모델에 대한 도전
+부모 위임 모델은 필수가 아닌 자바 설계자들이 권장하는 모델  
+자바 업계는 대부분 해당 모델을 따르지만 예외 존재  
+
+1. 부모 위임 모델 등잔 이전(JDK 1.2 탄생 이전)  
+클래스 로더 개념과 추상 클래스인 `java.lang.ClassLoader`는 이미 존재  
+이미 해당 클래스 로더를 확장해 사용하던 개발자가 존재  
+기존 코드들과 호환되게끔 JDK 1.2의 `ClassLoader`는 `loadClass()`를 하위 클래스에서 오버라이딩하지 못하도록 강제  
+그 대신 protected 메서드인 `findClass()`를 오버라이딩한 후 `loadClass()` 안에서 호출하라고 안내  
+
+2. 부모 위임 모델 자체의 결함  
+사용자 코드를 거꾸로 다시 호출해야 하는 기본 타입이 존재하는 경우  
+스레드별 콘텍스트 클래스 로더를 도입  
+JDK 6에서는 `java.util.ServiceLoader` 클래스와 `META-INF/services` 안에 구성 정보를 제공해서 보완  
+
+3. 동적인 능력 수요 증가  
+자바 애플리케이션의 구성 요소들을 런타임에 교체하거나 추가할 수 있게 하는 것  
+
+<br>
+
+### 모듈화 시대의 클래스 로더
+JDK 9도 하위 호환을 위해 3계층 클래스 로더 아키텍처와 부모 위임 모델의 근간을 흔들지는 않음  
+대신 확장 클래스 로더가 플랫폼 클래스 로더로 대체  
+JDK 전체가 모듈화되면서 모듈들 안의 클래스 라이브러리들은 자연스럽게 확장성 요구 사항을 충족  
+그 결과 JDK 기능 확장을 위해 쓰이던 `JAVA_HOME/lib/ext` 디렉토리나 `java.ext.dirs` 시스템 변수 사용 방식을 유지할 필요 없음  
+
+플랫폼 클래스 로더와 애플리케이션 클래스 로더가 더는 `java.net.URLClassLoader`로부터 파생되지 않음  
+최신 부트스트랩 클래스 로더, 플랫폼 클래스 로더, 애플리케이션 클래스 로더는 모두 `jdk.internal.loader.BuiltinClassLoader`에서 파생  
+더 이상 C++로 따로 구현한 부트스트랩 클래스 로더가 아닌 자바의 BootClassLoader 형태로 존재  
+
+3계층 클래스 로더와 부모 위임 모델은 여전히 유지하지만 클래스 로딩의 위임 관계에는 변화 발생  
+클래스 로딩을 요청받은 플랫폼 및 애플리케이션 클래스 로더는 부모 로더에 위임하기 전에 해당 클래스가 특정 시스템 모듈에 속하는지 확인  
+특정 시스템 모듈에 속한다면 부모 로더가 아닌 해당 모듈을 담당하는 로더에 위임  
 
 
+<img width="500" height="250" alt="modern_class_loader" src="https://github.com/user-attachments/assets/c9d3dcab-6bf6-458d-844a-0e44472cc605" />
 
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
