@@ -61,6 +61,106 @@
 - 잠근 변수에 대해서 다른 스레드가 해제 연산 불가
 - 잠금을 해제하려면 변수를 메인 메로리로 동기화 필수(저장과 쓰기)
 
+<br>
+
+### volatile 변수용 특별 규칙
+자바 가상 머신이 제공하는 가장 가벼운 동기화 메커니즘  
+
+<br>
+
+모든 스레드에서 이 변수를 투명하게 조회 가능  
+가시성을 보장, 즉 한 스레드가 값을 수정하면 다른 스레드들도 새로운 값을 즉시 조회 가능  
+하지만 자바의 산술 연산자가 원자적이 아니라 완벽하게 안전하지 못함
+
+
+```java
+public class VolatileTest {
+  public static volatile int race = 0;
+
+  public static void increase() {
+    // 명령어 한 개가 반드시 원자적으로 수행된다는 보장 없음
+    race++;
+  }
+
+  public static final int THREADS_COUNT = 20;
+
+  public static void main(String[] args) {
+    Thread[] threads = new Thread[THREADS_COUNT];
+    for (int i = 0; i < THREADS_COUNT; i++) {
+      threads[i] = new Thread(new Runnable() {
+        @Override
+        public void run() {
+          for (int i = 0; i < 10000; i++) {
+            increase();
+          }
+        }
+      });
+      threads[i].start();
+    }
+
+    // 다른 모든 스레드가 종료할 때까지 대기
+    while (Thread.activceCount() > 1)
+      Thread.yield();
+
+    // 결과는 200,000보다 작은 값 출력
+    System.out.println(race);
+  }
+}
+```
+
+<br>
+
+해당 시나리오는 락을 활용하여 원자성 보장 필수  
+- 연산 결과가 변수의 현재 값과는 무관하거나 변수의 값을 수정하는 스레드가 하나뿐임을 보장
+- 다른 상태 변수와 관련한 불변성 제약 조건에 관여하지 않음
+
+<br>
+
+아래와 같은 시나리오에 매우 적합  
+
+```java
+volatile boolean shutdownRequested;
+
+public void shutdown() {
+  shutdownRequested = true;
+}
+
+public void doWork() {
+  // shutdown 메서드가 실행되면 바로 종료됨을 보장
+  while(!shutdownRequested) {
+    // 비즈니스 로직
+  }
+}
+```
+
+<br>
+
+명령어 재정렬 최적화를 방지  
+일반 변수는 메서드 실행 중 할당 결과를 이용해야 하는 모든 위치에서 올바른 결과를 얻는다는 점만 보장  
+변수 할당 작업의 실행 순서가 프로그램 코드 순서와 같다는 보장 없음  
+
+```java
+Map configOPtions;
+char[] configText;
+
+volatile boolean initialized = false;
+
+// 스레도 A 실행
+configOptions = new HashMap();
+configText = readConfigFile(fileName);
+processConfigOptions(configText, configOPtions);
+initialized = true;
+
+// 스레드 B 실행
+while (!initialized) { // 스레드 A가 설정 초기화를 마칠 때까지 대기
+  sleep();
+}
+doSomethingWithConfig();
+```
+
+<br>
+
+### long과 double 변수용 특별 규칙
 
 
 
