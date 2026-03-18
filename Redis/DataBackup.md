@@ -94,21 +94,71 @@ appenddirname "appendonlydir"
 <br>
 
 ### 자동 AOF 재구성
+`auto-aof-rewrite-percentage` 옵션은 파일을 다시 쓰기 위한 시점을 정함  
+마지막으로 저장된 파일의 크기는 `INFO Persistence` 커맨드로 확인할 수 있는 `aof_base_size` 값  
 
+```
+> INFO Persistence
+# Persistence
+...
+aof_current_size:186830
+aof_base_size:145802
+...
+```
 
+<br>
 
+### 수동 AOF 재구성
+`BGREWRITEAOF` 커맨드를 사용해서 원하는 시점에 직접 파일 재구성 가능  
+자동 재구성 때와 동일하게 동작  
 
+<br>
 
+### AOF 타임스탬프
+`aof-timestamp-enabled yes` 옵션을 통해 타임스탬프도 함께 저장  
+레디스 기본 제공 `redis-check-aof` 프로그램을 통해 타임스탬프를 이용한 버전 관리 가능  
 
+```
+$ src/redis-check-aof --truncate-to-timestamp 1669532844 appendonlydir/appendonly.aof.manifest'
+Start checking Multi Part AOF
+Start to check BASE AOF (RDB format).
+...
+Successfully truncated AOF appendonly.aof.15.incr.aof to timestamp 1669532844
+ALL AOF files and mainfest are valid
+```
 
+<br>
 
+### AOF 파일 복원
+시점 복원에서 사용한 `redis-check-aof` 프로그램은 파일 손상이 있는 경우 사용  
+레디스가 의도치 않은 장애로 중단된 경우 AOF 파일의 상태 확인 가능  
+`fix` 옵션을 이용해서 해결 가능  
 
+```
+$ src/redis-check-aof appendonlydir/appendonly.aof.manifest
+Start checking Multi Part AOF
+Start to check BASE AOF (RDB format).
+...
+RDB preamble is OK, proceeding with AOF tail...
+...
+AOF appendonly.aof.15.incr.aof is not valid. Use the --fix option to try fixing it.
+```
 
+<br>
 
+### AOF 파일 안전성
+파일에 데이터를 저장하면 데이터는 커널 영역의 OS 버퍼에 임시로 저장  
+운영체제가 판단하기에 커널이 여유롭거나 최대 지연 시간에 도달한 경우 데이터를 실제 디스크에 내려씀  
+`FSYNC` 명령어는 커널의 OS 버퍼에 저장된 내용을 디스크에 내리도록 강제하는 시스템 콜  
+AOF 파일을 저장할 때 `APPENDFSYNC` 옵션을 사용하면 `FSYNC` 호출을 제어 가능  
+- `APPENDFSYNC no`: `WRITE` 시스템 콜 호출, 가장 빠른 쓰기 성능  
+- `APPENDFSYNC always`: `WRITE`와 `FSYNC` 시스템 콜 호출, 가장 느린 쓰기 성능
+- `APPENDFSYNC everysec`: 1초에 한 번씩만 `FSYNC` 시스템 콜 호출, 기본 옵션  
 
+<br>
 
+### 백업 주의사항
+`BGSAVE` 커맨드는 자식 프로세스를 생성하고 이때 `Copy-On-Write` 방식 사용  
+최악의 경우 기존 메모리 용량의 2배를 사용  
 
-
-
-
-
+<br>
