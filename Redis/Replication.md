@@ -145,19 +145,99 @@ ts=r cmd=replicaof user=default redir=-1 resp=2')
 
 <br>
 
+### 비동기 방식 복제 연결
+정상적으로 복제 연결이 된 상태에서 마스터에서 복제본으로 데이터 전달은 비동기 방식으로 동작  
+마스터 노드가 비정상 종료된 경우 복제본에 전달되지 않은 상태이기 때문에 유실 가능성이 존재  
 
+<img width="500" height="300" alt="asynchronous_replication" src="https://github.com/user-attachments/assets/ce1a8432-2f08-4e6c-b9d3-cca0a3945b2e" />
 
+<br>
+<br>
 
+### 복제 ID
+모든 레디스 인스턴스는 복제 ID(`replication ID`)를 보유  
+복제 기능을 사용하지 않더라도 모두 랜덤 스트링 값을 보유하며 오프셋과 쌍으로 존재  
+레디스 내부 데이터가 수정되는 모든 커맨드를 수행할 때마다 오프셋이 증가  
 
+<br>
 
+`replication id`와 `offset`이 같을 때 두 노드는 정확히 일치된 상태라는 것을 의미  
 
+```
+# 마스터 노드
+> INFO Replication
+# Replication
+role:master
+connected_slaves:1
+slave0:ip=127.0.0.1,port=6002,state=online,offset=709,lag=0
+master_failover_state:no-failover
+master_replid:e3b06d3eba522894a240a8a9ce3e808dd5ccfd7a
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:807
+second_repl_offset:-1
+...
 
+# 복제본 노드
+> INFO Replication
+# Replication
+role:slave
+master_host:127.0.0.1
+master_port:6001
+...
+master_replid:e3b06d3eba522894a240a8a9ce3e808dd5ccfd7a
+master_repl_offset:801
+...
+```
 
+<br>
 
+### 부분 재동기화
 
+<img width="500" height="200" alt="psync" src="https://github.com/user-attachments/assets/7e234cba-d5a1-4f8a-bb3a-ca0324501b53" />
 
+복제 연결이 끊길 때마다 마스터에서 `RDB` 파일을 새로 내여 전달하는 과정을 거친다면 성능 악화  
+마스터는 커넥션 유실을 대비해 백로그 버퍼에 복제본에 전달한 커맨드 데이터를 저장  
+`replication id`와 `offset`을 이용해 시점 관리 가능  
 
+<br>
 
+하지만 마스터 백로그 버퍼에 원하는 데이터가 남지 않거나 마스터 정보가 일치하지 않다면 전체 재동기화 시도  
+복제 백로그 크기는 `repl-backlog-size` 옵션으로 설정, 기본값은 1MB  
+백로그는 1개 이상의 복제본이 연결된 경우에만 할당, `repl-backlog-ttl`만큼의 유효 시간을 가짐  
 
+<br>
 
+### Secondary 복제 ID
 
+<img width="500" height="250" alt="new_master" src="https://github.com/user-attachments/assets/3698a964-7663-4d25-9f6d-437e877621c7" />
+
+한 개의 복제본 그룹 내의 모든 레디스 노드는 동일한 복제 ID를 보유
+마스터 노드와의 복제가 끊어짐과 동시에 복제본은 새로운 복제 ID를 생성  
+
+<br>
+
+### 읽기 전용 모드
+복제를 구성하면 복제본은 기본으로 읽기 전용 모드로 동작  
+클라이언트는 복제본 노드에 연결되더라도 데이터를 저장하는 것은 불가능  
+`replica-read-only` 옵션으로 제어 가능  
+복제본에 직접 데이터를 쓰더라도 연결된 다른 복제본으로 전파되지 않음  
+
+<br>
+
+### 유효하지 않은 복제본 데이터
+유효하지 않은 데이터란 복제본과 마스터의 데이터가 일치하지 않는 경우의 데이터를 의미  
+연결이 끊어진 상태 또는 복제 연결이 시작된 뒤 아직 완료되지 않은 경우  
+기본적으로 유효하지 않다고 판단될 때에도 클라이언트로부터 들어오는 읽기 요청에 데이터를 반환  
+`replica-serve-stale-data no` 설정을 한 경우 데이터 대신 `SYNC with master in progress` 오류를 반환  
+
+<br>
+
+### 백업을 사용하지 않는 경우에서의 데이터 복제
+
+<img width="500" height="300" alt="replication_without_backup" src="https://github.com/user-attachments/assets/8bbeb129-d164-4171-b4ad-172b3a24c1dc" />
+
+백업 파일을 사용하지 않는 경우 마스터가 재부팅될 때 데이터 복원이 되지 않음  
+이때 복제본에 빈 `RDB` 파일을 보냄  
+백업 기능을 사용하거나 마스터에서는 인스턴스 자동 재시작 비활성화 권장  
+
+<br>
