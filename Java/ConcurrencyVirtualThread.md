@@ -187,6 +187,153 @@ public class LittleLawExample {
 }
 ```
 
+```
+=== Little's Law Throughput Comparison ===
+Testing 10000 tasks with 500ms latency each
+
+Virtual Threads          - Time:   552ms, Throughput: 18115.94 tasks/s
+Fixed ThreadPool (100)   - Time: 50381ms, Throughput:   198.49 tasks/s
+Fixed ThreadPool (500)   - Time: 10106ms, Throughput:   989.51 tasks/s
+Fixed ThreadPool (1000)  - Time:  5080ms, Throughput:  1968.50 tasks/s
+```
+
+<br>
+
+## 가상 스레드 내부 동작 방식
+
+### 스택 프레임과 메모리 관리
+전통적인 스레드는 스택 프레임을 운영체제가 할당하는 일체형 메모리 블록에 저장  
+반면 가상 스레드에 필요한 스택 크기는 가비지 컬렉션 대상이 되는 힙에 저장  
+스레드에 필요한 스택 크기를 예측할 필요 없음  
+
+<br>
+
+운영체제는 가상 스레드의 존재를 알지 못하고 오직 플랫폼 스레드만을 인식  
+가상 스레드에서 실행하기 위해 가상 스레드를 플랫폼 스레드에 마운트하고 이때 사용하는 플랫폼 스레드를 캐리어 스레드라고 표현  
+캐리어 스레드는 특화된 `ForkJoinPool`의 일부  
+
+<br>
+
+일반적으로 스레드를 블로킹하는 연산을 만나면 캐리어 스레드로부터 언마운트 가능  
+캐리어 스레드의 스택에 복사된 후 코드가 실행되면서 변경이 발생한 스택 프레임 내용이 다시 힙으로 복사  
+
+<br>
+
+### 투명성과 비가시성
+가상 스레드를 마운트/언마운트하는 과정은 자바 코드에서 보이지 않음  
+캐리어 스레드의 `ThreadLocal` 값조차 가상 스레드에게는 보이지 않음  
+가상 스레드 개념은 가상 메모리 시스템과 유사하며 크기가 무제한인 주소 공간에 접근하는 듯한 환경 속에서 실행  
+
+<br>
+
+### 비동기 연산 단순화
+결과가 나올 때까지 편안하게 블로킹하고 대기하더라도 과도한 자원을 소모하지 않음  
+
+```java
+public class ImageProcessingExample {
+  public static void main(String[] args) throws InterruptedException, ExecutionException {
+    try (var service = Executors.newVirtualThreadPerTaskExecutor()) {
+      List<Callable<BufferedImage>> tasks = List.of(
+        () -> resize("https://example.com/img1.jpg", 200, 200), // 이미지 다운로드 및 크기 변환
+        () -> grayscale("https://example.com/img2.jpg"),        // 이미지 다운로드 및 흑백 처리
+        () -> rotate("https://example.com/img3.jpg", 90)        // 이미지 다운로드 및 회전 변환
+      );
+
+      List<Future<BufferedImage>> results = service.invokeAll(tasks); // 모든 태스크를 동시에 제출
+
+      int i = 1;
+      for (Future<BufferedImage> future : results) {
+        BufferedImage image = future.get(); // 블로킹, 결과를 받을 때까지 캐리어 스레드에게 제어권 넘김
+        ImageIO.write(image, "jpg", new File("output_image" + i + ".jpg");
+        i++;
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+```
+
+<br>
+
+### 구조적 동시성
+구조적 동시성 API는 구조화된 영역 안에서 태스크를 실행하고, 태스크 실패시 모든 태스크 자동 취소  
+`StructuredTaskScope` 사용시 실패 즉시 중단(`fail-fast`)되는 영역을 지정 가능  
+
+```java
+public static void main(String[] args) {
+  try (StructuredTaskScope scope = StructuredTaskScope.open()) {
+    StructuredTaskScope.Subtask<String> subtask1 = scope.fork(() -> fetchData("https://api1.example.com"));
+    StructuredTaskScope.Subtask<String> subtask2 = scope.fork(() -> fetchData("https://api2.example.com"));
+    scope.join();
+    var result = subtask2.get() + subtask1.get();
+    System.out.println(result);
+  } catch (InterruptedException e) {
+    throw new RuntimeException(e)l
+  }
+}
+```
+
+<br>
+
+## 요청 제한을 통한 자원 제약 관리
+애플리케이션은 백만 개의 요청을 수용가능하더라도 데이터베이스는 그렇지 않음  
+자원에 특화된 요청 제한 메커니즘이 필요  
+
+```java
+public class ResourceAwareRateLimitExample {
+  private static final HttpClient CLIENT = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(10))
+    .build();
+  private static final int MAX_PARALLEL = 10;
+  private static final Semaphore gate = new Semaphore(MAX_PARALLEL); // 최대 동시 요청 개수를 지정한 세마포어
+  private static final String API_URL = "https://api.chucknorris.io/jokes/random";
+
+  public static void main(String[] args) throws Exception {
+    Instant start = Instant.now();
+    List<String> jokes = fetchJokes(50);
+    long ms = Duration.between(start, Instant.now()).toMillis();
+    System.out.printf("Fetched %d jokes in %d ms (avg %d ms)%n", jokes.size(), ms, ms / jokes.size());
+    jokes.stream().limit(3).forEach(j -> System.out.println("• " + j));
+  }
+
+  private static List<String> fetchJokes(int n) throws Exception {
+    try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) { // 제출된 요청 당 가상 스레드 생성
+      List<Future<String>> futures = IntStream.range(0, n)
+        .mapToObj(i -> pool.submit(ResourceAwareRateLimitExample::fetchJoke))
+        .toList();
+      return futures.stream()
+        .map(ResourceAwareRateLimitExample::join)
+        .toList();
+    }
+  }
+
+  private static String fetchJoke() throws Exception {
+    HttpRequest req = HttpRequest.newBuilder(URI.create(API_URL))
+      .GET()
+      .timeout(Duration.ofSeconds(30))
+      .build();
+    try {
+      gate.acquire(); // 세마포어 락 획득
+      HttpResponse<String> res = CLIENT.send(req, HttpResponse.BodyHandlers.ofString());
+      if (res.statusCode() != 200) {
+        throw new RuntimeException("API error: " + res.statusCode());
+      }
+      return parseJoke(res.body());
+    } finally {
+      gate.release(); // 세마포어 락 반납
+    }
+  }
+}
+```
+
+
+
+
+
+
+
+
 
 
 
