@@ -327,6 +327,220 @@ public class ResourceAwareRateLimitExample {
 }
 ```
 
+<br>
+
+### 자바의 세마포어
+`java.util.concurrent` 패키지의 `Semaphore` 클래스를 사용해서 접근 제어 가능  
+- `acquire()`: 출입증 요청, 이미 다 할당된 경우 대기
+- `release()`: 출입증 반납
+- `availablePermits()`: 현재 지급 가능한 출입증 개수 반환 
+
+```java
+public class ResourcePool {
+  private final Semaphore semaphore;
+  private final AtomicInteger activeConnections; // 현재 연결된 커넥션 개수 모니터링용
+  private final AtomicInteger peakConnections;   // 실행 동안 관찰된 최대 동시 연결 개수
+
+  public ResourcePool(int resourceCount) {
+    this.semaphore = new Semaphore(resourceCount, true); // 세마포어 최대 한도 설정
+    this.activeConnections = new AtomicInteger(0);
+    this.peakConnections = new AtomicInteger(0);
+  }
+
+  public Optional<String> useResource(String query) {
+    boolean acquired = false;
+    try {
+      acquired = sesmaphore.tryAcquire(5, TimeUnit.SECONDS); // 무기한 블로킹이 아닌 타임아웃 설정
+      if (!acquired) {
+        return Optional.empty();
+      }
+      int current  = activeConnections.incrementAndGet();
+      peakConnections.updateAndGet(peak -> Math.max(peak, current));
+      return queryDatabase(query); // 데이터베이스 연결
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return Optional.empty();
+    } finally {
+      if (acquired) {
+        activeConnections.decrementAndGet();
+        semaphore.release();
+      }
+    }
+  }
+}
+```
+
+<br>
+
+세마포어는 네트워크 소켓, 데이터베이스 연결 등 유한한 용량을 가진 모든 유형의 공유 자원에 대한 접근 제한에 이상적  
+특정 코드 섹션을 동시에 실행하는 스레드 수를 정밀하게 관리 가능  
+가상 스레드를 사용하면 블로킹 중에도 운영체제 자원을 소모하지 않아서 세마포어 기반 동기화 확장성이 좋음  
+어떤 스레드가 출입증을 가지고 있는지 추적하지 않아서 어떤 스레드든지 해당 출입증 반납 가능  
+
+<br>
+
+### 가상 스레드 한계
+가상 스레드는 고정(`pinning`)이라는 제약 사항 존재  
+즉 가상 스레드가 자신의 캐리어 스레드에 묶여서 고정되는 상황  
+고정된 상태에 빠진 가상 스레드는 블로킹 연산을 실행할 때 캐리어 스레드로부터 언마운트 불가(캐리어 스레드 독점)  
+- `synchronized` 블록 사용: 가상 스레드가 해당 블록에 진입하면 캐리어 스레드에 고정  
+- 네이티브 메서드: 가상 스레드가 네이티브 메서드나 외부 함수를 실행하는 경우 캐리어 스레드에 고정  
+
+<br>
+
+`synchronized` 블록이나 메서드 대신 `ReentrantLock`을 사용하면 고정되지 않음  
+네이티브 메서드 사용은 개발자가 식별하고 최소화 필수  
+
+<br>
+
+```java
+public class ThreadPinnedExample {
+  private static final Object lock = new Object();
+
+  public static void main(String[] args) {
+    List<Thread> threadList = IntStream.range(0, 10)
+      .mapToObj(i -> Thread.ofVirtual().unstarted(() -> {
+        if (i ==0) {
+          System.out.println(Thread.currentThread()); // 블록 진입 전 캐리어 스레드 정보
+        }
+
+        synchronized (lock) {
+          try {
+            Thread.sleep(25);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        }
+
+        if (i == 0) {
+          System.out.println(Thread.currentThread()); // 블록 탈출 후 캐리어 스레드 정보
+        }
+      }))
+      .toList();
+
+      threadList.forEach(Thread::start);
+      threadList.forEach(t -> {
+        try {
+          t.join();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      });
+  }
+}
+```
+
+```
+VirtualThread[#21]/runnable@ForkJoinPool-1-worker-1
+VirtualThread[#21]/runnable@ForkJoinPool-1-worker-1
+```
+
+<br>
+
+### ReentrantLock 사용을 통한 고정 해결
+해당 락을 사용하면 가상 스레드 블로킹시 캐리어 스레드로부터 언마운트 허용  
+
+```java
+public class ThreadPinnedExample {
+  private static final ReentrantLock lock = new ReentrantLock();
+
+  public static void main(String[] args) {
+    List<Thread> threadList = IntStream.range(0, 10)
+      .mapToObj(i -> Thread.ofVirtual().unstarted(() -> {
+        if (i ==0) {
+          System.out.println(Thread.currentThread()); // 락 획득 전 캐리어 스레드 정보
+        }
+
+        lock.lock();
+        try {
+          Thread.sleep(25);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        } finally {
+          lock.unlock();
+        }
+        
+        if (i == 0) {
+          System.out.println(Thread.currentThread()); // 락 반납 후 캐리어 스레드 정보
+        }
+      }))
+      .toList();
+
+      threadList.forEach(Thread::start);
+      threadList.forEach(t -> {
+        try {
+          t.join();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      });
+  }
+}
+```
+
+```
+VirtualThread[#20]/runnable@ForkJoinPool-1-worker-1
+VirtualThread[#20]/runnable@ForkJoinPool-1-worker-3
+```
+
+<br>
+
+### 네이티브 메서드 호출과 고정
+
+
+```java
+public class ThreadPinnedNativeMethodExample {
+  public static void main(String[] args) {
+    List<Thread> threadList = IntStream.range(0, 10)
+      .mapToObj(i -> Thread.ofVirtual().unstarted(() -> {
+        if (i == 0) {
+          System.out.println(Thread.currentThread());
+        }
+        int sum = invokeNativceAddNumbers(56, 11);
+        if (i == 0) {
+          System.out.println(Thread.currentThread());
+        }
+      })
+      .toList();
+
+      threadList.forEach(Thread::start);
+      threadList.forEach(t -> {
+        try {
+          t.join();
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      });
+  }
+
+  public static int invokeNativeAddNumbers(int a, int b) {
+    try (Arena arena = Arena.ofConfined()) {
+      SymbolLookup lookup = SymbolLookup.libraryLookup(Path.of("libaddNumbers.dylib"), arena);
+      MemorySegment memorySegment = lookup.find("addNumbers")
+        .orElseThrow(() -> new RuntimeException("addNumbers function not found"));
+      Linker linker = Linker.nativeLinker();
+      FunctionDescriptor addNumbersDescriptor = FunctionDescriptor.of(
+        ValueLayout.JAVA_INT,
+        ValueLayout.JAVA_INT,
+        ValueLayout.JAVA_INT
+      );
+      MethodHandle addNumbersHandle = linker.downcallHandle(memorySegment, addNumbersDescriptor);
+      try {
+        return (int) addNumbersHandle.invokeExact(a, b);
+      } catch (Throwable e) {
+        throw new RuntimeException(e.getMessage());
+      }
+    }
+  }
+}
+```
+
+
+
+
+
+
+
 
 
 
