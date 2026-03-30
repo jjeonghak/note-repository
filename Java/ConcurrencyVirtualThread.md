@@ -486,7 +486,9 @@ VirtualThread[#20]/runnable@ForkJoinPool-1-worker-3
 <br>
 
 ### 네이티브 메서드 호출과 고정
-
+JVM이 네이티브 코드 실행 검사 또는 제어가 불가하기 때문에 고정  
+네이티브 코드는 스레드 간에 마이그레이션 불가한 스레드 로컬 상태를 보유 가능  
+자바 스택 프레임처럼 저장하고 복원할 수 없고 운영체제 수준의 스레드 기본 요소와 직접 상호작용  
 
 ```java
 public class ThreadPinnedNativeMethodExample {
@@ -494,11 +496,11 @@ public class ThreadPinnedNativeMethodExample {
     List<Thread> threadList = IntStream.range(0, 10)
       .mapToObj(i -> Thread.ofVirtual().unstarted(() -> {
         if (i == 0) {
-          System.out.println(Thread.currentThread());
+          System.out.println(Thread.currentThread()); // 네이티브 호출 전 캐리어 스레드 정보
         }
         int sum = invokeNativceAddNumbers(56, 11);
         if (i == 0) {
-          System.out.println(Thread.currentThread());
+          System.out.println(Thread.currentThread()); // 네이티브 호출 후 캐리어 스레드 정보
         }
       })
       .toList();
@@ -514,7 +516,7 @@ public class ThreadPinnedNativeMethodExample {
   }
 
   public static int invokeNativeAddNumbers(int a, int b) {
-    try (Arena arena = Arena.ofConfined()) {
+    try (Arena arena = Arena.ofConfined()) { // FFM API 방식의 네이티브 호출
       SymbolLookup lookup = SymbolLookup.libraryLookup(Path.of("libaddNumbers.dylib"), arena);
       MemorySegment memorySegment = lookup.find("addNumbers")
         .orElseThrow(() -> new RuntimeException("addNumbers function not found"));
@@ -526,7 +528,7 @@ public class ThreadPinnedNativeMethodExample {
       );
       MethodHandle addNumbersHandle = linker.downcallHandle(memorySegment, addNumbersDescriptor);
       try {
-        return (int) addNumbersHandle.invokeExact(a, b);
+        return (int) addNumbersHandle.invokeExact(a, b); // 네이티브 호출 동안 언마운트 불가
       } catch (Throwable e) {
         throw new RuntimeException(e.getMessage());
       }
@@ -535,28 +537,59 @@ public class ThreadPinnedNativeMethodExample {
 }
 ```
 
+```
+VirtualThread[#20]/runnable@ForkJoinPool-1-worker-1
+VirtualThread[#20]/runnable@ForkJoinPool-1-worker-1
+```
 
+<br>
 
+## 가상 스레드 ThreadLocal
+잠재적으로 수백만 개가 실행 가능한 가상 스레드에서 ThreadLocal 변수를 과도하게 사용하면 문제 발생  
+- 메모리 소비: 여러 스레드가 각각 ThreadLocal 변수 복사본을 갖는 경우 메모리 사용량이 급격히 증가  
+- 오버헤드: ThreadLocal 변수를 초기화하고 정리하는 작업에 오버헤드 발생  
+- 상속: 부모 스레드로부터 ThreadLocal 값을 상속 가능, 이는 추적과 디버깅이 어려움  
 
+<br>
 
+```java
+public class ThreadLocalExample {
+  public static void main(String[] args) {
+    ThreadLocal<LargeObject> threadLocal = ThreadLocal.withInitial(LargeObject::new);
+    var threadList = IntStream.range(0, 1000)
+      .mapToObj(i -> Thread.ofVirtual().unstarted(() -> {
+        LargeObject largeObject = threadLocal.get();
+        useIt(largeObject);
+        sleep();
+      }))
+      .toList();
 
+    threadList.forEach(Thread::start);
+    threadList.forEach(thread -> {
+      try {
+        thread.join();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    });
+  }
 
+  private static void useIt(LargeObject largeObjet) {
+    System.out.println(largeObject.data.length);
+  }
 
+  private static void sleep() {
+    try {
+      Thread.sleep(Duration.ofMinutes(5));
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
+  static class LargeObject {
+    private byte[] data = new byte[1024 * 500];
+  }
+}
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
