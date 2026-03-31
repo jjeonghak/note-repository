@@ -269,6 +269,88 @@ After starting continuation again
 Done from continuation
 ```
 
+<br>
+
+<img width="500" height="250" alt="continuation1" src="https://github.com/user-attachments/assets/7e9b429e-cda7-47aa-9cf7-538a8ed26c7b" />
+
+<img width="500" height="200" alt="continuation2" src="https://github.com/user-attachments/assets/08a3f16a-c6d1-429d-a908-801b22693448" />
+
+<img width="500" height="200" alt="continuation3" src="https://github.com/user-attachments/assets/00f209f1-b835-456e-8aa5-6e41e4e7e031" />
+
+컨티뉴에이션은 가상 스레드에서 실행되어 블로킹 I/O 연산을 만나면 `Continuation.yield(scope)` 메서드를 호출  
+가상 스레드를 일시 정지시켜 캐리어 스레드로부터 언마운트되도록 유도  
+가상 스레드가 언마운트될 때 스레드의 스택 프레임이 다른 곳으로 복사  
+가상 스레드가 다시 마운트되면 다른 곳에 복사된 스택 프레임이 다시 스레드의 스택으로 복사  
+
+<br>
+
+<img width="500" height="200" alt="continuation4" src="https://github.com/user-attachments/assets/4b3223eb-adb9-494d-a4ca-46a71e44dae5" />
+
+복사 작업에 대한 비용을 줄이기 위해 JVM은 지연 복사 메커니즘 구현  
+컨티뉴에이션이 처음으로 일시 중단될 때는 전체 스택 프레임을 컨티뉴에이션 객체로 복사  
+다시 재개될 때는 컨티뉴에이션에 있던 스택 프레임 전체가 아닌 일부만 프레임에 복사  
+반환 배리어 메커니즘을 통해 함수가 반활될 때 필요한 프레임을 컨티뉴에이션 스택으로부터 복사해야 하는지 확인  
+
+<br>
+
+## 단순한 가상 스레드 구현
+`Continuation API`를 이용해서 가상 스레드 동작 시뮬레이션 가능  
+
+```java
+public class NanoThread {
+  public static final NanoThreadScheduler NANO_THREAD_SCHEDULER = new NanoThreadScheduler();
+  private static final AtomicInteger COUNTER = new AtomicInteger(1);
+  public static final ContinuationScope SCOPE = new ContinuationScope("nanoThreadScope");
+  private final Contination continuation;
+  private final int nid;
+
+  private NaonThread(Runnable runnable) {
+    this.nid = COUNTER.getAndIncrement();
+    this.continuation = new Continuation(SCOPE, runnable);
+  }
+
+  public static void start(Runnable runnable) {
+    var nanoThread = new NanoThread(runnable);
+    NANO_THREAD_SCHEDULER.schedule(nanoThread);
+  }
+
+  public void run() {
+    continuation.run();
+  }
+
+  public static NanoThread currentVThread() {
+    return NanoThreadScheduler.CURRENT_NANO_THREAD.get();
+  }
+
+  @Override
+  public String toString() {
+    return "NanoThread-" + nid + "-" + Thread.currentThread().getName();
+  }
+}
+```
+
+```java
+public class NanoThreadScheduler {
+  public static final ThreadLocal<NanoThread> CURRENT_NANO_THREAD = new ThreadLocal<>();
+  public static final ScheduledExecutorService IO_EVENT_SCHEDULER = Executors.newSingleThreadScheduledExecutor();
+  private final ExecutorService workStealingPool = Executors.newWorkStealingPool(2);
+
+  public void schedule(NanoThread nanoThread) {
+    workStealingPool.submit(() ->{
+      CURRENT_NANO_THREAD.set(nanoThread);
+      nanoThread.run();
+      CURRENT_NANO_THREAD.remove();
+    });
+  }
+}
+```
+
+
+
+
+
+
+
 
 
 
