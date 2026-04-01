@@ -345,19 +345,61 @@ public class NanoThreadScheduler {
 }
 ```
 
+```java
+public class FileOperation {
+  private final Random random = new Random();
 
+  public void transfer(String filePath) {
+    System.out.println("Start transferring file: " + filePath);
+    NanoThread nanoThread = NanoThread.currentVThread();
+    IO_EVENT_SCHEDULER.schedule(() ->
+      NANO_THREAD_SCHEDULER.schedule(nanoThread), random.nextInt(1000), TimeUnit.MILLISECONDS
+    );
+    CURRENT_NANO_THREAD.remove();
+    Continuation.yield(SCOPE);
+    System.out.println("Transfer completed for file: " + filePath);
+  }
+}
+```
 
+```java
+public class NanoThreadDemo {
+  public static void main(String[] args) throws Exception {
+    FileOperation fileOperation = new FileOperation();
+    for (int i = 0; i < 4; i++) {
+      int finalI = i;
+      NanoThread.start(() -> {
+        System.out.println("Transfer: File_" + finalI + " Running in VThread: " + NanoThread.currentVThread()
+      });
+      fileOperation.transfer("File_" + finalI);
+      System.out.println("Transfer: File_" + finalI + " Completed in VThread: " _ NanoThread.currentVThread());
+    }
+    Thread.sleep(Duration.ofMinutes(1));
+  }
+}
+```
 
+<br>
 
+<img width="500" height="400" alt="nano_thread" src="https://github.com/user-attachments/assets/a24067a3-9c55-41db-8471-b4bde82e7b41" />
 
+```
+Transfer: File_1 Running in VThread: NanoThread-2-ForkJoinPool-1-worker-2
+Transfer: File_0 Running in VThread: NanoThread-1-ForkJoinPool-1-worker-1
+Start transferring file: File_1
+Start transferring file: File_0
+Transfer: File_2 Running in VThread: NanoThread-3-ForkJoinPool-1-worker-2
+Start transferring file: File_2
+Transfer: File_3 Running in VThread: NanoThread-4-ForkJoinPool-1-worker-2
+Start transferring file: File_3
+Transfer completed for file: File_3
+Transfer: File_3 Completed in VThread: NanoThread-4-ForkJoinPool-1-worker-1
+Transfer completed for file: File_0
+Transfer: File_0 Completed in VThread: NanoThread-1-ForkJoinPool-1-worker-1
+Transfer completed for file: File_1
+Transfer: File_1 Completed in VThread: NanoThread-2-ForkJoinPool-1-worker-1
+Transfer completed for file: File_2
+Transfer: File_2 Completed in VThread: NanoThread-3-ForkJoinPool-1-worker-1
+```
 
-
-
-
-
-
-
-
-
-
-
+<br>
