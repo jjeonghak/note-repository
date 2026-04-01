@@ -144,6 +144,171 @@ OK
 
 <br>
 
+## 클러스터 운영
+
+### 클러스터 리샤딩
+리샤딩은 마스터 노드가 보유한 해시슬롯 중 일부를 다른 마스터로 이전하는 것  
+`cluster reshard` 옵션을 통해 수행 가능  
+
+```
+$ redis-cli --cluster reshard 192.168.0.66 6379
+>>> Performing Cluster Check (using node 192.168.0.66:6379)
+S: f6c15801602a4f5e89458945362ce3e6cf1dcd3 192.168.0.66:6379
+   slots: (0 slots) slave
+M: 5al5c78clca9f39aceab55357d69cl93756al445 192.168.0.11:6379
+   slots: [0-5460] (5461 slots) master
+   1 additional replica(s)
+...
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+How many slots do you want to move (from 1 to 16384)?
+```
+
+<br>
+
+클러스터에 속한 여러 노드 둥 하나의 노드를 지정하면 해당 노드가 속한 클러스터 구조를 파악  
+이동시킬 슬롯의 개수를 지정한 후 해시슬롯을 받을 노드 ID를 입력  
+`all`은 다른 노드에서 조금씩 슬롯을 가져오는 상황  
+`done`은 해시슬롯을 가져올 마스터 ID를 하나씩 지정한 후 입력  
+
+```
+How many slots do you want to move (from 1 to 16384)? 100
+What is the receving node ID? ablb4edfa9085bl04fc3fd9f3f9d53740f7dea66
+Please enter all the source node IDs.
+  Type 'all' to use all the nodes as source nodes for the hash slots.
+  Type 'done' once you entered all the source nodes IDs.
+Source node #1:
+```
+
+<br>
+
+### 클러스터 리샤딩 - 간단 버전
+슬롯 이동이 잦아 자동화가 필요한 경우 아래와 같은 커맨드로 사용자 인터렉션 없이 사용 가능  
+
+```
+redis-cli --cluster reshard <host>:<port> --cluster-from <node-id>
+--cluster-to <node-id> --cluster-slots <number of slots> --cluster-yes
+```
+
+<br>
+
+### 클러스터 확장 - 신규 노드 추가
+노드를 마스터/복제본 용도로 추가하려면 해당 노드는 어떠한 데이터도 저장되지 않은 상태 필수  
+추가하고자 하는 노드도 마찬가지로 설정 파일에 `cluster-enabled yes` 옵션 필수  
+
+<br>
+
+신규 마스터를 추가하려면 새로운 노드와 기존 클러스터 노드를 하나씩 지정  
+새로운 노드를 추가하기 전 기존 노드의 상태 확인 과정 존재  
+새롭게 추가된 마스터 노드는 해시슬롯을 할당받지 못한 상태이기 때문에 리샤딩 과정 필수  
+
+```
+redis-cli --cluster add-node <추가할 ip:port> <기존 ip:port>
+```
+
+<br>
+
+복제본을 추가하려면 마스터를 추가할 때와 동일하나 `--cluster-slave` 옵션 추가  
+복제본의 마스터가 될 노드를 지정 가능, 해당 옵션이 없다면 임의의 마스터의 복제본으로 연결  
+클러스터의 복제본이 대칭적인 구조가 아니라면 복제본이 가장 적은 마스터를 파악해서 연결  
+
+```
+redis-cli --cluster add-node <추가할 ip:port> <기존 ip:port>
+--cluster-slave [--cluster-master-id <기존 마스터 id>]
+```
+
+<br>
+
+### 노드 제거
+노드를 제거하려면 `del-node` 커맨드 사용
+제거할 노드가 마스터/복제본 상관없이 같은 방식으로 삭제 가능  
+하지만 마스터 노드의 경우 제거하기 전 노드에 저장된 데이터가 없는 상태여야 가능  
+즉, 할당된 해시슬롯이 하나도 없도록 다른 노드에 리샤딩하는 작업이 선행 필수  
+
+```
+redis-cli --cluster del-node 192.168.0.11:6379  73173c7c742a5659a25e41e0cf288fe24429e2fd
+>>> Removing node 73173c7c742a5659a25e41e0cf288fe24429e2fd from cluster 192.168.0.11:6379
+>>> Sending CLUSTER FORGET messages to the cluster...
+>>> Sneding CLUSTER RESET SOFT to the deleted node.
+```
+
+<br>
+
+제거될 노드에서 클러스터 구성 데이터를 지우는 것뿐만 아니라 다른 노드에게도 해당 노드를 지우라는 커맨드 필수  
+`CLUSTER FORGET <node-id>` 커맨드를 수신한 노드는 노드 테이블에서 해당 노드 정보 제거  
+제거될 노드에는 `CLUSTER RESET` 커맨드 수행, 기본값은 `SOFT`  
+`HARD` 옵션은 아래의 과정이 모두 수행, `SOFT`는 3번 과정까지만 수행  
+1. 복제본이라면 마스터로 전환, 모든 데이터셋 삭제(마스터였지만 데이터가 존재하는 경우는 리셋 작업 중단)  
+2. 해시슬롯이 존재하면 모든 슬롯 해제  
+3. 클러스터 구성 내의 다른 노드 데이터 초기화  
+4. 에포크 관련 모든 값이 0으로 초기화  
+5. 노드의 ID가 새로운 임의 ID로 변경  
+
+<br>
+
+### 레디스 클러스터로 데이터 마이그레이션
+기존에 싱글 혹은 센티널 구성으로 사용하고 있던 레디스 인스턴스를 클러스터로 마이그레이션 가능  
+기존에 다중 키 커맨드를 사용하지 않은 경우는 저장 로직이 문제되지 않지만 사용한 경우는 해시태그를 사용하도록 수정 필요  
+데이터가 저장될 클러스터 노드는 해시슬롯 `16384`개가 정상적으로 할당된 상태  
+운영중인 레디스 데이터는 마이그레이션하는 동안 클라이언트를 모두 중단 필수(마이그레이션 도중 발생하는 변경 커맨드가 반영되지 않음)  
+
+```
+redis-cli --cluster import 192.168.0.11:6379 --cluster-from 192.168.0.88:6379 --cluster-copy
+```
+
+<br>
+
+### 복제본을 이용한 읽기 성능 향상
+클라이언트는 기본적으로 키를 요청하면 키를 보유한 마스터 노드로 연결을 리다이렉션  
+복제본을 읽기 전용으로 사용 가능  
+
+```
+$ redis-cli -h 192.168.0.55 -c
+192.168.0.55:6379> readonly
+OK
+```
+
+<br>
+
+## 클러드터 동작 방법
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
