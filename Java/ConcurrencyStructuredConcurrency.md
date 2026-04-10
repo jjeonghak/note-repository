@@ -242,6 +242,7 @@ public List<ValidatedUser> validateAllUsers(List<Long> userIds) throws Interrupt
 모든 서브태스크의 성공 여부와 관계없이 완료될 때까지 대기  
 해당 정책은 부수 효과가 중요하거나 일부 성공한 결과만이라도 처리해야 하는 경우 적합  
 `join()` 메서드는 항상 null을 반환, 결과 수집보다 태스크 완료 여부에 더 초점  
+가장 큰 특징은 장애 격리(`fault isolation`), 연결 처리 핸들러 오류로 인해 다른 연결로 장애 전파되지 않음  
 
 ```java
 public void snedCritialAlert(String message) throws InterruptedException {
@@ -289,19 +290,302 @@ public void snedCritialAlert(String message) throws InterruptedException {
 
 <br>
 
+### allUntil
+사용자 지정 중단 조건을 정의 가능  
 
+```java
+public void performBackup(String data) throws InterruptedException {
+  log("Starting backup to multiple locations...");
 
+  try (var scope = open(Joiner.<BackupResult>allUntil(subtask -> {
+    boolean shouldStop = hasSuccess.get();
+    if (shouldStop) {
+      log("Backup successful. Canceling other attempts...");
+    }
+    return shouldStop;
+  }))) {
+    scope.fork(() -> backupToCloud(data));
+    scope.fork(() -> backupToUSB(data));
+    scope.fork(() -> backupToNetwork(data));
+    scope.join();
 
+    if (hasSuccess.get()) {
+      log("Backup completed successfully");
+    } else {
+      log("All backup attempts failed");
+    }
+  }
+}
+```
 
+```
+00:34:05.871 main          : Starting backup to multiple locations...
+00:34:05.881 VThread[#28]  :  -> Backing up to cloud...
+00:34:05.881 VThread[#32]  :  -> Backing up to network drive...
+00:34:05.881 VThread[#30]  :  -> Backing up to USB...
+00:34:06.184 VThread[#30]  :  <- USB backup failed
+00:34:06.284 VThread[#32]  :  <- Network backup successful
+00:34:06.286 VThread[#32]  : Backup successful. Canceling other attemps...
+00:34:06.288 main          : Backup completed successfully
+```
 
+<br>
 
+## 예외 처리
+구조적 동시성의 예외 처리는 사용중인 `Joiner` 정책에 따라 명확한 패턴을 따름  
+`joiner` 객체의 `result()` 메서드는 `join()` 메서드에 의해 호출되며 서브태스크 완료 결과 또는 예외를 반환  
+예외인 경우 `StructuredTaskScope.FailedException`으로 감싸서 가장 먼저 실패한 서브태스크의 예외를 던짐  
 
+<br>
 
+### 기본적인 예외 처리
+가장 흔한 패턴은 `try-catch`로 감싸서 `FailedException` 예외를 잡아서 처리  
 
+```java
+public String fetchUserData(String userId) {
+  try (var scope = open(Joiner.<String>allSuccessfulOrThrow())) {
+    var profileTask = scope.fork(() -> fetchUserProfile(userId))l
+    var preferencesTask = scope.fork(() -> fetchUserPreferences(userId));
+    var results = scope.join();
+    return results.map(Subtask::get)
+      .collect(Collectors.joining(", ");
+  } catch (FailedException e) {
+    log("Task failed: " + e.getCause().getMessage());
+    return "Error: Unable to fetch user data";
+  } catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+    throw new RuntimeException("Operation interrupted", e);
+  }
+}
+```
 
+<br>
 
+### 패턴 매칭을 활용한 예외 처리
+여러 종류의 예외에 대해 각각 다른 복구 전략을 적용해야 하는 경우 사용  
 
+```java
+public OrderResult processOrder(String customerId, String productId, double amount) {
+  try (var scope = open(Joiner.<String>allSuccessfulOrThrow())) {
+    var paymentTask = scope.fork(() -> processPayment(customerId, amount));
+    var inventoryTask = scope.fork(() -> checkAndReserveInventory(productId));
+    var shippingTask = scope.fork(() -> calculateShipping(customerId, productId));
+    var results = scope.join()
+      .map(Subtask::get)
+      .toList();
+    String orderId = generateOrderId();
+    return new OrderResult(orderId, "CONFIRMED", "Order confirmed successfully", true);
+  } catch (FailedException e) {
+    Throwable cause = e.getCause();
+    return handleOrderProcessingError(cause); // 패턴 매칭 기반 예외 처리 핸들러
+  } catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+    throw new RuntimeException("Operation interrupted", e);
+  }
+}
+```
 
+```java
+private static OrderResult handleOrderProcessingError(Throwable cause) {
+  return switch (cause) {
+    case PaymentDeclinedException pde -> new OrderResult(null, "PAYMENT_FAILED",
+        """
+        Your payment was declined, Please check your card details or try a different paymnet method.
+        """,
+        false
+      );
+    case InsufficientInventoryException iie -> new OrderResult(null, "OUT_OF_STOCK",
+        """
+        Sorry, this item is currently out of stock. We'll notify you when it becomes available.
+        """,
+        false
+      );
+    case ShipppingNotAvailableException snae -> new OrderREsult(null, "SHIPPING_UNAVAILABLE",
+        """
+        We can't ship to your address right now. Please contact customer service for alternatives.
+        """,
+        false
+      );
+    default -> new OrderResult(null, "SYSTEM_ERROR",
+        """
+        Something went wrong on our end. Please try again or contact support.
+        """,
+        false
+      );
+  };
+}
+```
+
+<br>
+
+### 전략적 예외 전파
+예외를 상위 수준으로 전파하고 더 넓은 컨텍스트에서 에러를 처리하는 방식  
+다양한 수준에서 서로 다른 책임이 연관되는 계층형 애플리케이션을 만들 때 적합  
+
+```java
+public List<String> fetchCriticalData(List<String> sources)
+    thorws StructuredTaskScope.FailedException, InterrtuptedException {
+  try (var scope = open(StructuredTaskScope.Joiner.<String>allSuccessfulOrThrow())) {
+    var tasks = sources.stream()
+      .map(source -> scope.fork(() -> fetchFromSource(source)))
+      .toList();
+    var result = scope.join();
+    return results.map(StructuredTaskScope.Subtask::get)
+      .toList();
+  }
+  // catch 블록 생략, 예외를 상위로 전파
+}
+```
+
+```java
+public void processDataWithCentralizedHandling() {
+  try {
+    var sources = List.of("source1", "source2");
+    var data = fetchCriticalData(sources);
+    log("Successfully fetched data: " + data);
+  } catch (StructuredTaskScope.FailedException e) {
+    log("Critical data fetch failed: " + e.getCause().getMessage());
+    handleCriticalSystemFailure(e);
+  } catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+    log("Operation was interrupted");
+  }
+}
+```
+
+<br>
+
+### 서브태스크 내부 예외 처리
+특정 예외가 전체 작업 실패가 아닌 정의된 결과를 반환해야 하는 경우 사용  
+
+```java
+public List<ServiceResponse> gatherOptionalData(List<String> services) throws InterruptedException {
+  try (var scope = open(Joiner.<ServiceResponse>allSuccessfulOrThrow())) {
+    var tasks = service.stream()
+      .map(service -> scope.fork(() -> fetchWithDefaults(service)))
+      .toList();
+    var results = scope.join();
+    return results.map(Subtask::get)
+      .toList();
+  } catch (FailedException e) {
+    // 서브태스크가 처리하지 못하고 예상치 못한 예외
+    log("Unexpected failure: " + e.getCause().getMessage());
+    throw new RuntimeException("System error", e);
+  }
+}
+```
+
+```java
+private ServiceResponse fetchWithDefaults(String service) {
+  try {
+    String data = fetchServiceData(service);
+    return new ServiceResponse(service, data, true);
+  } catch (IOException e) {
+    log("Network error for " + service + ": " + e.getMessage());
+    return new ServiceResponse(service, "Default data", false);
+  } catch (TimeoutException e) {
+    log("Timeout for " + service + ": " + e.getMessage());
+    return new ServiceResponse(service, "Cached data", false);
+  } catch (Exception e) {
+    log("Unexcepted error for " + service + ": " + e.getMessage());
+    return new ServiceResponse(service, "Error", false);
+  }
+}
+```
+
+<br>
+
+## 스코프 구성
+기본적인 `open()` 또는 `open(Joiner)` 메서드로 생성하는 경우 아래 구성이 적용  
+- 스레드 팩토리: 이름 없는 가상 스레드 생성
+- 모니터링용 이름: 없음(익명 스코프)
+- 타임아웃: 없음(작업 완료 또는 취소까지 무기한 동작)
+
+<br>
+
+더 정교한 제어가 필요한 경우 `Configuration API`를 이용해서 오버로딩 가능  
+
+```java
+static <T, R> StructuredTaskScope<T, R> open(Joiner<? super T, ? extends R> joiner,
+    Function<Configuration, Configuration> configFunction) {
+  return StructuredTaskScopeImpl.open(joiner, configFunction);
+}
+```
+
+```java
+sealed interface Configuration {
+  Configuration withThreadFactory(ThreadFactory threadFactory);
+  Configuration withName(String name);
+  Configuration withTimeout(Duration timeout);
+}
+```
+
+```java
+try (var scope = open(Joiner.allSuccessfulOrThrow(),
+    cf -> cf.withTimeout(Duration.ofSeconds(10)))) {
+}
+ThreadFactory factory = Thread.ofVirtual()
+  .name("user-processor-", 0)
+  .factory();
+try (var scope = open(Joiner.allSuccessfulOrThrow(), cf -> cf
+    .withThreadFactory(factory)
+    .withTimeout(Duration.ofSeconds(30))
+    .withName("my-scope"))) {
+  ...
+}
+```
+
+<br>
+
+### 이름 있는 스레드
+가장 보편적인 커스터마이징 방식으로 디버깅이나 모니터링을 위한 이름 부여 스레드 생성  
+
+```java
+public void processUserRequests(List<String> userIds) {
+  ThreadFactory factory = Thread.ofVirtual()
+    .name("user-processor-", 0)
+    .factory();
+  try (var scope = open(Joiner.<String>allSuccessfulOrThrow(),
+      cf -> cf.withThreadFactory(factory))) {
+    var tasks = userIds.stream()
+      .map(userId -> scope.fork(() -> processUser(userId)))
+      .toList();
+    var results = scope.join()
+      .map(Subtask::get)
+      .toList();
+    System.out.println("Processed users: " + results);
+  } catch (FailedException | InterruptedException e) {
+    System.out.println("Processing failed: " + e.getMessage());
+  }
+}
+```
+
+<br>
+
+### 타임아웃 설정
+무기한 대기 상황과 외부 서비스 응답 불가 상황을 빠르게 실패 처리 가능  
+
+```java
+public List<String> fetchDataWithTimeout(List<String> sources)
+    throws TimeoutException, FailedException, InterruptedException {
+  Duration timeout = Duration.ofSeconds(5);
+  try (var scope = open(Joiner.<String>allSuccessfulOrThrow(), cf -> cf.withTimeout(timeout))) {
+    var tasks = sources.stream()
+      .map(source -> scope.fork(() -> fetchFromSource(source)))
+      .toList();
+
+    // join() 완료되기 전에 타임아웃 발생시 TimeoutException 던짐
+    return scope.join()
+      .map(Subtask::get)
+      .toList();
+  }
+}
+```
+
+<br>
+
+## 커스텀 조이너
+커스텀 조이너는 `StructuredTaskScope.Joiner<T, R>` 인터페이스를 구현해서 생성 가능  
 
 
 
