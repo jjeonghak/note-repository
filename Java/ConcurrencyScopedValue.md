@@ -131,13 +131,250 @@ public class JobScheduler {
 }
 ```
 
+<br>
 
+### ScopedValue 실행
+유한한 수명을 가지고 있으며 먼저 값을 설정하고 사용 가능  
 
+```java
+public static void main(String[] args) {
+  ScopeValue<String> NAME = ScopedValue.newInstance();
+  Runnable task = () -> {
+    if (NAME.isBound()) {
+      System.out.println("Name is bound: " + NAME.get());
+    } else {
+      System.out.println("Name is not bound");
+    }
+  };
 
+  // Name is not bound
+  task.run();  
+}
+```
 
+<br>
 
+값을 바인딩하고 실행하기 위해서는 `where()` 메서드와 `run()` 메서드 사용  
 
+```java
+public static void main(String[] args) {
+  ScopedValue<String> NAME = ScopedValue.newInstance();
+  Runnable task = () -> {
+    if (NAME.isBound()) {
+      System.out.println("Name is bound: " + NAME.get());
+    } else {
+      System.out.println("Name is not bound");
+    }
+  }
 
+  // Name is bound: Bazlur
+  ScopedValue.where(NAME, "Bazlur")
+    .run(task);  
+}
+```
 
+<br>
 
+만약 스코프 내에서 바인딩 후 태스크를 실행하고 다시 독립적으로 태스크를 실행한 경우 바인딩 무시  
+동적 스코프 내에서만 바인딩된 상태를 유지하기 때문에 `run()` 메서드 실행이 완료되면 자동 바인딩 해제  
 
+```java
+public static void main(String[] args) {
+  ScopedValue<String> NAME = ScopedValue.newInstance();
+  Runnable task = () -> {
+    if (NAME.isBound()) {
+      System.out.println("Name is bound: " + NAME.get());
+    } else {
+      System.out.println("Name is not bound");
+    }
+  }
+
+  // Name is bound: Bazlur
+  ScopedValue.where(NAME, "Bazlur")
+    .run(task);  
+
+  // Name is not bound
+  task.run();
+}
+```
+
+<br>
+
+메인 스레드가 아닌 다른 스레드에서 태스크를 실행한 경우도 바인딩 무시  
+`ScopeValue`는 새로 생성되는 스레드에 자동으로 상속되지 않음  
+
+```java
+public static void main(String[] args) throws InterruptedException {
+  ScopedValue<String> NAME = ScopedValue.newInstance();
+  Runnable task = () -> {
+    if (NAME.isBound()) {
+      System.out.println("Name is bound: " + NAME.get());
+    } else {
+      System.out.println("Name is not bound");
+    }
+  }
+
+  Thread thread = Thread.ofPlatform().unstarted(task);
+  ScopedValue.where(NAME, "Bazlur")
+    .run(thread::start);
+
+  // Name is not bound
+  thread.join();
+}
+```
+
+<br>
+
+만약 메인 스레드가 아닌 새로 생성되는 스레드 내에서 바인딩하면 상속  
+
+```java
+public static void main(String[] args) throws InterruptedException {
+  ScopedValue<String> NAME = ScopedValue.newInstance();
+  Runnable task = () -> {
+    if (NAME.isBound()) {
+      System.out.println("Name is bound: " + NAME.get());
+    } else {
+      System.out.println("Name is not bound");
+    }
+  }
+
+  Thread thread = Thread.ofVirtual().start(() -> {
+    ScopedValue.where(NAME, "Bazlur")
+      .run(task)
+  });
+
+  // Name is bound: Bazlur
+  thread.join();
+}
+```
+
+<br>
+
+평문형 API를 제공하기 때문에 여러 개의 `ScopedValue`를 하나의 체인에 함께 바인딩 가능  
+
+```java
+public class MultiScopedExample {
+  private static final ScopedValue<String> USER_ID = ScopedValue.newInstance();
+  private static final ScopedValue<String> SESSION_ID = ScopedValue.newInstance();
+
+  public static void main(String[] args) {
+    ScopedValue.where(USER_ID, "user123")
+      .where(SESSION_ID, "session456")
+      .run(() -> performTask());
+  }
+
+  public static void performTask() {
+    String userId = USER_ID.get();
+    String sessionId = SESSION_ID.get();
+    System.out.println("Performing task for user: " + userId + " in session: " + sessionId);
+    logAction();
+  }
+
+  public static void logAction() {
+    String userId = USER_ID.get();
+    String sessionId = SESSION_ID.get();
+    System.out.println("Logging action for user: " + userId + " in session: " + sessionId);
+  }
+}
+```
+
+<br>
+
+만약 `ScopedValue`에 바인딩된 값이 없는 경우 `orElse`, `orElseThrow` 메서드로 기본값 또는 예외 처리 가능  
+
+```java
+public class ScopedValueDefaultsExample {
+  private static final ScopedValue<String> USER_NAME = ScopedValue.newInstance();
+
+  public static void main(String[] args) {
+    String userNameUnbound = USER_NAME.orElse("Guest");
+    System.out.println("No bouding -> user name defaults to: " + userNameUnbound);
+
+    try {
+      USER_NAME.orElseThrow(() -> new IllegalStateException("No user name bound yet!"));
+    } catch (IllegalStateException e) {
+      System.out.println("Caught exception: " + e.getMessage());
+    }
+
+    ScopedValue.where(USER_NAME, "Bazlur").run(() -> {
+      String boundUserName = USERNAME.orElse("Guest");
+      System.out.println("Within binding -> user name is: " + boundUserName);
+      String validatedName = USEr_NAME.orElseThrow(() -> IllegalStateException("No user name bound yet!"));
+      System.out.println("Validated name: " + validateName);
+    });
+  }
+}
+```
+
+<br>
+
+### 중첩 스코프 SocpedValue 리바인딩
+리바인딩은 중첩된 스코프 안에서 동일한 이름으로 새롭게 값을 지정  
+하지만 중첩된 스코프 안에서만 유효하도록 제한, 중첩된 스코프 종료시 원래 값으로 자동 복원  
+넓은 컨텍스트에 영향을 미치지 않고 지엽적으로 실행 흐름 내에서만 설정을 조정하는 등에 유용  
+
+```java
+public class ScopedValueRebindingExample {
+  private static final ScopedValue<String> USER_ROLE = ScopedValue.newInstance();
+
+  public static void main(String[] args) {
+    // 초기 스코프 바인딩
+    ScopedValue.where(USER_ROLE, "Admin").run(() -> {
+      System.out.println("Outer scope: User role is " + USER_ROLE.get());
+
+      // 중첩 스코프 리바인딩
+      ScopedValue.where(USER_ROLE, "Guest").run(() -> {
+        System.out.println("Inner scope: User role is " + USER_ROLE.get());
+      });
+
+      System.out.println("Back to outer scope: User role is " + USER_ROLE.get());
+    });
+  }
+}
+```
+
+```
+Outer scope: User role is Admin
+Inner scope: User role is Guest
+Back to outer scope: User role is Admin
+```
+
+<br>
+
+### ScopedValue 구조적 동시성
+상속 메커니즘을 통해 데이터를 부모 자식 간 명시적으로 넘기지 않아도 효율적으로 공유 가능  
+이는 구조적 동시성이 명확하게 정의된 경계를 가지기 때문에 자연스럽게 통합되어 동작  
+
+```java
+public class ScopedValueStructuredConcurrencyExample {
+  private static final ScopedValue<String> USERNAME = ScopedValue.newInstance();
+
+  public static void main(String[] args) {
+    ScopedValue.where(USERNAME, "Bazlur").run(() -> doSomething());
+  }
+
+  public static void doSomething() {
+    try (var scope = StructuredTaskScope.open()) {
+      StructuredTaskScope.Subtask<String> task1 = scope.fork(() -> USERNAME.get() + " from task 1");
+      StructuredTaskScope.Subtask<String> task2 = scope.fork(() -> USERNAME.get() + " from task 2");
+      scope.join();
+      String result1 = task1.get();
+      String result2 = task2.get();
+      System.out.println(result1);
+      System.out.println(result2);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+```
+
+<br>
+
+### 성능 고려사항
+가상 스레드를 사용할 때 `ThreadLocal`보다 `ScopedValue`가 전반적으로 더 나은 성능  
+가상 스레드가 자신만의 복사본을 가져야 하므로 메모리 사용량이 급증하고 오버레드 유발 가능  
+반면 `ScopedValue`는 특정 스코프 내에서만 스레드 사이에 데이터를 공유하기 때문에 메모리 사용 최소화  
+가상 스레드의 가벼운 특성을 활용해서 기존 `ThreadLocal`에서 흔히 발생하는 병목 문제 해결  
+
+<br>
