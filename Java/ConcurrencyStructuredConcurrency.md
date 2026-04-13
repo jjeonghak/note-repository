@@ -587,16 +587,267 @@ public List<String> fetchDataWithTimeout(List<String> sources)
 ## 커스텀 조이너
 커스텀 조이너는 `StructuredTaskScope.Joiner<T, R>` 인터페이스를 구현해서 생성 가능  
 
+<br>
 
+### 성공과 예외 모두 수집
 
+```java
+public class CollectingJoiner<T> implements StructuredTaskScope.Joiner<T, CollectingJoiner.Result<T>> {
+  private final Queue<T> results = new ConcurrentLinkedQueue<>();
+  private final Queue<Throwable> exceptions = new ConcurrentLinkedQueue<>();
 
+  @Override
+  public Result<T> result() {
+    return new Result<>(
+      results.stream().toList(),
+      exceptions.stream().toList()
+    );
+  }
 
+  @Override
+  public boolean onComplete(StructuredTaskScope.Subtask<? extends T> subtask) {
+    switch (subtask.state()) {
+      case SUCCESS -> results.add(subtask.get());
+      case FAILED -> exceptions.add(subtask.exception());
+      case UNAVAILABLE -> exceptions.add(new RuntimeException("Task was cnaceled"));
+    }
+    return false;
+  }
 
+  public record Result<T>(List<T> successes, List<Throwable> failures) {
+    public boolean hasFailures() {
+      return !failures.isEmpty();
+    }
 
+    public int totalTasks() {
+      return successes.size() + failures.size();
+    }
+  }
+}
+```
 
+<br>
 
+### 정족수 기반 완료
 
+```java
+public class QuorumJoiner<T> implements StructuredTaskScope.Joiner<T, Boolean> {
+  private final int requiredSuccesses;
+  private final AtomicInteger successCount = new AtomicInteger(0);
+  private final AtomicInteger totalCount = new AtomicInteger(0);
+  private volatile boolean quorumReached = false;
 
+  public QuorumJoiner(int requiredSuccesses) {
+    this.requiredSuccesses = requiredSuccesses;
+  }
 
+  @Override
+  public Boolean result() {
+    return quorumReached;
+  }
 
+  @Override
+  public boolean onFork(StructuredTaskScope.Subtask<? extends T> subtask) {
+    totalCount.incrementAndGet();
+    return false;
+  }
 
+  @Override
+  public boolean onComplete(StructuredTaskScope.Subtask<? extends T> subtask) {
+    if (subtask.state() == StructuredTaskScope.Subtask.State.SUCCESS) {
+      int currentSuccess = successCount.incrementAndGet();
+      if (currentSuccess >= requiredSuccesses) {
+        quorumReached = true;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public int getSuccessCount() {
+    return successCount.get();
+  }
+
+  public int getTotalcount() {
+    return totalCount.get();
+  }
+}
+```
+
+<br>
+
+### 적응형 완료
+
+```java
+public class AdaptiveJoiner<T> implements StructuredTaskScope.Joiner<T, CollectingJoiner.Result<T>> {
+  private final int minSampleSize;
+  private final double maxFailureRate;
+  private final Queue<T> successes = new ConcurrentLinkedQueue<>();
+  private final Queue<Throwable> failures = new ConcurrentLinkedQueue<>();
+
+  public AdaptiveJoiner(double maxFailureRate, int minSampleSize) {
+    this.maxFailureRate = maxFailureRate;
+    this.minSampleSize = minSampleSize;
+  }
+
+  @Override
+  public CollectingJoiner.Result<T> result() {
+    return new CollectingJoiner.Result<>(
+      success.stream().toList(),
+      failures.stream().toList()
+    );
+  }
+
+  @Override
+  public boolean onComplete(StructuredTaskScope.Subtask<? extends T> subtaks) {
+    switch (subtask.state()) {
+      case SUCCESS -> successes.add(subtask.get());
+      case FAILED -> failures.add(subtask.exception());
+      case UNAVAILABLE -> failures.add(new RuntimeException("Task canceled"));
+    }
+    int total = successes.size() + failures.size();
+    if (total >= minSampleSize) {
+      double failureRate = (double) failures.size() / total;
+      return failureRate > maxFailureRate;
+    }
+    return false;
+  }
+}
+```
+
+<br>
+
+### 요청 제한
+
+```java
+public class RateLimitedJoiner<T> implements StructuredTaskScope.Joiner<T, List<T>> {
+  private final Semaphore semaphore;
+  private final Queue<T> results = new ConcurrentLinkedQueue<>();
+  private final Queue<Throwable> failures = new ConcurrentLinkedQueue<>();
+
+  public RateLimitedJoiner(int maxConcurrentTasks) {
+    this.semaphore = new Semaphore(maxConcurrentTasks);
+  }
+
+  @Override
+  public boolean onFork(StructuredTaskScope.Subtask<? extends T> subtask) {
+    try {
+      semaphore.acquire();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    return false;
+  }
+
+  @Override
+  public boolean onComplete(StructuredTaskScope.Subtask<? extends T> subtask) {
+    switch (subtask.state()) {
+      case SUCCESS -> results.add(subtask.get());
+      case FAILED -> failures.add(subtask.exception());
+      case UNAVAILABLE -> failures.add(new RuntimeException("Task canceled"));
+    }
+    semaphore.release();
+    return false;
+  }
+
+  @Override
+  public List<T> result() {
+    return results.stream().toList();
+  }
+}
+```
+
+<br>
+
+### 조건부
+
+```java
+public class ConditionalJoiner<T> implements StructuredTaskScope.Joiner<T, List<T>> {
+  private final Supplier<Boolean> shouldContinue;
+  private final Queue<T> results = new ConcurrentLinkedQueue<>();
+  private final Queue<Throwable> failures = new ConcurrentLinkedQueue<>();
+
+  public ConditionalJoiner(Supplier<Boolean> shouldContinue) {
+    this.shouldcontinue = shouldContinue;
+  }
+
+  @Override
+  public boolean onFork(StructuredTaskScope.Subtask<? extends T> subtask) {
+    if (!shouldContinue.get()) {
+      System.out.println("Condition failed, stopping new tasks");
+      return true;  // 새로운 태스크가 실행되지 않도록 스코프 취소
+    }
+    return false;
+  }
+
+  @Override
+  public boolean onComplete(StructuredTaskScope.Subtask<? extends T> subtask) {
+    switch (subtask.state()) {
+      case SUCCESS -> results.add(subtask.get());
+      case FAILED -> failures.add(subtask.exception());
+      case UNAVAILABLE -> failures.add(new RuntimeException("Task canceled"));
+    }
+    return false;
+  }
+
+  @Override
+  public List<T> result() {
+    return results.stream().toList();
+  }
+
+  public List<Throwable> getFailures() {
+    return failures.stream().toList();
+  }
+}
+```
+
+<br>
+
+## 메모리 일관성 효과
+`StructuredTaskScope` 소유한 스레드에서 서브태스크를 포크하기 전에 실행된 동작은 항상 먼저 실행  
+또한 서브태스크가 수행하는 동작은 그 서브태스크의 결과를 가져오는 동작보다 먼저 실행  
+스코프 소유 스레드가 `fork()` 호출 전에 수행한 데이터 변경은 포크된 서브태스크에서 조회 가능 보장  
+서브태스크에서 수행한 데이터 변경을 서브태스크 결과를 조회하는 시기에 조회 가능 보장  
+
+<br>
+
+## 중첩 스코프
+`StructuredTaskScope` 역시 중첩해 사용함으로써 다층적인 서브태스크 위계 구조 생성 가능  
+중첩 스코프(`nested scope`)는 태스크가 자연스럽게 여러 단계의 서브태스크로 나뉘는 복잡한 작업 흐름 관리에 유용  
+
+<br>
+
+<img width="550" height="350" alt="nested_scope" src="https://github.com/user-attachments/assets/6a99c493-d502-4c98-978f-3e3420adbe19" />
+
+```java
+public DocumentReport processDocument(String documentId) throws InterruptedException {
+  try (var gatheringScope = open(StructuredTaskScope.Joiner.<String>allSuccessfulOrThrow())) {
+    var headerTask = gatheringScope.fork(() -> fetchHeader(documentId));
+    var bodyTask = gatheringScope.fork(() -> fetchBody(documentId));
+    var metadataTask = gatheringScope.fork(() -> fetchMetadata(documentId));
+
+    gatheringScope.join();
+    return analyzeContent(haederTask.get(), bodyTask.get(), metadataTask.get());
+  } catch (StructuredTaskScope.FailedException e) {
+    throw new RuntimeException("Failed to gather document content", e);
+  }
+}
+
+private DocumentReport analyzeContent(String header, String body, String metadata) throws InterruptedException {
+  try (var analysisScope = open(StructuredScope.Joiner.allSuccessfulOrThrow())) {
+    var wordCountTask = analysisScope.fork(() -> countWords(body));
+    var sentimentTask = analysisScope.fork(() -> analyzeSentiment(body));
+    var summaryTask = analysisScope.fork(() -> generateSummary(header, body, metadata));
+    analysisScope.join();
+    return new DocumentReport(
+      wordCountTask.get(),
+      sentimentTask.get(),
+      summaryTask.get()
+    );
+  } catch (StructuredTaskScope.FailedException e) {
+    throw new RuntimeException("Failed to analyze document content", e);
+  }
+}
+```
+
+<br>
