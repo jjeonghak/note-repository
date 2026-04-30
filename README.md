@@ -9,7 +9,7 @@
 * [Algorithm](./Algorithm) : 알고리즘에 관한 학습 내용
 * [Database](./Database) : MySQL 데이터베이스에 관한 학습 내용
 * [Java](./Java) : 기초 자바에 관한 학습 내용
-* [Java_Spring](./Java_Spring) : 스프링에 관한 학습 내용
+* [Java_Spring](./Spring) : 스프링에 관한 학습 내용
 * [JPA](./JPA) : JPA에 관한 학습 내용
   
 <br>
