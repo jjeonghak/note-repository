@@ -84,6 +84,133 @@ Tag value = (field_index << 3) | wire_type
 | -2 | 3 |
 | 2 | 4 |
 
+<br>
+
+int32, int64 같은 일반 타입을 사용하는 경우 음수는 가변 길이 인코딩을 사용하기 때문에 sint32, sint64 권장  
+음의 정수에 대한 가변 길이 정수 인코딩은 양의 정수보다 같은 바이너리 값을 나타내고자 더 많은 바이트가 필요  
+
+<br>
+
+### 비가변 길이 정수 숫자
+가변 길이 정수 타입과 반대, 실제 값에 관계없이 고정된 바이트 수를 할당  
+fixed, sfixed, double, float 같은 데이터 타입  
+
+<br>
+
+### 문자열 타입
+문자열 타입은 길이로 구분된 와이어 타입에 속함  
+지정된 바이트 수의 데이터가 뒤따르는 가변 길이 정수 인코딩 크기를 갖음  
+문자열은 UTF-8 문자 인코딩을 사용  
+
+<br>
+
+## 길이-접두사 지정 메시지 프레이밍
+일반적인 용어로 메시지 프레이밍 방식은 의도한 대상이 정보를 쉽게 추출할 수 있도록 관련 정보를 구성하는 것  
+길이-접두사 지정 방식은 메시지 자체를 전송하기 전에 각 메시지 크기를 기록하는 메시지 프레이밍 방식  
+
+<img width="500" height="400" alt="message_framing" src="https://github.com/user-attachments/assets/96e880a3-4877-473d-8e95-0b9770b480da" />
+
+<br>
+
+압축 플래그 값이 1인 경우는 HTTP 전송에서 선언된 헤더 중 하나인 메시지 인코딩 헤더에 선언된 메커니즘을 사용  
+값이 0인 경우는 메시지 바이트 인코딩이 발생하지 않았음을 나타냄  
+수신자는 첫 번째 바이트를 읽어 메시지 압축 여부를 확인  
+이후 다음 4바이트를 읽어 인코딩된 바이너리 메시지 크기를 얻음  
+
+<br>
+
+## HTTP/2를 통한 gRPC
+gRPC 채널은 HTTP/2 연결인 엔드포인트에 대한 연결을 나타냄  
+채널이 생성되면 서버로 여러 개의 원격 호출을 보낼 수 있도록 재사용  
+
+<img width="500" height="250" alt="grpc_and_http2" src="https://github.com/user-attachments/assets/cf3d9edd-6a3a-4e02-a00d-05b35bec4df6" />
+
+<br>
+
+### 요청 메시지
+요청 메시지는 원격 호출을 시작하는 메시지  
+요청 메시지는 항상 클라이언트 애플리케이션에 의해 트리거  
+요청 헤더, 길이-접두사 지정 메시지, 스트림 종료 플래그라는 세 가지 주요 요소로 구성  
+
+<img width="500" height="100" alt="request_message" src="https://github.com/user-attachments/assets/e2551061-018f-4598-814f-3d7f505c3d02" />
+
+<br>
+
+```
+HEADERS (flags = END_HEADERS)
+:method = POST
+:schema = http
+:path = /ProductInfo/getProduct
+:authority = abc.com
+te = trailers
+grpc-timeout = 1S
+content-type = application/grpc
+grpc-encoding = gzip
+authorization = Bearer xxxxxx
+```
+
+`:`으로 시작하는 헤더 이름은 예약 헤더로, HTTP/2에서는 다른 헤더보다 앞에 등장  
+헤더는 통신 정의 헤더(`call-definition`)와 사용자 정의(`custom`) 메타데이터로 분류  
+통화 정의 헤더는 HTTP/2에서 지원하는 사전에 정의된 헤더로 사용자 정의 메타데이터보다 먼저 전송  
+사용자 정의 메타데이터는 애플리케이션 계층에서 정의한 임의의 키-값 세트(접두사로 `grpc-` 사용 불가)  
+
+<br>
+
+```
+DATA (flags = END_STREAM)
+<Length-Prefixed Message>
+```
+
+요청 메시지의 마지막은 최종 DATA 프레임에 `END_STREAM` 플래그 추가 필수  
+
+<br>
+
+### 응답 메시지
+클라이언트 요청에 대한 응답으로 서버에 의해 성생  
+요청 메시지와 유사하게 응답 헤더, 길이-접두사 지정 메시지, 트레일러 세 가지 주요 요소로 구성  
+
+<img width="500" height="100" alt="response_message" src="https://github.com/user-attachments/assets/16484e43-1f9a-432e-8105-b3625f2ad690" />
+
+<br>
+
+```
+HEADERS (flags = END_HEADERS)
+:status = 200
+grpc-encoding = gzip
+content-type = application/grpc
+```
+
+```
+DATA
+<Length-Prefixed Message>
+```
+
+요청 메시지와는 달리 `END_STREAM` 플래그는 데이터 프레임과 함께 전송되지 않음  
+트레일러라는 별도의 헤더로 전송  
+
+```
+HEADERS (flags = END_STREAM, END_HEADERS)
+grpc-status = 0
+grpc-message = xxxxxx
+```
+
+<br>
+
+특정 시나리오에서는 요청 호출에 즉각적인 실패가 발생 가능  
+해당 경우 서버는 데이터 프레임 없이 트레일러만 응답을 보냄  
+
+<br>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
