@@ -201,14 +201,19 @@ grpc-message = xxxxxx
 
 <br>
 
+## gRPC 통신 패턴 메시지 흐름
 
+### 단순 RPC
+요청 메시지에는 헤더와 길이-접두사 지정 메시지가 포함  
+클라이언트 측에서 연결 절반 종료를 위해 EOS 플래그 추가  
+연결 절반 종료는 클라이언트 측에서 연결을 닫았지만 서버에서 들어오는 메시지는 수신 가능을 의미  
+서버는 전체 메시지를 받은 후에만 응답 메시지를 생성  
 
+<img width="500" height="250" alt="unary_rpc_message_flow" src="https://github.com/user-attachments/assets/eda5b965-4b64-4dbe-9124-29735d5270a6" />
 
+<br>
 
-
-
-
-
+### 서버 스트리밍 RPC
 
 
 
