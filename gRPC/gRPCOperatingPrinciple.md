@@ -214,11 +214,27 @@ grpc-message = xxxxxx
 <br>
 
 ### 서버 스트리밍 RPC
+클라이언트 관점에서는 단순 RPC와 비슷하게 동일한 요청 메시지 흐름을 갖음  
+서버는 전체 요청 메시지를 수신한 후 여러 응답 메시지를 보냄  
 
+<img width="500" height="250" alt="server_streaming_rpc_message_flow" src="https://github.com/user-attachments/assets/aa6e5d04-89c7-4a52-85e5-e1bd5599d23e" />
 
+<br>
 
+### 클라이언트 스트리밍 RPC
+클라이언트는 먼저 헤더 프레임을 전송해서 서버와의 연결 설정  
+연결 이후 여러 길이-접두사 지정 메시지를 데이터 프레임으로 서버에 보냄  
+마지막 데이터 프레임에 EOS 플래그를 전송해서 연결 절반을 닫고, 그 동안 서버는 받은 메시지를 읽음  
+모든 메시지를 읽은 후 헤더와 함께 응답 메시지를 보냄  
 
+<img width="500" height="250" alt="client_streaming_grpc_message_flow" src="https://github.com/user-attachments/assets/e9b84712-8073-47fa-b65f-c56744e40e27" />
 
+<br>
 
+### 양방향 스트리밍 RPC
+클라이언트가 헤더 프레임을 전송해서 연결을 설정  
+연결 이후 클라이언트와 서버 모두 상대방이 끝날 때까지 기다리지 않고 길이-접두사 지정 메시지를 보냄  
 
+<img width="500" height="250" alt="bidirectional_streaming_rpc_message_flow" src="https://github.com/user-attachments/assets/14aee72c-cf00-4078-a772-251ee5594fee" />
 
+<br>
