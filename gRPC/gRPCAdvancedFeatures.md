@@ -204,16 +204,46 @@ public class OrderClientStreamInterceptor implements ClientInterceptor {
 각 서비스 호출마다 개별 RPC를 기준으로 타임아웃 적용이 가능하지만, 요청 전체 생명주기에는 데드라인을 사용  
 요청을 시작하는 애플리케이션이 데드라인을 설정하면 전체 요청 체인은 데드라인까지 응답 필수  
 
+<img width="500" height="150" alt="deadline" src="https://github.com/user-attachments/assets/99d01233-daea-4a4c-a9ec-c87db570e1d9" />
 
+<br>
 
+클라이언트 애플리케이션은 gRPC 서비스를 처음 연결할 때 데드라인을 설정  
+해당 시간 내에 RPC 호출이 응답하지 않으면 `DEADLINE_EXCEEDED` 에러 반환  
 
+```java
+ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 8080)
+    .usePlaintext()
+    .build();
+try {
+  OrderManagementGrpc.OrderManagementBlockingStub stub = OrderManagementGrpc.newBlockingStub(channel)
+    .withDeadlineAfter(2, TimeUnit.SECOND);
+  Order order1 = Order.newBuilder()
+    .setId("101")
+    .addItems("iPhone XS")
+    .addItems("Mac Book Pro")
+    .setDestination("San Jose, CA")
+    .setPrice(2300.00f)
+    .build();
 
+  try {
+    StringValue res = stubWithDeadline.addOrder(order1);
+    System.out.println("AddOrder Response -> " + res.getValue());
+  } catch (StatusRuntimeException e) {
+    Status.Code code = e.getStatus().getcode();
+    System.out.printf("Error Occured -> AddOrder : %s\n", code);
+    if (code == Status.Code.DEADLINE_EXCEEDED) {
+      System.out.println("Timeout");
+    }
+  } finally {
+    channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+  }
+}
+```
 
+<br>
 
+서버 측에서도 클라이언트의 `DEADLINE_EXCEEDED` 상태를 확인 가능  
+클라이언트가 이미 데드라인 초과 상태인지를 확인한 후 서버에서 RPC를 더 이상 진행하지 않고 에러를 반환  
 
-
-
-
-
-
-
+<br>
