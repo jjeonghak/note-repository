@@ -247,3 +247,94 @@ try {
 클라이언트가 이미 데드라인 초과 상태인지를 확인한 후 서버에서 RPC를 더 이상 진행하지 않고 에러를 반환  
 
 <br>
+
+## 취소 처리
+클라이언트와 서버는 모두 통신 성공 여부를 독립적으로 결정  
+클라이언트와 서버는 RPC를 중단 가능하며, 취소 결정을 상대방에게 전파  
+
+```java
+Context.CancellableContext cancellableContext = Context.current().withCancellation();
+
+cancellableContext.run(() -> {
+  StreamObserver<StringValue> requestStream = asyncStub.processOrders(new StreamObserver<CombinedShipment>() {
+    @Override
+    public void onNext(CombinedShipment value) { ... }
+
+    @Override
+    public void onError(Throwable t) {
+      Status status = Status.fromThrowable(t);
+      System.out.println("RPC Status: " + status.getCode());
+    }
+
+    @Override
+    public void onCompleted() { ... }
+  });
+
+  try {
+    requestStream.onNext(StringValue.newBuilder().setValue("101").build());
+    requestStream.onNext(StringValue.newBuilder().setValue("102").build());
+
+    Thread.sleep(1000);
+
+    // RPC 강제 취소
+    cancellableContext.cancel(new Exception("User cancelled the RPC"));
+
+    // 취소 이후 전송은 실패하거나 무시
+    requestStream.onNext(StringValue.newBuilder().setValue("103").build());
+    requestStream.onCompleted();
+  } catch (Exception e) {
+    e.printStackTrace();
+  }
+});
+```
+
+<br>
+
+
+서버 측도 클라이언트의 연결 취소 요청을 실시간으로 확인 가능  
+
+```java
+public StreamObserver<StringValue> processOrders(StreamObserver<CombinedShipment> responseObserver) {
+    // 서버에서 클라이언트의 취소 여부를 실시간으로 감지하고 싶을 때
+    Context.current().addListener(context -> {
+        System.out.println("Client cancelled the request or connection lost.");
+    }, MoreExecutors.directExecutor());
+
+    return new StreamObserver<StringValue>() {
+        @Override
+        public void onNext(StringValue value) {
+            // 클라이언트가 취소하기 전까지 데이터 처리
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            Status status = Status.fromThrowable(t);
+            if (status.getCode() == Status.Code.CANCELLED) {
+                System.out.println("RPC Cancelled: 서버 리소스 정리 시작...");
+            }
+        }
+
+        @Override
+        public void onCompleted() {
+            responseObserver.onCompleted();
+        }
+    };
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
