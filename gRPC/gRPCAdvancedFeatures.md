@@ -396,12 +396,11 @@ try {
 ## 멀티플렉싱
 gRPC 서버에서 여러 gRPC 서비스를 실행 가능  
 여러 gRPC 클라이언트 스텁에 동일한 gRPC 클라이언트 연결을 사용 가능  
+두 gRPC 서비스가 하나의 gRPC 서버에서 실행 중이면 하나의 gRPC 연결만으로 호출 가능  
 
 <img width="500" height="250" alt="multifexing" src="https://github.com/user-attachments/assets/70481d6f-5a6f-4bfe-9cef-1a0df0f5f027" />
 
 <br>
-
-두 gRPC 서비스가 하나의 gRPC 서버에서 실행 중이면 하나의 gRPC 연결만으로 호출 가능  
 
 ```java
 import io.grpc.Server;
@@ -423,24 +422,147 @@ public class OrderManagementServer {
 }
 ```
 
-```go
-conn, err := grpc.Dial(address, grpc.WithInsecure())
-...
-orderManagementClient := pb.NewOrderManagementClient(conn)
-...
-res, addErr := orderManagementClient.AddOrder(ctx, &order1)
-...
-helloClient := hwpb.NewGreeterClient(conn)
-...
+```java
+ManageChannel channel = ManagedChannelBuilder.forAddress("localhost", 50051)
+  .usePlaintext()
+  .build();
 
-helloResponse, err := helloClient.SayHello(hwcCtx, &hwpb.HelloRequest{Name: "gRPC Up and Running"})
+try {
+  OrderManagementGrpc.OrderManagementBlockingStub orderClient = OrderManagementGrpc.newBlockingStub(channel);
+  GreeterGrpc.GreeterBlockingStub helloClient = GreeterGrpc.newBlockingStub(channel);
+  Order order1 = Order.newBuilder().setId("101").build();
+  StringValue res = orderClient.addOrder(order1);
+  System.out.println("Order Response: " + res.getValue());
+  HelloRequest helloReq = HelloRequest.newBuiler()
+    .setName("gRPC Up and Running")
+    .build();
+  HelloReply helloRes = helloClient.sayHello(helloReq);
+  System.out.println("Hello Response: " + helloRes.getMessage());
+} finally {
+  channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+}
 ```
 
+<br>
 
+## 메타데이터
 
+특정 조건에서 RPC 비즈니스 콘텐스트와 관련이 없는 RPC 호출 정보 공유하는 경우 발생  
+이때 메타데이터가 RPC 인자의 일부가 되는 것은 권장하지 않음  
+메타데이터의 가장 일반적인 사용은 gRPC 애플리케이션 간에 보안 헤더를 교환하는 것  
 
+<img width="500" height="250" alt="metadata" src="https://github.com/user-attachments/assets/26b42090-d8e3-46c5-a701-12d546c626fb" />
 
+<br>
 
+### 메타데이터 생성과 조회
+
+```java
+Metadat.Key<String> key1 = Metadata.Key.of("key1", Metadata.ASCII_STRING_MARSHALLER);
+Metadat.Key<String> key2 = Metadata.Key.of("key2", Metadata.ASCII_STRING_MARSHALLER);
+
+Metadata metadata = new Metadata();
+metadata.put(key1, "val1");
+metadata.put(key1, "val1-2");
+metadata.put(key2, "val2");
+
+OrderManagementGrpc.OrderManagementBlockingStub stub = MetadataUtils.attachHeaders(
+  OrderManagementGrpc.newBlockingStub(channel), metadata
+);
+```
+
+```java
+@Override
+public void addOrder(Order orderReq, StreamObserver<StringValue> responseObserver) {
+  Metadata metadata = Context.current()
+    .key(io.grpc.InternalServerInterceptors.METADATA_CONTEXT_KEY)
+    .get();
+}
+```
+
+<br>
+
+### 메타데이터 누적 및 조회
+
+```java
+Metadata header1 = new Metadata();
+header1.put(Metadata.Key.of("timestamp", Metadata.ASCII_STRING_MARSHALLER), LocalDateTime.now().toString());
+header1.put(Metadata.Key.of("kn", Metadata.ASCII_STRING_MARSHALLER), "vn");
+
+Metadata header2 = new Metadata();
+Metadata.Key<String> k1 = Metadata.Key.of("k1", Metadata.ASCII_STRING_MARSHALLER);
+header2.put(k1, "v1");
+header2.put(k1, "v2");
+header2.put(Metadata.Key.of("k2", Metadata.ASCII_STRING_MARSHALLER), "v3");
+
+header1.merge(header2);
+
+OrderManagementGrpc.OrderManagementBlockingStub stub = MetadataUtils.attachHeaders(
+  OrderManagementGrpc.newBlockingStub(channel), header1
+);
+
+Response res = stub.someRPC(request);
+Iterator<Response> stream = stub.someStreamingRPC(request);
+```
+
+```java
+Metadata.Key<Metadata> headerKey = MetadataUtils.METADATA_KEY;
+AtomicReference<Metadata> headerCapture = new AtomicReference<>();
+AtomicReference<Metadata> trailerCapture = new AtomicReference<>();
+
+OrderManagementGrpc.OrderManagementBlockingStub stub = MetadataUtils.captureMetadata(
+  OrderManagementGrpc.newBlockingStub(channel),
+  headerCapture,
+  trailerCapture
+);
+
+try {
+  StringValue res = stub.addOrder(orderRequest);
+  Metadata headers = headerCapture.get();
+  Metadata trailers = trailerCapture.get();
+} catch (StatusRuntimeException e) {
+  Metadata errorTrailers = e.getTrailers();
+}
+```
+
+```java
+ClientResponseObserver<Order, StringValue> responseObserver = new ClientResponseObserver<Order, StringValue>() {
+  @Override
+  public void beforeStart(ClientCallStreamObserver<Order> requestStream) {
+    // 스트림 시작 전 설정
+  }
+
+  @Override
+  public void onNext(StringValue value) {
+    // 데이터 수신
+  }
+
+  @Override
+  public void onError(Throwable t) {
+    Metadata trailers = Status.trailersFromThrowable(t);
+  }
+
+  @Override
+  public void onCompleted() {
+    // 성공 종료 시점
+  }
+}
+
+asyncStub.someStreamingRPC(request, responseObserver);
+```
+
+<br>
+
+## 로드밸런싱
+gRPC에는 일반적으로 로드밸런서 프록시와 클라이언트 측 로드밸런싱 두 가지 메커니즘 존재  
+
+<br>
+
+### 로드밸런서 프록시
+클라이언트가 LB 프록시에 RPC를 요청  
+LB 프록시는 호출을 처리하는 실제 로직을 구현한 서버 중 하나에게 RPC 호출을 분배  
+
+<img width="500" height="250" alt="loadbalance_proxy" src="https://github.com/user-attachments/assets/dd7620cd-5cab-489e-a60d-31412862f3e0" />
 
 
 
