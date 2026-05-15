@@ -322,7 +322,119 @@ public StreamObserver<StringValue> processOrders(StreamObserver<CombinedShipment
 }
 ```
 
+<br>
 
+## 에러 처리
+에러가 발생하면 에러 상태의 자세한 정보를 제공하는 선택적 에러 메시지와 함께 에러 상태 코드를 반환  
+- OK: 성공적인 상태
+- CANCELLED: 처리가 취소, 일반적으로 호출자에 의해 호출
+- DEADLINE_EXCEEDED: 처리가 완료되기 전에 데드라인 만료
+- INVALID_ARGUMENT: 클라이언트가 유효하지 않은 인자를 지정
+
+```java
+import com.google.rpc.BadRequest;
+import com.google.rpc.Code;
+import com.google.rpc.Status;
+import io.grpc.protobuf.StatusProto;
+
+if ("-1".equals(orderReq.getId())) {
+  System.out.println("Order ID is invalid: " + orderReq.getId());
+
+  BadRequest.FieldViolation violation = BadRequest.FieldViolation.newBuilder()
+    .setField("ID")
+    .setDescription(String.format("Order Id received is not valid %s : %s",
+        orderReq.getId(), orderReq.getDescription())
+    .build();
+
+  BadRequest badRequest = BadRequest.newBuilder()
+    .addFieldViolations(violation)
+    .build();
+
+  Status statuc = Statuc.newBuilder()
+    .setCode(Code.INVALID_ARGUMENT_VALUE)
+    .setMessage("Invalid information received")
+    .addDetails(com.google.protobuf.Any.pack(badRequest))
+    .build();
+
+  responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+  return;
+}
+```
+
+```java
+try {
+  Order order1 = Order.newBuilder().setId("-1").build();
+  StringValue res = stub.addOrder(order1);
+  System.out.println("AddOrder Response -> " + res.getValue());
+} catch (StatusRuntimeException e) {
+  com.google.rpc.Status status = io.grpc.protobuf.StatusProto.fromThrowable(e);
+
+  if (status.getCode() == Code.INVALID_ARGUMET_VALUE) {
+    System.out.println("Invalid Argument Error: " + status.getCode());
+    for (com.google.protobuf.Any any : status.getDetailsList()) {
+      try {
+        if (any.is(BadRequest.class)) {
+          BadRequest br = any.unpack(BadRequest.class);
+          for (BadRequest.FieldViolation v : br.getFieldViolationsList()) {
+            System.out.printf("Request Field Invalid: %s - %s\n", v.getField(), v.getDescription());
+          }
+        } else {
+          System.out.println("Unexpected error type: " + any.getTypeUrl());
+        }
+      } catch (InvalidProtocolBufferException ex) {
+        ex.printStackTrace();
+      }
+    }
+  } else {
+    System.out.println("Unhandled error: " + status.getCode());
+  }
+}
+```
+
+<br>
+
+## 멀티플렉싱
+gRPC 서버에서 여러 gRPC 서비스를 실행 가능  
+여러 gRPC 클라이언트 스텁에 동일한 gRPC 클라이언트 연결을 사용 가능  
+
+<img width="500" height="250" alt="multifexing" src="https://github.com/user-attachments/assets/70481d6f-5a6f-4bfe-9cef-1a0df0f5f027" />
+
+<br>
+
+두 gRPC 서비스가 하나의 gRPC 서버에서 실행 중이면 하나의 gRPC 연결만으로 호출 가능  
+
+```java
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
+
+public class OrderManagementServer {
+  private static final int PORT = 50051;
+
+  public static void main(String[] args) throws IOException, InterruptedException {
+    initSampleData();
+    Server server = ServerBuilder.forPort(PORT)
+      .addService(new OrderMgtServiceImpl())
+      .addService(new HelloServiceImpl())
+      .build();
+
+    server.start();
+    server.awaitTermination();
+  }
+}
+```
+
+```go
+conn, err := grpc.Dial(address, grpc.WithInsecure())
+...
+orderManagementClient := pb.NewOrderManagementClient(conn)
+...
+res, addErr := orderManagementClient.AddOrder(ctx, &order1)
+...
+helloClient := hwpb.NewGreeterClient(conn)
+...
+
+helloResponse, err := helloClient.SayHello(hwcCtx, &hwpb.HelloRequest{Name: "gRPC Up and Running"})
+```
 
 
 
