@@ -564,11 +564,64 @@ LB 프록시는 호출을 처리하는 실제 로직을 구현한 서버 중 하
 
 <img width="500" height="250" alt="loadbalance_proxy" src="https://github.com/user-attachments/assets/dd7620cd-5cab-489e-a60d-31412862f3e0" />
 
+<br>
 
+### 클라이언트 측 로드밸런싱
+별도의 중간 프록시 계층을 갖는 대신 gRPC 클라이언트 레벨에서 로드밸런싱 로직 구현 가능  
+해당 방법은 클라이언트가 여러 백엔드 gRPC 서버를 인식하고 각 RPC에 사용할 하나의 서버를 선택  
+클라이언트는 연결할 최상의 gRPC 서버를 얻고자 질의 가능하며 룩어사이드 로드밸런서에서 얻은 gRPC 서버 주소에 직접 연결  
 
+<img width="500" height="300" alt="client_side_loadbalancing" src="https://github.com/user-attachments/assets/992a8418-d116-4381-a62b-23699e2e5aaa" />
 
+<br>
 
+```java
+ManagedChannel pickFirstChannel = ManagedChannelBuilder
+  .forTarget(exampleScheme + ":///" + exampleServiceName)
+  .defaultLoadBalancingPolicy("pick_first")
+  .usePlaintext()
+  .build();
 
+System.out.println("=== Calling Greeter with pick_first ===");
+makeRPCs(pickFirstChannel, 10);
+pickFirstChannel.shutdown();
 
+ManagedChannel roundRobinChannel = ManagedChannelBuilder
+  .forTarget(exampleScheme + ":///" + exampleServiceName)
+  .defaultLoadBalancingPolicy("round_robin")
+  .usePlaintext()
+  .build();
 
+System.out.println("=== Calling Greeter with round_robin ===");
+makeRPCs(roundRobinChannel, 10);
+roundRobinChannel.shutdown();
+```
 
+<br>
+
+## 압축
+
+```java
+ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 8080)
+  .usePlaintext()
+  .build();
+OrderMangementGrpc.OrderManagementBlockingStub stub = OrderManagementGrpc.newBlockingStub(channel);
+OrderManagementGrpc.OrderManagementBlockingStub compressedStub = stub.withCompression("gzip");
+...
+```
+
+```java
+public class OrderManagementService extends OrderManagementGrpc.OrderManagementImplBase {
+  @Override
+  public void addOrder(Order request, StreamObserver<StringValue> responseObserver) {
+    if (responseObserver instanceof ServerCallStreamObserver) {
+      ((ServerCallStreamObserver<StringValue) responseObserver).setCompression("gzip");
+    }
+    StringValue res = StringValue.newBuilder().setValue("Order Added: " + request.getId()).build();
+    responseObserver.onNext(res);
+    responseObserver.onCompleted();
+  }
+}
+```
+
+<br>
