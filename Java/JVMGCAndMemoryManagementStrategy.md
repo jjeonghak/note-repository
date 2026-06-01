@@ -355,7 +355,7 @@ JDK 9 버전에서 폐기 대상으로 지정, JDK 14에서 완전히 제거
 
 <img width="600" height="300" alt="garbage_first_collector" src="https://github.com/user-attachments/assets/572654bc-a2e8-4129-814e-ace62ebe5244" />
 
-부분 회수(`partial collection`) 설계 아이디어와 리전을 회수 단위로 하는 메모리 레이아웃 분야 개첵  
+부분 회수(`partial collection`) 설계 아이디어와 리전을 회수 단위로 하는 메모리 레이아웃 분야 개척  
 JDK 9 버전 이후 PS + 패러렐 올드 조합을 밀어내고 서버 모드용 기본 컬렉터로 지정  
 광역적으로 마크-컴팩트 알고리즘, 지엽적으로 마크-카피(두 리전 사이) 사용  
 정지 시간 예측 모델을 이용해서 가비지 컬렉터가 쓰는 시간을 통제하는 것을 목표  
