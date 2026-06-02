@@ -362,7 +362,7 @@ protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundE
 부모 위임 모델은 필수가 아닌 자바 설계자들이 권장하는 모델  
 자바 업계는 대부분 해당 모델을 따르지만 예외 존재  
 
-1. 부모 위임 모델 등잔 이전(JDK 1.2 탄생 이전)  
+1. 부모 위임 모델 등장 이전(JDK 1.2 탄생 이전)  
 클래스 로더 개념과 추상 클래스인 `java.lang.ClassLoader`는 이미 존재  
 이미 해당 클래스 로더를 확장해 사용하던 개발자가 존재  
 기존 코드들과 호환되게끔 JDK 1.2의 `ClassLoader`는 `loadClass()`를 하위 클래스에서 오버라이딩하지 못하도록 강제  
