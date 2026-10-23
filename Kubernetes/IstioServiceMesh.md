@@ -123,13 +123,33 @@
 
 ### 서비스 메시와 API 게이트웨이 관계
 
+<img width="600" height="450" alt="api_gateway" src="https://github.com/user-attachments/assets/f29657e3-0e0e-42f9-b235-83c800ee5b50" />
 
+API 게이트웨이는 공개 API에 외부에서 접근할 수 있는 엔드포인트를 제공  
+트래픽이 흐르는 중앙집중 시스템을 만들기 때문에 ESB와 메시징 버스에서의 병목 현상 발생 가능  
 
+<br>
 
+<img width="600" height="450" alt="service_mesh_hop" src="https://github.com/user-attachments/assets/8c8dd89d-55ef-46ab-a7a8-963db1fb2651" />
 
+서비스 메시에서 프록시는 서비스와 함께 배치되므로 추가 홉을 거치지 않는 탈중앙적 시스템  
 
+<br>
 
+### 분산 아키텍처에 적합한 경우
 
+<img width="700" height="400" alt="istio_layer" src="https://github.com/user-attachments/assets/42550802-c758-4be9-8cb3-3427ad02a9f2" />
 
+이스티오는 어떤 배포 자동화 도구를 사용해야 하는지 규정하거나 침해하지 않음  
+또한 어떤 비즈니스 로직도 구현하거나 대체하지 않음  
+배포 플랫폼과 애플리케이션 코드 사이의 복잡한 네트워킹 코드를 애플리케이션과 분리하는 역할  
 
+<br>
 
+### 서비스 메시 단점
+서비스 메시를 사용하면 요청 경로에 미들웨어, 프록시 추가 필수  
+프록시가 익숙하지 않다면 오히려 디버깅하기 어려움  
+메시 내에 서비스가 많을수록 메시의 가치가 높아지지만 잘못 설정한 경우 여러 서비스에 악영향  
+서비스 메시가 새로운 계층이 되므로 전체 아키텍처의 복잡성이 증가  
+
+<br>
