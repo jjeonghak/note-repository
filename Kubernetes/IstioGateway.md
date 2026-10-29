@@ -286,25 +286,216 @@ spec:
 
 ### 이스티오 게이트웨이에서 TCP 포트 노출
 
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: echo-tcp-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 31400
+      name: tcp-echo
+      protocol: TCP
+    hosts:
+    - "*"
+```
 
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: tcp-echo-vs-from-gw
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - echo-tcp-gateway
+  tcp:
+  - match:
+    - port: 31400
+    route:
+    - destination:
+      host: tcp-echo-service
+      port:
+        number: 2701
+```
 
+<br>
 
+### SNI 통과를 사용한 트래픽 라우팅
+앞선 두 기능의 조합, 즉 트래픽을 종료하지 않고 SNI 호스트네임에 따라 TCP 트래픽을 라우팅하는 방법  
+게이트웨이가 하는 일은 SNI 헤더를 살펴보고 트래픽을 라우팅하는 것, TLS 커넥션 종료는 그 후 백엔드에서 처리  
 
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: sni-passthrough-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 31400                      # HTTP 포트가 아닌 특정 포트 열기
+      name: tcp-sni
+      protocol: TLS
+    hosts:
+    - "simple-sni-1.istioinaction.io"    # 호스트를 포트와 연결
+    tls:
+      mode: PASSTHROUGH                  # 통과 트래픽으로 처리
+```
 
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: simple-sni-1-vs
+spec:
+  hosts:
+  - "simple-sni-1.istioinaction.io"
+  gateways:
+  - sni-passthrough-gateway
+  tls:
+  - match:                                # 특정 포트와 호스트의 비교 부분
+    - port: 31400
+      sniHosts:
+      - simple-sni-1.istioinaction.io
+    route:
+    - destination:                        # 트래픽이 일치하는 경우 라우팅 목적지
+        host: simple-tls-service-1
+        port:
+          number: 80                      # 서비스 포트로 라우팅
+```
 
+<br>
 
+## 운영
+게이트웨이란 단지 엔보이 프록시에 불과  
 
+<br>
 
+### 게이트웨이 책임 나누기
 
+<img width="700" height="400" alt="multi_gateway" src="https://github.com/user-attachments/assets/605518ea-30b7-46f3-8da6-618847e40d2e" />
 
+이스티오 게이트웨이는 단순히 사이드카로 배포되지 않는 엔보이 프록시에 불과  
+즉, 게이트웨이를 인그레스, 이그레스, 공유 게이트웨이, 멀티 클러스터 프록시 등 다양한 용도로 사용 가능  
 
+```yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: my-user-gateway-install
+  namespace: istioinaction
+spec:
+  profile: empty
+  values:
+    gateways:
+      istio-ingressgateway:
+        autoscaleEnabled: false
+  components:
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: false
+    - name: my-user-gateway
+      namespace: istioinaction
+      enabled: true
+      label:
+        istio: my-user-gateway
+```
 
+<br>
 
+### 게이트웨이 주입
+사용자에게 IstioOperator 리소스 접근 권한을 부여하지 않고 자체 게이트웨이를 만드는 방법  
+미완성 게이트웨이 디플로이먼트를 배포하고 이스티오가 나머지를 채우는 방식  
+디플로이먼트는 미완성으로, 이스티오가 주입을 수행하는 방법을 지시하는 애노테이션이 존재  
 
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-user-gateway-injected
+  namespace: istioinaction
+spec:
+  selector:
+    matchLabels:
+      ingress: my-user-gateway-injected
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"        # 주입 활성화
+        inject.istio.io/templates: gateway     # gateway 템플릿 사용
+      labels:
+        ingress: my-user-gateway-ingected
+    spec:
+      containers:
+      - name: istio-proxy                      # 이름 필수
+        image: auto                            # 미완성 이미지
+```
 
+<br>
 
+### 인그레스 게이트웨이 엑세스 로그
+프록시의 일반적인 기능은 처리한 모든 요청을 기록하는 것  
+기본 프로필을 사용한 운영 환경 이스티오는 액세스 로깅이 비활성화  
 
+```
+$ istioctl install --set meshConfig.accessLogFile=/deb/stdout
+```
 
+<br>
 
+더 나은 접근 방식은 관심 있는 워크로드에 대해서만 액세스 로그를 켜는 것  
+텔레메트리 정의를 통해 네임스페이스 내 셀렉터에 일치하는 파드에 액세스 로그를 활성화
 
+```yaml
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: ingress-gateway
+  namespace: istio-system
+spec:
+  selector:
+    matchlabels:
+      app: istio-ingressgateway    # 레이블과 일치하는 파드는 텔레메트리 설정을 가져옴
+  accessLogging:
+  - providers:
+    - name: envoy                  # 액세스 로그를 위한 프로바이더 설정
+    disabled: false                # 활성화
+```
 
+<br>
+
+### 게이트웨이 설정 줄이기
+기본적으로 이스티오는 모든 프록시가 메시 내의 모든 서비스를 알도록 구성  
+메시 내 서비스가 많을수록 데이터 플레인과 컨트롤 플레인 모두에서 설정이 매우 커질 가능성 존재  
+이를 Sidecar 리소스를 사용해서 설정을 줄일 수 있음, 하지만 게이트웨이에는 적용되지 않음  
+즉, 새로운 게이트웨이를 배포하면 프록시에 메시 내 라우팅 가능한 모든 서비스가 설정  
+요령은 프록시에서 필요 이상의 설정을 제거하고 게이트웨이 관련 설정만 포함되도록 하는 것  
+`PILOT_FILTER_GATEWAY_CLUSTER_CONFIG` 기능 플래그가 핵심, 게이트웨이에 적용한 VirtualService 참조 클러스터만 설정  
+
+```yaml
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: control-plane
+spec:
+  profile: minimal
+  components:
+    pilot:
+      k8s:
+        env:
+        - name: PILOT_FILTER_GATEWAY_CLUSTER_CONFIG
+          value: "true"
+  meshConfig:
+    defaultConfig:
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+    enablePrometheusMerge: true
+```
+
+<br>
