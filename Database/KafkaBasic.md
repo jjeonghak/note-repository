@@ -151,3 +151,56 @@ JSON, XML 같이 읽기 편한 스키마도 있지만 호환성 유지 기능이
 프로듀서와 컨슈머는 더 이상 어떤 형태로든 밀접하게 결합될 필요 없음  
 
 <br>
+
+## 환경 설정
+설치된 카프카가 원활하게 작동하려면 몇 가지 환경 설정 필수  
+
+<br>
+
+### 주키퍼
+
+<img width="450" height="300" alt="kafka_zookeeper" src="https://github.com/user-attachments/assets/93ebdcbb-2769-41c6-8e52-1d8f8f7e7ce5" />
+
+카프카 클러스터의 메타데이터와 컨슈머 클라이언트에 대한 정보를 저장하기 위해 아파치 주키퍼 사용  
+설정 정보 관리, 이름 부여, 분산 동기화, 그룹 서비스를 제공하는 중앙화된 서비스  
+
+<br>
+
+주키퍼는 고가용성을 보장하기 위해 앙상블(`ensemble`)이라 불리는 클러스터 단위로 작동  
+부하 분산 알고리즘 때문에 앙상블은 홀수 개의 서버를 가지며 요청에 응답하려면 쿼럼의 과반 이상이 작동 필수  
+각 서버는 공통된 설정 파일을 사용해야하며 데이터 디렉토리에 자신의 ID 번호를 지정하는 `myid` 파일 보유 필수  
+
+<br>
+
+```properties
+tickTime=2000
+dataDir=/var/lib/zookeeper
+clientPort=2181
+initLimit=20
+syncLimit=5
+server.1=zoo1.example.com:2888:3888
+server.2=zoo2.example.com:2888:3888
+server.3=zoo3.example.com:2888:3888
+```
+
+위 설정은 앙상블 안의 모든 서버 내역 역시 정의  
+`server.{X}={hostname}:{peerPort}:{leaderPort}` 형식으로 정의  
+- X: 서버의 ID(myid 정의 값)
+- hostname: 서버의 호스트명 또는 IP 주소
+- peerPort: 앙상블 안의 서버들이 서로 통신할 때 사용하는 TCP 포트
+- leaderPort: 리더를 선출하는데 사용되는 TCP 포트 번호
+
+<br>
+
+### 핵심 브로커 매개변수
+1. `broker.id`: 모든 카프카 브로커는 정수값 식별자를 보유
+2. `listeners`: `{protocol}://{hostname}:{port}` 형태로 정의
+3. `zookeeper.connect`: 브로커의 메타데이터가 저장되는 주키퍼의 위치를 지정, `{hostname}:{port}/{path}` 형태로 정의
+4. `log.dirs`: 모든 메시지를 로그 세그먼트 단위로 묶어서 지정된 디스크 디렉토리에 저장
+5. `num.revovery.threads.per.data.dir`: 설정 가능한 스레드 풀을 사ㅛㅇ해서 로그 세그먼트 관리
+6. `auto.create.topics.enable`: 토픽 자동 생성 여부
+7. `auto.leader.rebalance.enable`: 토픽의 리더 역할이 균둥하게 분산되도록 리더 리밸런싱 여부
+8. `delete.topic.enable`: 클러스터의 토픽을 임의 삭제 방지 여부
+9. `num.partitions`: 새로운 토픽이 생성될 때 몇 개의 파티션을 갖게 되는지 결정
+
+<br>
