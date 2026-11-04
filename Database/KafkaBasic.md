@@ -144,12 +144,10 @@ JSON, XML 같이 읽기 편한 스키마도 있지만 호환성 유지 기능이
 
 ## 데이터 생태계
 
+<img width="450" height="350" alt="kafka_big_data_ecosystem" src="https://github.com/user-attachments/assets/cc7a4a1d-f559-47db-98a6-dd8be37a1eae" />
 
+카프카는 데이터 생태계에 있어서 순환 시스템을 제공  
+모든 클라언트에 대해 일관된 인터페이스를 제공하면서 다양한 인프라 요소들 사이에 메시지를 전달하는 것  
+프로듀서와 컨슈머는 더 이상 어떤 형태로든 밀접하게 결합될 필요 없음  
 
-
-
-
-
-
-
-
+<br>
