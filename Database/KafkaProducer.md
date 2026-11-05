@@ -17,7 +17,7 @@
 
 ## 카프카 프로듀서 생성
 메시지를 쓰기 위해서 원하는 필수 속성 지정 후 프로듀서 객체 생성  
-- `boostrap.servers`: 카르카 클러스터와 첫 연결을 생성하기 위해 프로듀서가 사용할 브로커의 `host:port` 목록
+- `boostrap.servers`: 카프카 클러스터와 첫 연결을 생성하기 위해 프로듀서가 사용할 브로커의 `host:port` 목록
 - `key.serializer`: 레코드의 키 값을 직렬화하기 위해 사용하는 시리얼라이저 클래스의 이름
 - `value.serializer`: 레코드의 밸류값을 직렬화하기 위해 사용하는 시리얼라이저 클래스의 이름
 
@@ -204,12 +204,82 @@ public class CustomerSerializer implements Serializer<Customer> {
 <br>
 
 ### 아파치 에이브로 직렬화
+아파치 에이브로는 언어 중립적인 데이터 직렬화 형식, 스키마 형태로 기술  
+직렬화된 결과물이 저장된 파일을 읽거나 직렬화를 할 때 스키마 정보가 별도로 주어진다고 가정  
+메시지를 쓰는 애플리케이션이 새로운 스키마로 전환하더라도 기존 스키마와 호환성을 유지  
+즉 데이터를 읽는 쪽 애플리케이션을 전부 변경하지 않고 스키마를 변경해도 예외나 에러 없이 null 반환  
 
+<br>
 
+### 카프카 에이브로 레코드 사용
 
+<img width="600" height="300" alt="kafka_avro_record" src="https://github.com/user-attachments/assets/a7290702-643c-4700-bbf9-357134935319" />
 
+파일 안에 전체 스키마를 저장함으로써 약간의 오버헤드를 감수하는 에이브로 파일과는 차이점 존재  
+카프카 레코드에 전체 스키마를 저장할 경우 전체 레코드 사이즈는 2배 이상될 가능성 존재  
+하지만 에이브로는 레코드를 읽을 때 스키마 전체를 필요로 하기 때문에 스키마 저장이 필수  
+카프카는 직접 스키마를 저장하는 방식이 아닌 스키마 레지스트리 패턴을 사용
 
+<br>
 
+```java
+Properties props = new Properties();
+
+props.put("bootstrap.servers", "localhost:9092");
+props.put("key.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+props.put("schema.registry.url", schemaUrl);
+
+String topic = "customerContacts";
+
+Producer<String, Customer> producer = new KafkaProducer<>(props);
+```
+
+여기서 메시지로 사용한 객체는 일반적인 자바 클래스가 아닌 에이브로 코드 생성 기능을 사용한 특화 객체  
+에이브로 시리얼라이저는 오직 에이브로 객체만을 직렬화 가능  
+에이브로 클래스를 생성하는 것은 `avro-tools.jar` 또는 에이브로 메이븐 플러그인  
+
+<br>
+
+```java
+props.put("bootstrap.servers", "localhost:9092");
+props.put("key.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+props.put("schema.registry.url", schemaUrl);
+
+String schemaString =
+  "{\"namespace\": \"customerManagement.avro\", " +
+  "\"type\": \"record\", " +
+  "\"name\": \"Customer\", " +
+  "\"fields\": [" +
+  "{\"name\": \"id\", \"type\": \"int\"}, " +
+  "{\"name\": \"name\", \"type\": \"string\"}, " +
+  "{\"name\": \"email\", \"type\": [\"null\",\"string\"], \"default\":\"null\"}" +
+  "]}";
+Producer<String, GenericRecord> producer = new KafkaProducer<>(props);
+
+Schema.Parser parser = new Schema.Parser();
+Schema schema = parser.parse(schemaString);
+
+GenericRecord customer = new GenericData.Record(schema);
+customer.put("id", 1);
+customer.put("name", "exampleCustomer");
+customer.put("email", "example@google.com");
+
+ProducerRecord<String, GenericRecord> data = new ProducerRecord<>("customerContacts", "exampleCustomer", customer);
+producer.send(data);
+```
+
+에이브로를 사용하면 키-값 형태로 사용 가능한 제네릭 에이브로 객체 역시 사용 가능  
+제네릭 에이브로 객체를 사용하려면 위와 같이 스키마 지정 필수  
+
+<br>
+
+## 파티션
+ProducerRecord 객체는 토픽, 키, 밸류 값을 포함  
+키의 기본값이 null이기 때문에 토픽과 밸류 값만 있어서 객체 생성 가능  
+하지만 대부분의 경우 키 값이 지정된 객체를 사용, 같은 키 값을 가진 모든 메시지는 같은 파티션에 저장  
+기본 파티셔너 사용 중 키 값이 null인 레코드는 현재 사용 가능한 토픽의 파티션 중 랜덤하게 저장  
 
 
 
