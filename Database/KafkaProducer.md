@@ -281,29 +281,139 @@ ProducerRecord 객체는 토픽, 키, 밸류 값을 포함
 하지만 대부분의 경우 키 값이 지정된 객체를 사용, 같은 키 값을 가진 모든 메시지는 같은 파티션에 저장  
 기본 파티셔너 사용 중 키 값이 null인 레코드는 현재 사용 가능한 토픽의 파티션 중 랜덤하게 저장  
 
+<br>
 
+<img width="600" height="200" alt="kafka_round_robin_sticky" src="https://github.com/user-attachments/assets/1008f925-e1ce-42af-b8f6-03765c61c5b1" />
 
+키 값을 설정하지 않고 처리할 때 라운드 로빈 알고리즘은 접착성(`sticky`)을 가지고 처리  
+프로듀서가 메시지 배치를 채울 때 다음 배치로 넘어가기 전 이전 배치를 먼저 채우게 설계  
 
+<br>
 
+기본 파티셔너 외에도 `RoundRobinPartitioner`, `UniformStickyPartitioner` 포함  
+메시지가 키 값을 포함하고 있는 경우에도 랜덤 파티션 또는 접착성 랜덤 파티션 할당을 수행(본래 키의 목적을 포기)  
+파티션 내 순서 보장은 포기하더라도 모든 파티션에 부하를 균등하게 쪼개고 싶은 경우 사용  
 
+<br>
 
+### 커스텀 파티셔너 구현
+종종 데이터를 키 값에 대한 해시 처리가 아닌 다른 방식으로 할당하고 싶은 경우 사용  
 
+```java
+public class ExamplePartitioner implements Partitioner {
+  public void configure(Map<String, ?> configs) {}
 
+  public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
+    List<PartitionInfo> partitions = cluster.partitionsForTopic(topic);
+    int numPartitions = paritions.size();
 
+    if ((keyBytes == null) || (!(key instanceOf String))) {
+      throw new InvalidRecordException("We expect all messages to have customer name as key");
+    }
+    if (((String) key).equals("Example")) {
+      return numPartitions - 1; // Example will always go to last partition
+    }
+    // Other records will get hashed to the rest of the partitions
+    return Math.abs(Utils.murmur2(keyBytes)) % (numPartitions - 1);
+  }
+}
+```
 
+<br>
 
+## 헤더
+레코드는 키, 밸류 외에도 헤더를 포함 가능, 헤더는 카프카 레코드의 키/밸류를 건드리지 않고 추가 메타데이터를 심을 때 사용  
+주된 용도 중 하나는 메시지의 전달 내역을 기록하는 것, 메시지 파싱 없이 헤더 정보로 메시지 라우팅 및 출처 추적 가능  
 
+```java
+ProducerRecord<String, String> record = new ProducerRecord<>("Country", "Products", "France");
+record.headers().add("privacy-level", "YOLO".getBytes(StandardCharsets.UTF_8));
+```
 
+<br>
 
+## 인터셉터
+카프카 클라이언트의 코드를 변경하지 않으면서 그 작동을 변경해야하는 경우 사용  
+일반적으로 모니터링, 정보 추적, 표준 헤더 삽입 등에 사용  
 
+<br>
 
+```java
+ProducerRecord<K, V> onSend(ProducerRecord<K, V> record)
+```
+레코드를 브로커로 보내기 전 직렬화되기 직전에 호출  
+해당 메서드가 리턴한 레코드가 실제 직렬화되어 카프카로 전송  
 
+<br>
 
+```java
+void onAcknowledgement(RecordMetadata metadata, Exception exception)
+```
 
+카프카 브로커가 보낸 응답을 클라이언트가 받았을 때 호출  
+브로커의 응답을 변경할 수 없지만 그 안에 담긴 정보를 조회 가능  
 
+<br>
 
+```java
+public class CountingProducerInterceptor implements ProducerInterceptor {
+  ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+  static AtomicLong numSent = new AtomicLong(0);
+  static AtomicLong numAcked = new AtomicLong(0);
 
+  public void configure(Map<String, ?> map) {
+    Long windowSize = Long.valueOf((String) map.get("counting.interceptor.window.size.ms"));
+    executorService.scheduleAtFixedRate(CountingProducerInterceptor::run, windowSize, windowSize, TimeUnit.MILLISECONDS);
+  }
 
+  public ProducerRecord onSend(ProducerRecord producerRecord) {
+    numSent.incrementAndGet();
+    return producerRecord;
+  }
 
+  public void onAcknowledgement(RecordMetadata recordMetadata, Exception e) {
+    numAcked.incrementAndGet();
+  }
 
+  public void close() {
+    executorService.shutdownNow();
+  }
 
+  pubic static void run() {
+    System.out.println(numSent.getAndSet(0));
+    System.out.println(numAcked.getAndSet(0));
+  }
+}
+```
+
+<br>
+
+## 쿼터, 스로틀링
+카프카 브로커에는 쓰기/읽기 속도를 쿼터를 설정해서 제한 가능  
+쿼터 타입은 쓰기 쿼터, 읽기 쿼터, 요청 쿼터 세가지 존재  
+쓰기/읽기 쿼터는 클라이언트가 데이터를 전송하거나 받는 속도를 초당 바이트 수 단위로 제한  
+요청 쿼터는 브로커가 요청을 처리하는 시간 비율 단위로 제한  
+
+```
+# 특정 클라이언트의 쓰기 속도 제한
+bin/kafka-configs --bootstrap-server localhost:9092 --alter \
+  --add-config 'producer_byte_rate=1024' --entity-name clientC \
+  --entity-type clients
+
+# 특정 유저의 쓰기 속도 및 읽기 속도 제한
+bin/kafka-configs --bootstrap-server localhost:9092 --alter \
+  --add-config 'producer_byte_rate=1024,consumer_byte_rate=2048' \
+  --entity-name user1 --entity-type users
+
+# 모든 사용자의 읽기 속도 제한
+bin/kafka-configs --bootstrap-server localhost:9092 --alter \
+  --add-config 'consumer_byte_rate=2024' --entity-type users
+```
+
+<br>
+
+클라이언트가 할당량을 다 채운 경우 브로커는 클라이언트의 요청에 대한 스로틀링(`throttling`)을 시작  
+브로커가 클라이언트의 요청에 대한 응답을 늦게 보내 준다는 의미  
+대부분의 경우 클라이언트는 해당 상황에서 응답 대기 가능 요청 수 설정에 의해 자동적으로 요청 속도를 감소  
+
+<br>
