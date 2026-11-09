@@ -60,6 +60,135 @@
 <br>
 
 ## 정적 그룹 멤버십
+기본적으로 컨슈머 그룹의 멤버십은 일시적, 컨슈머가 그룹을 떠나는 순간 리밸런싱  
+`group.instance.id` 설정을 통해서 컨슈머 그룹의 정적인 멤버로 지정하지 않는 경우에만 유효  
+해당 설정을 통해 일시적인 컨슈머 장애에 대해 유휴 기간 동안 리밸런싱 방지  
+정적 그룹 멤버십은 각 컨슈머가 파티션의 내용물을 사용해 로컬 상태나 캐시를 유지할 때 유용  
+`session.timeout.ms` 설정을 통해 유휴 기간 설정 가능  
+
+<br>
+
+## 카프카 컨슈머 생성
+반드시 지정해야만 하는 속성은 아래 3가지  
+이외에도 필수는 아니지만 매우 일반적으로 사용되는 네번째 속성인 `group.id` 존재  
+- `bootstrap.servers`
+- `key.deserializer`
+- `value.desecializer`
+
+```java
+Properties props = new Properties();
+props.put("bootstrap.servers", "broker1:9092,broker2:9092");
+props.put("group.id", "CountryCounter");
+props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(props);
+```
+
+<br>
+
+## 토픽 구독하기
+컨슈머를 생성한 후에 1개 이상의 토픽 구독 필수  
+정규식을 매개변수로 구독 가능, 정규식과 매치되는 이름을 가진 새로운 토픽 생성시 바로 구독 가능  
+하지만 만약 토픽의 목록이 굉장히 많고 컨슈머도 굉장히 많은 경우 정규식을 사용한 구독은 상당한 오버헤드 발생  
+
+```java
+consumer.subscribe(Collections.singletonList("customerCountries"));
+consumer.subscribe(Pattern.compile("test.*"));
+```
+
+<br>
+
+## 폴링 루프
+컨슈머 API의 핵심은 서버에 추가 데이터가 들어왔는지 폴링하는 단순한 루프  
+새 컨슈머에서 처음으로 `poll()` 메서드를 호출하면 컨슈머는 코디네이터를 찾아서 컨슈머 그룹에 참가  
+해당 메서드가 `max.poll.interval.ms` 설정 이상으로 호출되지 않는 경우 컨슈머가 죽은 것으로 판정  
+
+```java
+Duration timeout = Duration.ofMillis(100);
+
+while (true) {
+  ConsumerRecords<String, String> records = consumer.poll(timeout);
+  for (ConsumerRecord<String, String> record : records) {
+    System.out.printf(
+      "topic = %s, partition = $d, offset = %d, customer = %s, value = %s\n",
+      record.topic(), record.partition(), record.offset(), record.key(), record.value()
+    );
+    int updatedCount = 1;
+    if (custValueMap.containsKey(record.value()))) {
+      updatedCount = custValueMap.get(record.value()) + 1;
+    }
+    custValueMap.put(record.value(), updatedCount);
+    JSONObject json = new JSONObject(custCountryMap);
+    System.out.println(json.toString());
+  }
+}
+```
+
+<br>
+
+### 스레드 안전성
+하나의 스레드에서 동일한 그룹 내에 여러 개의 컨슈머 생성 불가  
+같은 컨슈머를 다수의 스레드가 안전하게 사용하는 것도 불가, 하나의 스레드 당 하나의 컨슈머가 원칙  
+애플리케이션에서 동일한 그룹에 속하는 여러 개의 컨슈머 운용은 다수의 스레드를 띄워 각각의 컨슈머를 운용  
+또 다른 방법은 이벤트를 받아서 큐에 넣는 컨슈머 하나와 이벤트를 꺼내서 처리하는 여러 개의 워커 스레드를 사용하는 것  
+
+<br>
+
+## 컨슈머 설정
+대부분의 매개변수는 합리적인 기본값을 보유  
+몇몇 매개변수는 컨슈머의 성능과 가용성에 영향을 줌  
+
+1. `fetch.min.bytes`: 레코드를 얻어올 때 받는 데이터의 최소량
+2. `fetch.max.wait.ms`: 컨슈머에게 응답하기 전 충분한 데이터가 모일 때까지 기다리는 시간
+3. `fetch.max.bytes`: 컨슈머가 브로커를 폴링할 때 카프카가 리턴하는 최대 바이트 수
+4. `max.poll.records`: `poll()` 메서드 호출 때마다 리턴되는 최대 레코드 수
+5. `max.partition.fetch.bytes`: 서버가 파티션별로 리턴하는 최대 바이트 수
+6. `session.timeout.ms`: 신호를 주고받지 않고도 살아 있는 것으로 판전되는 최대 시간
+7. `max.poll.interval.ms`: 컨슈머가 폴링을 하지 않고도 죽은 것으로 판정되지 않을 수 있는 최대 시간
+8. `default.api.timeout.ms`: 컨슈머 API 호출에 적용되는 타임아웃 값
+9. `request.timeout.ms`: 컨슈머가 브로커로부터 응답을 기다릴 수 있는 최대 시간
+10. `auto.offset.reset`: 오프셋을 커밋한 적이 없거나 커밋된 오프셋이 유효하지 않는 경우 파티션 읽기 시작 작동 정의
+11. `enable.auto.commit`: 컨슈머가 자동으로 오프셋을 커밋할지 여부 결정
+12. `partition.assignment.strategy`: 컨슈머에게 어느 파티션이 할당될지 결정
+13. `client.id`: 브로커가 요청을 보낸 클라이언트를 식별할때 사용하는 문자열
+14. `client.rack`: 다수의 클라우드 가용 영역 중 컨슈머와 같은 영역에 있는 레플리카를 설정
+15. `group.instance.id`: 정적 그룹 멤버십 기능을 적용하기 위해 사용하는 설정
+16. `receive.buffer.bytes`: 소켓이 사용하는 TCP 수신 버퍼 크기
+17. `offsets.retention.minutes`: 브로커 설정, 그룹이 비게된 경우 커밋된 오프셋을 보관하는 기간
+
+<br>
+
+## 오프셋과 커밋
+컨슈머가 카프카를 사용해서 각 파티션에서의 위치를 추적 가능  
+파티션에서 현재 위치를 업데이트하는 작업을 오프셋 커밋(`offset commit`)이라고 부름. 
+전통적인 메시지 큐와 다르게 레코드를 개별적으로 커밋하지 않고 컨슈머는 파티션에서 성공적으로 처리해 낸 마지막 메시지를 커밋  
+카프카에 특수 토픽인 `__consumer_offsets` 토픽에 각 파티션 별로 커밋된 오프셋을 업데이트하도록 메시지를 보냄  
+오프셋 자동/수동 여부에 상관없이 `poll()` 메서드가 리턴한 마지막 오프셋 바로 다음 오프셋을 커밋하는 것이 기본적인 동작  
+
+<br>
+
+<img width="450" height="250" alt="kafka_consumer_duplication" src="https://github.com/user-attachments/assets/eacb66f6-3d05-4b5a-87b3-c19a5349469e" />
+
+만약 커밋된 오프셋이 클라이언트가 이미 처리한 마지막 메시지 오프셋보다 작을 경우 중복 처리 발생  
+
+<br>
+
+<img width="450" height="250" alt="kafka_consumer_missing_message" src="https://github.com/user-attachments/assets/566b1c24-d1e0-45e7-8e1e-20747c3b8314" />
+
+반대로 커밋된 오프셋이 클라언트가 처리한 마지막 메시지 오프셋보다 큰 경우 누락 발생
+
+<br>
+
+### 자동 커밋
+
+
+
+
+
+
+
+
+
 
 
 
