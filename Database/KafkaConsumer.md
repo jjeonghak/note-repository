@@ -180,6 +180,318 @@ while (true) {
 <br>
 
 ### 자동 커밋
+오프셋을 커밋하는 가장 쉬운 방법인 컨슈머가 대신 커밋하는 것  
+`enable.auto.commit=true` 설정을 통해 5초에 한 번, `poll()` 메서드를 통해 받은 마지막 메시지의 오프셋을 커밋  
+5초는 기본값으로 `auto.commit.interval.ms` 설정으로 변경 가능  
+해당 방식은 윈도우 크기에 따라 크래시 상황에서 중복이 발생 가능성이 존재, 완전히 중복을 없애는 것은 불가능  
+또한 리턴된 모든 이벤트들이 다음 `poll()` 메서드 호출 전에 반드시 처리되어야 하는게 중요  
+
+<br>
+
+### 현재 오프셋 커밋
+컨슈머 API는 타이머 시간이 아닌 애플리케이션 개발자가 원하는 시간에 현재 오프셋을 커밋하는 옵션 제공  
+`enable.auto.commit=false` 설정을 통해 애플리케이션이 명시적으로 커밋하려 할 때만 오프셋 커밋 가능  
+가장 신뢰성 있는 커밋 API는 `commitSync()`, 리턴한 마지막 오프셋을 커밋한 뒤 커밋이 성공적으로 완료되면 리턴 아니면 예외  
+이 역시 리턴된 마지막 오프셋을 커밋하기 때문에 레코드를 받고 처리 완료 전에 크래시 상황이 발생하면 메시지 누락  
+
+```java
+Duration timeout = Duration.ofMillis(100);
+while (true) {
+  ConsumerRecords<String, String> records = consumer.poll(timeout);
+  for (ConsumerRecord<String, String> record : records) {
+    System.out.printf(
+      "topic = %s, partition = %d, offset = %d, customer = %s, value = %s\n",
+      record.topic(), record.partition(), record.offset(), record.key(), record.value()
+    );
+  }
+  try {
+    consumer.commitSync();
+  } catch (CommitFailedException e) {
+    log.error("commit failed", e);
+  }
+}
+```
+
+<br>
+
+### 비동기적 커밋
+수동 커밋의 단점 중 하나는 브로커가 커밋 요청을 응답하기 전까지 애플리케이션이 블록된다는 것  
+덜 자주 커밋한다면 처리량이 올라가겠지만 리밸런스에 의해 발생하는 잠재적인 중복 메시지의 수는 늘어남  
+
+```java
+Duration timeout = Duration.ofMillis(100);
+while (true) {
+  ConsumerRecords<String, String> records = consumer.poll(timeout);
+  for (ConsumerRecord<String, String> record : records) {
+    System.out.printf(
+      "topic = %s, partition = %d, offset = %d, customer = %s, value = %s\n",
+      record.topic(), record.partition(), record.offset(), record.key(), record.value()
+    );
+  }
+  consumer.commitAsync();
+}
+```
+
+<br>
+
+해당 방식의 단점은 동기 방식은 재시도를 하지만 비동기 방식은 재시도를 하지 않음  
+서버로부터 응답을 받은 시점에는 이미 다른 커밋 시도가 성공했을 가능성이 있기 때문  
+앞선 커밋이 실패했지만 이미 뒤이은 커밋이 성공해버리는 상황 발생 가능  
+또한 콜백 지정을 통해 커밋 에러를 로깅하거나 커밋 에러 수를 지표 형태로 집계하는 것이 보통, 재시도 하지 않음  
+만약 재시도를 원한다면 단조증가 번호를 콜백에 넣어서 현재 번호를 비교해서 같다면 재시도 가능  
+
+```java
+Duration timeout = Duration.ofMillis(100);
+while (true) {
+  ConsumerRecords<String, String> records = consumer.poll(timeout);
+  for (ConsumerRecord<String, String> record : records) {
+    System.out.printf(
+      "topic = %s, partition = %d, offset = %d, customer = %s, value = %s\n",
+      record.topic(), record.partition(), record.offset(), record.key(), record.value()
+    );
+  }
+  consumer.commitAsync(new OffsetCommitCallback() {
+    public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception e) {
+      if (e != null) {
+        log.error("Commit failed for offsets {}", offsets, e);
+      }
+    }
+  });
+}
+```
+
+<br>
+
+### 동기적 커밋과 비동기적 커밋 동시 사용
+보통 재시도 없는 커밋이 실패한다고 해서 큰 문제가 발생하지 않음  
+일시적인 문제일 경우 뒤이은 커밋이 성공할 것이기 때문  
+하지만 컨슈머를 닫기 전 혹은 리밸런스 전 마지막 커밋이라면 성공 여부 확인이 필요한 경우 존재  
+이런 경우 일반적인 패턴은 종료 직전에 동기/비동기 커밋을 함께 사용하는 것  
+
+```java
+Duration timeout = Duration.ofMillis(100);
+try {
+  while (!closing) {
+    ConsumerRecords<String, String> records = consumer.poll(timeout);
+    for (ConsumerRecord<String, String> record : records) {
+      System.out.printf(
+        "topic = %s, partition = %d, offset = %d, customer = %s, value = %s\n",
+        record.topic(), record.partition(), record.offset(), record.key(), record.value()
+      );
+    }
+    consumer.commitAsync();    // 정상적인 상황에서는 비동기 커밋
+  }
+  consumer.commitSync();       // 컨슈머를 닫는 상황에서는 다음 커밋이 있을 수 없으므로 동기 커밋 및 재시도
+} catch (Exception e) {
+  log.error("Unexpected error", e);
+} finally {
+  consumer.close();
+}
+```
+
+<br>
+
+### 특정 오프셋 커밋
+가장 최근 오프셋을 커밋하는 것은 메시지 배치의 처리가 끝난 이후에만 수행 가능  
+큰 배치를 처리하는 도중에 오프셋을 커밋하고 싶은 경우 사용  
+
+```java
+private Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
+int count = 0;
+
+...
+
+Duration timeout = Duration.ofMillis(100);
+while (true) {
+  ConsumerRecords<String, String> records = consumer.poll(timeout);
+  for (ConsumerRecord<String, String> record : records) {
+    System.out.printf(
+      "topic = %s, partition = %d, offset = %d, customer = %s, value = %s\n",
+      record.topic(), record.partition(), record.offset(), record.key(), record.value()
+    );
+    currentOffsets.put(
+      new TopicPartition(record.topic(), record.partition()),
+      new OffsetAndMetadata(record.offset() + 1, "no metadata"    // 향후에 읽기 시작할 메시지 위치
+    );
+    if (count % 1000 == 0) {      // 1000개의 레코드마다 현재 오프셋을 커밋
+      consumer.commitAsync(currentOffsets, null);
+    }
+    count++;
+  }
+}
+```
+
+<br>
+
+## 리밸런스 리스너
+컨슈머는 종료되기 전이나 리밸런싱이 시작되기 전에 정리 작업 필수  
+파티션이 해제될 것이라는 걸 알게 된다면 해장 파티션에서 마지막으로 처리한 이벤트의 오프셋 커밋 필수  
+`subscribe()` 메서드를 호출할 때 ConsumerRebalanceListener 리밸런스 리스터 전달 가능  
+
+```java
+public interface ConsumerRebalanceListner {
+  // 컨슈머에게 파티션 재할당 후 컨슈머가 메시지를 읽기 시작하기 전에 호출
+  // 리밸런스가 발생했음을 컨슈머에게 알려주는 역할, 새롭게 할당된 파티션이 없는 경우 빈 목록과 함게 호출
+  public void onPartitionsAssigned(Collection<TopicPartition> partitions);
+
+  // 컨슈머가 할당받았던 파티션이 할당 해제될 때 호출
+  // 메서드가 호출될 때 빈 목록이 주어지는 경우는 없음
+  public void onPartitionsRevoked(Collection<TopicPartition> partitions);
+
+  // 협력적 리밸런스 알고리즘이 사용되었을 경우 해제되기 전에 다른 컨슈머에 먼저 할당된 예외적인 상황에서만 호출
+  // 메서드가 호출되는 시점에서 이미 다른 컨슈머들에게 할당되어 있는 상태
+  default void onPartitionsLost(Collection<TopicPartition> partitions) {
+    onPartitionsRevoked(partitions);
+  }
+}
+```
+
+```java
+private Map<TopicPartition, OffsetAndMetadata> currentOffsets = new HashMap<>();
+Duration timeout = Duration.ofMillis(100);
+
+private class HandleRebalance implements ConsumerRebalanceListener {
+  public void onPartitionsAssigned(Collection<TopicPartition> partitions) {}
+  public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+    System.out.println("Lost partitions in rebalance. Committing current offsets:" + currentOffsets);
+    consumer.commitSync(currentOffsets);
+  }
+}
+
+try {
+  consumer.subscribe(topics, new HandleRebalance());
+  ...
+} catch (WakeupException ignore) {
+} catch (Exception e) {
+  log.error("Unexpected error", e);
+} finally {
+  consumer.close();
+  System.out.println("Closed consumer and we are done");
+}
+```
+
+<br>
+
+## 특정 오프셋 레코드 조회
+각 파티션의 마지막 커밋 오프셋이 아닌 특정 오프셋부터 읽기 기능 지원  
+맨 앞에서부터 모든 메시지를 읽거나 전부 건너뛰고 맨 마지막 메시지부터 읽고 싶은 경우 `seekToBdgining`, `seekToEnd` 사용  
+
+```java
+Long oneHourEarlier = Instant.now().atZone(ZoneId.systemDefault()).minusHour(1).toEpochSecond();
+Map<TopicPartition, Long> partitionTimestampMap = consumer.assignment()
+  .stream()
+  .collect(Collectors.toMap(tp -> tp, tp -> oneHourEalier));  // 컨슈머에 할당된 모든 파티션에 대해 되돌리고자 하는 타임스탬프 값
+Map<TopicPartition, OffsetAndTimestamp> offsetMap = consumer.offsetsForTimes(partitionTimestampMap); // 실제 오프셋
+for(Map.Entry<TopicPartition, OffsetAndTimestamp> entry : offsetMap.entrySet()) {
+  consumer.seek(entry.getKey(), entry.getValue().offset());
+}
+```
+
+<br>
+
+## 폴링 루프 종료
+컨슈머를 종료하고자 할 때 컨슈머가 `poll()` 메서드를 대기하고 있더라도 다른 스레드로 `consumer.wakeup()` 호출하면 탈출 가능  
+해당 메서드 호출시 대기중인 `poll()` 메서드는 `WakeupException` 예외 발생시키며 중단  
+컨슈머를 닫으면 오프셋을 커밋하고 그룹 코디네이터에게 컨슈머 그룹을 떠난다는 메시지 전송  
+
+```java
+Runtime.getRuntime().addShutdownHook(new Thread() {
+  public void run() {
+    System.out.println("Starting exit ...");
+    consumer.wakeup();
+    try {
+      mainThread.join();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+});
+```
+
+<br>
+
+## 디시리얼라이저
+직렬화와 역직렬화는 동전의 양면, 어차피 함께 쓰이기 때문에 같은 데이터 타입에 대해 같이 묶어 놓은 클래스 존재  
+Avro 또한 시리얼라이저와 디시리얼라이저 둘 다 사용 가능  
+
+<br>
+
+### 커스텀 디시리얼라이저
+
+```java
+public class Customer {
+  private int customerID;
+  private String customerName;
+
+  public Customer(int ID, String name) {
+    this.customerID = ID;
+    this.customerName = name;
+  }
+
+  public int getID() {
+    return customerID;
+  }
+
+  public String getName() {
+    return customerName;
+  }
+}
+```
+
+```java
+public class CustomerDeserializer implements Deserializer<Customer> {
+  @Override
+  public void configure(Map configs, boolean isKey) {}
+
+  @Override
+  public Customer deserialize(String topic, byte[] data) {
+    int id;
+    int nameSize;
+    String name;
+
+    try {
+      if (data == null) {
+        return null;
+      }
+      if (data.length < 8) {
+        throw new SerializationException("Size of data received by deserializer is shorter than expected");
+      }
+      ByteBuffer buffer = ByteBuffer.wrap(data);
+      id = buffer.getInt();
+      nameSize() = buffer.getInt();
+
+      byte[] nameBytes = new byte[nameSize];
+      buffer.get(nameBytes);
+      name = new String(nameByte, "UTF-8");
+
+      return new Customer(id, name);
+    } catch (Exception e) {
+      throw new SerializationException("Error when deserializing byte[] to Customer" + e);
+    }
+  }
+
+  @Override
+  public void close() {}
+}
+```
+
+<br>
+
+### Avro 디시리얼라이저
+
+```java
+Duration duration = Duration.ofMillis(100);
+Properties props = new Properties();
+props.put("bootstrap.servers", "broker1:9092,broker2:9092");
+props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+props.put("value.deserializer", "io.confluent.kafka.serializaers.KafkaAvroDeserializer");
+props.put("specific.avro.reader", "true");
+props.put("schema.registry.url", schemaUrl);
+KafkaConsumer<String, Customer> consumer = new KafkaConsumer<>(props);
+consumer.subscribe(Collections.singletonList("customerContacts"));
+```
+
+
 
 
 
