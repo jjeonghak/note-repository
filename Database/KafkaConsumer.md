@@ -491,36 +491,45 @@ KafkaConsumer<String, Customer> consumer = new KafkaConsumer<>(props);
 consumer.subscribe(Collections.singletonList("customerContacts"));
 ```
 
+<br>
 
+카프카가 활용되는 경우가 많아지면서 UUID, Void, List<T> 타입에 대한 시리얼라이저 추가  
+중첩된 타입에 대한 기능인 만큼 생성 방식이 조금 복잡  
 
+```java
+// 시리얼라이저 생성
+ListSerializer<?> listSerializer = new ListSerializer<>();
+Map<String, Object> props = new HashMap<>();
+props.put("default.list.key.serde.inner", Serdes.StringSerde.class.getName());
+listSerializer.configure(props, true);
+final Serializer<?> inner = listSerializer.getInnerSerializer();
 
+// 디시리얼라이저 생성
+ListDeserializer<?> listDeserializer = new LsitDeserializer<>();
+Map<String, Object> props = new HashMap<>();
+props.put("default.list.key.serde.type", ArrayList.class.getName());
+props.put("default.list.key.serde.inner", Serdes.StringSerde.class.getName());
+listDeserializer.configure(props, true);
+final Deserializer<?> inner = listDeserializer.innerDeserializer();
+```
 
+<br>
 
+## 독립 실행 컨슈머
+컨슈머 그룹 없이 컨슈머가 토픽의 모든 파티션으로부터 모든 데이터를 조회하는 경우 사용  
+컨슈머 그룹에 조인할 필요가 없으니 `subscribe()` 메서드 호출 필요 없음  
 
+```java
+Duration timeout = Duration.ofMillis(100);
+List<PartitionInfo> partitionInfos = consumer.partitionsFor("topic");    // 토픽에 대한 파티션 목록 요청
 
+if (partitionInfos != null) {
+  for (PartitionInfo partition : partitionInfos) {
+    partitions.add(new TopicPartition(partition.topic(), partition.partition()));
+  }
+  consumer.assign(partitions);    // 읽고자 하는 특정 파티션을 알았다면 해당 목록에 호출
+  ...
+}
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<br>
