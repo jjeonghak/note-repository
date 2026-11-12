@@ -84,6 +84,174 @@ try {
 }
 ```
 
+토픽 삭제는 돌이킬 수 없는 동작, 해당 토픽이 비어있는지 확인하는 절차도 없음  
+
+<br>
+
+```java
+vertx.createHttpServer().requestHandler(request -> {
+  String topic = request.getParam("topic");
+  String timeout = request.getParam("timeout");
+  int timeoutMs = NumberUtils.toInt(timeout, 1000);
+
+  DescribeTopicsResult demoTopic = admin.describeTopics(
+    Collections.singletonList(topic), new DescribeTopicsOptions().timeoutMs(timeoutMs)
+  );
+
+  // 비동기적 처리
+  demoTopic.values().get(topic).wehnComplete((final TopicDescription td, final Throwable t) -> {
+      if (t != null) {
+        request.response().end("Error trying to describe topic " + topic + " due to " + t.getMessage());
+      } else {
+        request.response().end(td.toString());
+      }
+  });
+}).listen(8080);
+```
+
+Future 객체의 결과를 블로킹해서 가져오는 방식이 아닌 비동기적인 방식을 원한다면 `KafkaFuture` 사용  
+
+<br>
+
+## 설정 관리
+설정 가능한 자원에는 브로커, 브로커 로그, 토픽이 존재하며 `ConfigResource` 객체를 사용  
+
+```java
+ConfigResource configResource = new ConfigResource(ConfigResource.Type.TOPIC, TOPIC_NAME);
+DescribeConfigResult configResult = admin.describeConfigs(Collections.singleton(configResource));
+Config configs = configsResult.all().get().get(configResource);
+
+// 기본값이 아닌 설정을 출력
+configs.entries().stream().filter(e -> !e.isDefault()).forEach(System.out::println);
+
+// 토픽에 압착 설정이 되어 있는지 확인
+ConfigEntry compaction = new ConfigEntry(TopicConfig.CLEANUP_POLICY_CONFIG, TopicConfig.CLEANUP_POLICY_COMPACT);
+if (!config.entrues().contains(compaction)) {
+  Collection<AlterConfigOp> configOp = new ArrayList<AlterConfigOp>();
+  configOp.add(new AlterconfigOp(compaction, AlterconfigOp.OpType.SET));
+  Map<ConfigResource, Collection<AlterConfigOp>> alterConf = new HashMap<>();
+  alterConf.put(configResource, configOp);
+  admin.incrementalAlterConfigs(alterConf).all().get();
+} else {
+  System.out.println("Topic " + TOPIC_NAME + " is compacted topic");
+}
+```
+
+<br>
+
+## 컨슈머 그룹 관리
+컨슈머 API를 사용해서 처리 지점을 되돌려 재처리 가능하지만 이러한 기능 자체가 애플리케이션에 재처리 기능 구현 필수  
+설령 애플리케이션에 해당 기능이 없더라도 사고 발생 후 재해 복구 상황 또한 재처리에 해당  
+AdminClient 객체를 사용해서 프로그램적으로 컨슈머 그룹과 커밋한 오프셋을 조회하고 수정하는 방법 존재  
+
+<br>
+
+### 컨슈머 그룹 조회
+
+```java
+admin.listConsumerGroups().valid().get().forEach(System.out::println);
+```
+
+가장 먼저 해야 할 일은 컨슈머 그룹의 목록을 조회하는 것  
+
+<br>
+
+```java
+ConsumerGroupDescription groupDescription = admin
+  .describeConsumerGroups(CONSUMER_GRP_LIST)
+  .describeGroups().get(CONSUMER_GROUP).get();
+System.out.println("Description of group " + CONSUMER_GROUP + ":" + groupDescription);
+```
+
+특정 그룹에 대한 더 상세한 정보를 조회할 때 사용  
+여기에는 그룹 멤버, 멤버별 식별자, 호스트명, 할당된 파티션, 할당 알고리즘, 그룹 코디네이터 호스트명이 포함  
+
+<br>
+
+```java
+// 브로커의 내부 토픽(__consumer_offsets)에서 해당 컨슈머 그룹이 각 파티션별로 마지막으로 커밋한 오프셋 정보 조회
+Map<TopicPartition, OffsetAndMetadata> offsets = admin
+  .listConsumerGroupOffsets(CONSUMER_GROUP)
+  .partitionsToOffsetsAndMetadata().get();
+
+// 아직 브로커와 통신하지 않고, 어떤 파티션의 어떤 위치(최신/가장오래된/특정시간)를 조회할지 조건만 담는 빈 Map
+Map<TopicPartition, OffsetSpec> requestLatestOffsets = new HashMap<>();
+
+// 컨슈머 그룹이 구독 중인 모든 파티션 목록을 순회하면서 조회 요청서 생성
+for (TopicPartition tp : offsets.keySet()) {
+  // OffsetSpec.latest()는 실제 오프셋 숫자를 가진 게 아니라 단순한 조회 옵션 객체이므로 재사용해도 무방
+  requestLatestOffsets.put(tp, OffsetSpec.latest());
+}
+
+// 브로커는 요청서의 각 파티션마다 OffsetSpec.latest() 지시를 확인한 후에 해당하는 오프셋 번호를 찾아 응답
+Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo> latestOffsets = admin
+  .listOffsets(requestLatestOffsets).all().get();
+
+for (Map.Entry<TopicPartition, OffsetAndMetadata> e : offsets.entrySet()) {
+  String topic = e.getKey().topic();
+  int partition = e.getKey().partition();
+
+  // 두 값의 차이가 컨슈머가 아직 못 읽고 밀려있는 메시지 수(Consumer Lag)
+  long committedOffset = e.getValue().offset();
+  long latestOffset = latestOffsets.get(e.getKey()).offset();
+}
+```
+
+과거에는 각 파티션에 대한 마지막 커밋된 오프셋은 내부 토픽에 쓴 커밋 메시지를 가져와서 파싱하는 방식 사용  
+내부 메시지 형식의 호환성 같은 것에 대해 아무런 보장을 하지 않아서 권장되지 않고 위의 AdminClient 사용하는 방식 권장  
+
+<br>
+
+### 컨슈머 그룹 수정
+AdminClient는 컨슈머 그룹을 수정하기 위한 메서드 보유(그룹 삭제, 커밋 오프셋 삭제 또는 변경 등)  
+오프셋을 삭제하면 컨슈머는 `auto.offset.reset` 설정에 의존해서 동작(맨 앞부터 읽기, 가장 마지막 최신부터 읽기)  
+컨슈머 그룹은 컨슈머가 새로운 파티션을 할당받거나 새로 시작할 때만 오프셋 토픽에 저장된 값을 조회  
+컨슈머가 모르는 으포셋 변경을 방지하기 위해 카프카는 현재 작업중인 컨슈머 그룹에 대한 오프셋 수정을 허용하지 않음  
+
+```java
+Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo> earliestOffsets = admin
+  .listOffsets(requestEarliestOffsets).all().get();
+
+Map<TopicPartition, OffsetAndMetadata> resetOffsets = new HashMap<>();
+for (Map.Entry<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo> e : earliestOffsets.entrySet()) {
+  resetOffsets.put(e.getKey(), new OffsetAndMetadata(e.getValue().offset()));
+}
+
+try {
+  admin.alterConsumerGroupOffsets(CONSUMER_GROUP, resetOffsets).all().get();
+} catch (ExecitionException e) {
+  if (e.getCause() instanceof UnknownMemberIdException) {
+    System.out.println("Check if consumer group is still active.");
+  }
+}
+```
+
+<br>
+
+## 고급 어드민 작업
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
