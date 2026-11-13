@@ -229,34 +229,142 @@ try {
 <br>
 
 ## 고급 어드민 작업
+사고 대응중에 매우 중요하지만 잘 쓰이지 않는 기능  
 
+<br>
 
+### 토픽 파티션 추가
+대체로 토픽의 파티션 수는 토픽이 생성될 때 결정되는 것이 보통  
+같은 키를 가진 메시지들이 동일한 파티션에서 동일한 순서로 처리될 것을 기대하기 때문에 사용이 드물며 위험 부담 존재  
+때때호 파티션이 처리할 수 있는 최대 처리량까지 부하가 차올라 파티션 추가 외에는 선택지가 없는 경우 사용  
 
+```java
+// 파티션 추가는 추가된 갯수가 아닌 추가 후 최종 갯수 지정
+Map<String, NewPartitions> newPartitions = new HashMap<>();
+newPartitions.put(TOPIC_NAME, NewPartitions.increaseTo(NUM_PARTITIONS + 2));
+admin.createPartitions(newPartitions).all().get();
+```
 
+<br>
 
+### 토픽 레코드 삭제
+카프카는 토픽에 대해 데이터 보존 정책을 설정할 수 있지만 법적인 요구 조건을 보장할 수준의 기능은 아님  
+`deleteRecords` 메서드는 호출 시점을 기준으로 지정된 오프셋보다 오래된 모든 레코드를 삭제 표시  
+삭제 표시된 레코드를 디스크에서 실제로 지우는 작업은 비동기적으로 실행, 대신 삭제 표시된 레코드는 컨슈머가 접근 불가  
+삭제된 레코드의 오프셋 중 가장 큰 값을 리턴하기 때문에 의도했던 대로 동작했는지 확인 가능  
 
+```java
+Map<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo> olderOffsets = admin
+  .listOffsets(requestOlderOffsets).all().get();
+Map<TopicPartition, RecordsToDelete> recordsToDelete = new HashMap<>();
+for (Map.Entry<TopicPartition, ListOffsetsResult.ListOffsetsResultInfo> e : olderOffsets.entrySet()) {
+  recordsToDelete.put(e.getKey(), RecordsToDelete.beforeOffsets(e.getValue().offset()));
+}
+admin.deleteRecords(recordsToDelete).all().get();
+```
 
+<br>
 
+### 리더 선출
+해당 메서드는 두가지 서로 다른 형태의 리터 선출 가능  
+1. 선호 리더 선출: 각 파티션은 선호 리더라 불리는 레플리카를 하나씩 보유
+2. 언클린 리더 선출: 리더가 될 수 없는 레플리카를 그냥 리더로 삼아버리는 방식
 
+<br>
 
+```java
+Set<TopicPartition> electableTopics = new HashSet<>();
+electableTopics.add(new TopicPartition(TOPIC_NAME, 0));
+try {
+  admin.electLeaders(ElectionType.PREFERRED, electableTopics).all().get();
+} catch (ExecutionException e) {
+  if (e.getCause() instanceof ElectionNotNeededException) {
+    System.out.println("All leaders are preferred already");
+  }
+}
+```
 
+해당 메서드 또한 비동기적으로 작동
+선호 리더가 아닌 레플리카가 현재 리더를 맡고 있는 경우에만 수행  
 
+<br>
 
+### 레플리카 재할당
+`alterPartitionReassignments`를 사용하면 파티션에 속한 각각의 레플리카의 위치를 정밀하게 제어 가능  
+레플리카를 다른 브로커로 재할당하는 것은 브로커 간에 대량의 데이터 복제를 초래  
 
+```java
+Map<TopicPartition, Optional<NewPartitionReassignment>> reassignment = new HashMap<>();
+reassignment.put(
+  new TopicPartition(TOPIC_NAME, 0), Optional.of(new NewPartitionReassignment(Arrays.asList(0, 1)))
+);
+reassignment.put(
+  new TopicPartition(TOPIC_NAME, 1), Optional.of(new NewPartitionReassignment(Arrays.asList(1)))
+);
+reassignment.put(
+  new TopicPartition(TOPIC_NAME, 2), Optional.of(new NewPartitionReassignment(Arrays.asList(1, 0)))
+);
+reassignment.put(new TopicPartition(TOPIC_NAME, 3), Optional.empty());
+admin.alterPartitionReassignments(reassignment).all().get();
 
+demoTopic = admin.describeTopics(TOPIC_LIST);
+topicDescription = demoTopic.values().get(TOPIC_NAME).get();
+```
 
+<br>
 
+## 테스트
+원하는 수만큼 브로커를 설정하고 초기화 가능한 `MockAdminClient` 테스트 클래스 제공  
+카프카 API 일부가 아닌 만큼 사전 경고 없이 변경 가능하지만 편리함  
 
+```java
+public TopicCreator(AdminClient admin) {
+  this.admin = admin;
+}
 
+public void maybeCreateTopic(String topicName) throws ExecutionException, InterruptedException {
+  Collection<NewTopic> topics = new ArrayList<>();
+  topics.add(new NewTopic(topicName, 1, (short) 1));
+  if (topicName.toLowerCase().startsWith("test")) {
+    admin.createTopics(topics);
+    ConfigResource configResource = new ConfigResource.Type.TOPIC, topicName);
+    ConfigEntry compaction = new ConfigEntry(TopicConfig.CLEANUP_POLICY_COMPACT);
+    Collection<AlterConfigOp> configOp = new ArrayList<AlterConfigOp>();
+    configOp.add(new AlterConfigOp(compaction, AlterConfigOp.OpType.SET));
+    Map<ConfigResource, Collection<AlterConfigOp>> alterConf = new HashMap<>();
+    alterConf.put(configResource, configOp);
+    admin.incrementalAlterConfigs(alterConf).all().get();
+  }
+}
+```
 
+```java
+@Before
+public void setUp() {
+  Node broker = new Node(0, "localhost", 9092);
+  MockAdminClient adminClient = new MockAdminClient(Collections.singletonList(broker), broker);
+  this.admin = spy(adminClient);
 
+  AlterConfigsResult emptyResult = mock(AlterConfigsResult.class);
+  doReturn(KafkaFuture.completedFuture(null)).when(emptyResult).all();
+  doReturn(emptyResult).when(admin).incrementalAlterconfigs(any());
+}
+```
 
+```java
+@Test
+public void testCreateTestTopic() throws ExecutionException, InterruptedException {
+  TopicCreator tc = new TopicCreator(admin);
+  tc.maybeCreateTopic("test.is.a.test.topic");
+  verigfy(admin, times(1)).createTopics(any());
+}
 
+@Test
+public void testNotTopic() throws ExecutionException, InterruptedException {
+  TopicCreator tc = new TopicCreator(admin);
+  tc.maybeCreateTopic("not.a.test");
+  verify(admin, never()).createTopics(any());
+}
+```
 
-
-
-
-
-
-
-
+<br>
