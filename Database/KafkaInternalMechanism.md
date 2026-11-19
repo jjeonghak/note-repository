@@ -78,13 +78,15 @@
 - Correlation ID: 각 요청에 붙는 고유한 식별자
 - 클라이언트 ID: 요청을 보내는 애플리케이션 식별자
 
+<br>
 
+<img width="500" height="300" alt="kafka_request_process" src="https://github.com/user-attachments/assets/0c54971f-1781-439f-8aff-ecf594717075" />
 
+브로커는 연결을 받는 각 포트별로 억셉터(`acceptor`) 스레드를 하나씩 실행  
+억셉터 스레드는 연결을 생성하고 들어온 요청을 프로세서 스레드에 넘겨 처리  
+네트워크 스레드는 클라이언트 연결로부터 들어온 요청을 요청 큐에 넣고 응답 큐에서 응답을 대기  
 
-
-
-
-
+<br>
 
 
 
